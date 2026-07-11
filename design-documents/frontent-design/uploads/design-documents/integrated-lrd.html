@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Integrated LRD — DIAIA &amp; AEAIS</title>
+<style>
+/* ================================================================
+   Business Data Solutions — brand system (palette C "strict minimal")
+   Reused verbatim from ai-for-smes-programme.html for visual consistency.
+   ================================================================ */
+:root {
+  --primary: #d4db3e;
+  --supporting: #1a1a1a;
+  --cream: #f5f0e6;
+  --bg-yellow: #fafbf0;
+  --bg-cream: #f5f0e6;
+  --bg-cream-2: #f0ebe0;
+  --bg-off-white: #f9f8f4;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --bg-page: #ffffff;
+  --bg-section: #f9fafb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text-xs: 0.75rem;  --text-sm: 0.875rem; --text-base: 1rem;
+  --text-lg: 1.125rem; --text-xl: 1.25rem;  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem; --text-4xl: 2.25rem; --text-5xl: 3rem;
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem; --space-16: 4rem;
+  --space-20: 5rem;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-md: 0 2px 4px rgba(0,0,0,.06), 0 8px 16px rgba(0,0,0,.06);
+  --shadow-lg: 0 4px 8px rgba(0,0,0,.08), 0 16px 32px rgba(0,0,0,.08);
+  --radius-sm: 6px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 9999px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+a:hover { background: var(--bg-yellow); }
+
+/* NAV */
+.bds-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-4) var(--space-8);
+}
+.bds-nav-inner {
+  max-width: 1024px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-6); flex-wrap: wrap;
+}
+.bds-wordmark {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-weight: 700; font-size: var(--text-xl);
+  text-decoration: none; color: var(--text-primary);
+}
+.bds-wordmark svg { width: 28px; height: 28px; flex-shrink: 0; }
+.bds-wordmark:hover { background: transparent; }
+.bds-nav-tag {
+  font-size: var(--text-sm); color: var(--text-muted);
+}
+
+/* PAGE LAYOUT */
+.bds-page {
+  max-width: 880px; margin: 0 auto;
+  padding: var(--space-12) var(--space-8) var(--space-20);
+}
+.bds-page-header {
+  margin-bottom: var(--space-12);
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+.bds-eyebrow {
+  font-size: var(--text-xs); text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted);
+  font-weight: 600; margin-bottom: var(--space-2);
+}
+h1.bds-h1 { font-size: var(--text-4xl); font-weight: 700; margin: 0 0 var(--space-6); line-height: 1.15; }
+
+.lead-quote {
+  margin: 0 0 var(--space-6); padding: var(--space-4) var(--space-6);
+  border-left: 4px solid var(--primary);
+  background: var(--bg-yellow);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-lg); color: var(--text-secondary);
+}
+.lead-quote em { font-style: italic; }
+
+/* Part headers (markdown level-1 "# Part …" / "# Appendix …") */
+h2.bds-part {
+  font-size: var(--text-3xl); font-weight: 700; line-height: 1.2;
+  margin: var(--space-20) 0 var(--space-6);
+  padding-top: var(--space-8);
+  border-top: 2px solid var(--supporting);
+}
+h2.bds-part::before {
+  content: ""; display: block;
+  width: 48px; height: 5px; background: var(--primary);
+  border-radius: var(--radius-full); margin-bottom: var(--space-4);
+}
+
+/* Sub-sections (markdown level-2 "## …") */
+h3 {
+  font-size: var(--text-xl); font-weight: 700;
+  margin: var(--space-12) 0 var(--space-3); line-height: 1.3;
+}
+h4 {
+  font-size: var(--text-lg); font-weight: 700;
+  margin: var(--space-8) 0 var(--space-2); line-height: 1.3;
+}
+
+p { margin: 0 0 var(--space-4); }
+ul, ol { margin: 0 0 var(--space-4); padding-left: var(--space-6); }
+li { margin: 0 0 var(--space-2); }
+li > ul, li > ol { margin-top: var(--space-2); }
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+
+hr { border: none; border-top: 1px solid var(--border); margin: var(--space-12) 0; }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; margin: var(--space-6) 0; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+thead th {
+  background: var(--bg-cream);
+  text-align: left; font-weight: 700;
+  border-bottom: 2px solid var(--border-strong);
+}
+th, td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  vertical-align: top; line-height: 1.5;
+}
+th:last-child, td:last-child { border-right: none; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: var(--bg-off-white); }
+td a { word-break: break-word; }
+
+/* Theme / foundation / module cards */
+.theme {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-8);
+  margin: var(--space-8) 0;
+}
+.theme h3 { margin-top: 0; }
+.theme-help { color: var(--text-secondary); }
+.theme .angles { list-style: none; padding-left: 0; }
+.theme .angles > li {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border);
+}
+.theme .angles > li:first-child { border-top: none; }
+.src {
+  display: block; margin-top: var(--space-2);
+  font-size: var(--text-sm); color: var(--text-secondary);
+}
+.illus { margin-top: var(--space-4); margin-bottom: 0; color: var(--text-muted); font-size: var(--text-sm); }
+
+/* Meta table (document header) */
+.meta-tbl th { width: 180px; background: var(--bg-cream-2); }
+
+code {
+  font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.9em; background: var(--bg-section);
+  padding: 0.15em 0.4em; border-radius: 4px; border: 1px solid var(--border);
+}
+
+.bds-footer {
+  border-top: 1px solid var(--border);
+  padding: var(--space-8); background: var(--bg-section);
+  text-align: center; color: var(--text-muted); font-size: var(--text-sm);
+}
+.bds-footer-inner { max-width: 1024px; margin: 0 auto; }
+.bds-footer .bds-wordmark { font-size: var(--text-base); margin-bottom: var(--space-2); }
+
+@media (max-width: 640px) {
+  .bds-nav { padding: var(--space-3) var(--space-4); }
+  .bds-page { padding: var(--space-8) var(--space-4) var(--space-12); }
+  h1.bds-h1 { font-size: var(--text-3xl); }
+  h2.bds-part { font-size: var(--text-2xl); }
+  .theme { padding: var(--space-4) var(--space-4); }
+}
+</style>
+</head>
+<body>
+
+<nav class="bds-nav">
+  <div class="bds-nav-inner">
+    <a href="#top" class="bds-wordmark">
+      <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Business Data Solutions">
+        <g fill="#1a1a1a">
+          <polygon points="9,29 11,10 17,10 19,29"/>
+          <polygon points="8,8.5 20,8.5 19,10 9,10"/>
+          <rect x="11" y="5" width="6" height="3.5"/>
+          <path d="M10.5 5 Q10.5 1.5 14 1.5 Q17.5 1.5 17.5 5 Z"/>
+          <rect x="13.5" y="0" width="1" height="1.8"/>
+        </g>
+        <rect x="13" y="6" width="2" height="2" fill="#d4db3e"/>
+        <g stroke="#d4db3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <path d="M21 4 L26 7 L21 10"/>
+          <path d="M26 4 L31 7 L26 10"/>
+        </g>
+      </svg>
+      <span>Business Data Solutions</span>
+    </a>
+    <span class="bds-nav-tag">Learner Requirement Document</span>
+  </div>
+</nav>
+
+<main class="bds-page" id="top">
+
+  <header class="bds-page-header">
+    <div class="bds-eyebrow">HAN · Minor Data Driven Decision Making</div>
+    <h1 class="bds-h1">Integrated LRD — DIAIA &amp; AEAIS</h1>
+    <blockquote class="lead-quote"><em>One handbook, two modules, one team: every team feeds its chosen topic and data into its own agentic system to generate a chapter, and only advances when an AI Socratic tutor and a peer team both agree the thinking behind it — not just the output — is real.</em></blockquote>
+
+    <div class="tbl-wrap">
+    <table class="meta-tbl">
+      <tbody>
+        <tr><th>Document</th><td>Learner Requirement Document (LRD)</td></tr>
+        <tr><th>Version</th><td>1.0 — draft for review</td></tr>
+        <tr><th>Date</th><td>7 July 2026</td></tr>
+        <tr><th>Programme</th><td>Minor Data Driven Decision Making, HAN University of Applied Sciences</td></tr>
+        <tr><th>Scope</th><td>Two parallel 7-week modules: <strong>DIAIA</strong> — Decision Intelligence and AI Agents (business / economy / society) — and <strong>AEAIS</strong> — Agentic Engineering &amp; AI Systems (technical build)</td></tr>
+        <tr><th>Author</th><td>Witek ten Hove — HAN, module design</td></tr>
+        <tr><th>Related documents</th><td><a target="_blank" rel="noopener" href="ai-for-smes-programme.html">ai-for-smes-programme.html</a> (the handbook, the mission, the seven themes) · <a target="_blank" rel="noopener" href="module-overview.md">module-overview.md</a> (current DIAIA) · <a target="_blank" rel="noopener" href="module-redesign-sketches.md">module-redesign-sketches.md</a> (the three sketches; this LRD commits to Sketch 3)</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>How to read it.</strong> Part 1 positions this LRD against the documents it builds on — it does not repeat their content. Part 2 sets out the <em>pedagogical quality system</em>: four grounded frameworks that every downstream design choice must trace back to. Part 3 gives Bloom-tagged learning outcomes for both modules. Parts 4–5 cover audience and design criteria. <strong>Part 6 is the core of this document</strong> — every team's production pipeline, the shared quality bar its output is measured against, and the gated learning-path system that makes the two modules "super simple" to run at scale. Parts 7–13 turn that into requirements, a weekly programme, assessment alignment, deliverables, acceptance criteria, risks and a rollout roadmap.</p>
+  </header>
+
+  <section>
+    <h2 class="bds-part">Part 1 — Context &amp; positioning</h2>
+
+    <h3>1.1 What this LRD is, and isn't</h3>
+    <p>This document does <strong>not</strong> re-argue the mission (the EU competitiveness case, Draghi, the Competitiveness Compass) or re-list the seven SME-facing themes — both live in <a target="_blank" rel="noopener" href="ai-for-smes-programme.html">ai-for-smes-programme.html</a> and stand as written. It does not re-derive the three technical sketches — they live in <a target="_blank" rel="noopener" href="module-redesign-sketches.md">module-redesign-sketches.md</a>. What this LRD adds:</p>
+    <ul>
+      <li>A formal <strong>Learner Requirement Document</strong> for the two modules together, in the format HAN already uses for workshop and application design (see the <em>LRD-Workshop</em> precedents in <code>background-docs/</code>) — learning outcomes, design criteria, functional/non-functional requirements, deliverables, acceptance criteria.</li>
+      <li>A committed technical level for AEAIS: <strong>Sketch 3 — "Agentic Engineering &amp; AI Systems."</strong> DIAIA correspondingly takes Sketch 3's 4b variant: pure strategy / economics / society, no build.</li>
+      <li>The <strong>integrated learning-path system</strong> (Part 6) — the new contribution this LRD makes on top of both source documents: every team owns one chapter end-to-end, feeding its chosen topic and data into its own agentic system against a shared, instructor-set quality bar; progression is gated by an AI Socratic tutor and a mandatory cross-team peer partnership, without any bespoke adaptive-difficulty engine.</li>
+    </ul>
+
+    <h3>1.2 The two sister modules at a glance</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th></th><th><strong>DIAIA</strong></th><th><strong>AEAIS</strong></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Full name</strong></td><td>Decision Intelligence and AI Agents</td><td>Agentic Engineering &amp; AI Systems</td></tr>
+        <tr><td><strong>Sketch committed</strong></td><td>3 (4b) — pure strategy/economics/society</td><td>3 (4a) — full agentic engineering</td></tr>
+        <tr><td><strong>Owns (within the shared team)</strong></td><td>The topic, the data, and the business/responsible-AI correctness of what the team's agentic system generates</td><td>The agentic system itself — its architecture, prompting, and evaluation pipeline — that turns the team's inputs into the generated chapter</td></tr>
+        <tr><td><strong>Professional task</strong></td><td>Direct the pipeline's business inputs — topic, data, SME framing — and critically vet what the system generates before it counts as the week's checkpoint</td><td>Build and operate the pipeline itself — the harness, the knowledge architecture, the eval loop — that produces the generated chapter</td></tr>
+        <tr><td><strong>Question answered</strong></td><td><em>Should an SME do this, and why?</em></td><td><em>How is it built, evaluated, deployed and governed?</em></td></tr>
+        <tr><td><strong>No build required</strong></td><td>Correct — DIAIA members direct and vet the team's system; they don't have to build it</td><td>Coding-confidence, or willingness to build it fast — a matter of the role a student chooses to stretch into, not their prior degree (§4)</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p><strong>One shared artifact, two lenses.</strong> Every team — DIAIA and AEAIS members together — produces exactly one thing each week: a chapter section generated by the team's own agentic system from the topic and data it chose (Part 6.1). DIAIA members are graded on the business judgment behind those choices and on how critically they vetted what the system produced; AEAIS members are graded on the system that produced it. Same weekly work, two assessment lenses, one artifact.</p>
+    <p><strong>The dogfooding point.</strong> Separately from each team's own chapter-generating system, AEAIS also builds and maintains the <em>shared hosting platform</em> every team runs on — the AI Wiki/Quartz site and the gate-status dashboard (Part 6.6). Two of AEAIS's six learning outcomes are spent on this shared infrastructure, not on any one team's own pipeline: a smaller group builds it once, collectively, and every team consumes it.</p>
+    <p><strong>The one deliberate exception.</strong> The Socratic AI tutor itself (Part 6.4) is <strong>not</strong> student-built — it is built and managed by the module owners. The same students it evaluates cannot also control how it evaluates them; that is the one place "AEAIS builds everything technical" (above) does not apply, on purpose.</p>
+
+    <h3>1.3 Relation to the handbook</h3>
+    <p>The handbook remains the shared capstone (<a target="_blank" rel="noopener" href="ai-for-smes-programme.html#top">programme.html Part 2–3</a>). Nothing in this LRD changes what gets published; it changes <em>how a team is allowed to move forward</em> while producing it.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 2 — Pedagogical quality system</h2>
+    <p>Four grounded frameworks (three in <code>background-docs/education-design/</code>; the fourth sourced from the AI Wiki) discipline every design choice in this LRD. They are stated here as design axioms, not summarised as literature.</p>
+
+    <div class="theme">
+      <h3>2.1 Bloom's revised taxonomy — precision in what we ask for</h3>
+      <p class="theme-help">Anderson &amp; Krathwohl (2001) cross a six-level <strong>Cognitive Process Dimension</strong> (Remember → Understand → Apply → Analyze → Evaluate → Create) with a four-level <strong>Knowledge Dimension</strong> (Factual → Conceptual → Procedural → Metacognitive). A learning outcome is a verb (process) plus an object (knowledge type) — never a learning <em>activity</em> in disguise.</p>
+      <p><strong>Design axiom:</strong> every learning outcome in Part 3 is tagged with its Bloom cell. A module that only asks students to <em>describe</em> or <em>explain</em> (Understand) is not doing what a capstone-driven minor needs; both modules here climb to <strong>Evaluate</strong> and <strong>Create</strong>, and — because the gating system in Part 6 explicitly asks teams to reflect on their own revision process — into <strong>metacognitive knowledge</strong>, the dimension classic rubrics rarely reach.</p>
+    </div>
+
+    <div class="theme">
+      <h3>2.2 Motivation &amp; Flow — why gates are calibrated, not arbitrary</h3>
+      <p class="theme-help">Pink's Motivation 3.0 (<em>Autonomy, Mastery, Purpose</em>) operationalises Deci &amp; Ryan's Self-Determination Theory; Csikszentmihalyi's <em>Flow</em> adds the experiential mechanism — a task must sit in the narrow channel between boredom (too easy) and anxiety (too hard), which maps directly onto Vygotsky's Zone of Proximal Development. Feedback must be <em>informational</em> ("here's how to improve") not <em>controlling</em> ("here's your grade") to sustain intrinsic motivation.</p>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Pink motivator</th><th>Mechanism in this LRD</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Autonomy</strong></td><td>Teams choose their own topic, data sources, and agentic-system architecture — together, not in role-split halves; the gate never dictates <em>how</em> to solve the checkpoint, only whether the thinking behind it is visible.</td></tr>
+          <tr><td><strong>Mastery</strong></td><td>Gates are binary and calibrated per week (Part 6.3) so a team is never blocked by a target it has no realistic path to — the checkpoint artifact scales with what that week's content actually taught, keeping teams inside the flow channel rather than the anxiety or boredom bands.</td></tr>
+          <tr><td><strong>Purpose</strong></td><td>Every checkpoint is real handbook/platform work, not a rehearsal exercise — the "why" is never abstract (§Motivation and Flow, structural manifestations: Challenge Based Learning's Engage→Investigate→Act arc is the same shape as a gated week).</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="theme">
+      <h3>2.3 UnBlooms — grade the thinking, not the output</h3>
+      <p class="theme-help">Austin (2026) argues that generative AI collapsed the assumption baked into every Bloom pyramid — that you must climb through Remember/Understand/Apply before you can Create. A student can now open an AI tool and skip straight to a polished artifact. Her response is not to invert the pyramid but to replace it with a <strong>metacognitive reflection loop</strong> — Questioning → Generating → Critiquing → Refining, organised around <em>human agency and curiosity</em> as the thing being protected, with "AI on the sidelines" providing productive friction through Socratic tutoring. The assessment question is never <em>what did you produce</em>; it is <em>how deliberately did you think along the way</em>.</p>
+      <p><strong>Design axiom:</strong> this is the direct ancestor of the Socratic AI agent in Part 6.4. It is why that agent is contractually barred from ever telling a student their work is good, bad, or scored — verdicts short-circuit the reflection loop UnBlooms exists to protect. The loop's four stages (Questioning / Generating / Critiquing / Refining) map onto this LRD's cycle: the agent <em>questions</em>, the team <em>generates</em> a revision, a peer team <em>critiques</em>, the team <em>refines</em> — and only then does the gate open. This matters more, not less, now that the chapter itself is machine-generated (Part 6.1): a team's own agentic system can already reach Create in Bloom's terms without the team doing any of the underlying thinking — exactly the collapse UnBlooms describes. The gate is what forces the thinking back in.</p>
+    </div>
+
+    <div class="theme">
+      <h3>2.4 Durable skills — the capability being protected</h3>
+      <p class="theme-help">Globerson et al. (2026), synthesised on the AI Wiki's <em>Durable Skills</em> page, define a durable skill by three criteria: <strong>open-ended</strong> (not reducible to closed-form rules), <strong>socially/contextually situated</strong> (its performance depends on a specific group, organisation or domain), and <strong>slow-changing</strong> (it doesn't go obsolete every 18 months). The canonical cluster is Collaboration, Creativity and Critical Thinking — and Critical Thinking now explicitly includes <strong>AI-Supported Exploration</strong> and <strong>AI-Supported Verification</strong> as sub-skills: judging AI output is itself a durable skill, not a stopgap until the model gets better. McKinsey Global Institute's <em>Skill Change Index</em> (2025) corroborates from the labour-market side: judgment, negotiation and mentorship sit in the lowest-automation-exposure quartile, while narrow digital skills sit in the highest.</p>
+      <p><strong>Design axiom:</strong> this is not a fourth independent framework bolted onto Bloom, Flow and UnBlooms — it is the answer to <em>which capability</em> those three are protecting. Every learning outcome in Part 3 is tagged with the durable skill it practises (§3.2–3.3), and the gate itself (Part 6.3) is reframed as weekly, structural practice of two specific sub-skills: AI-Supported Verification and Collaboration.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 3 — Learning outcomes (Bloom-tagged)</h2>
+    <p>Verbs are drawn from the revised-taxonomy verb bank (§2.1). <code>[Process / Knowledge]</code> tags follow Anderson &amp; Krathwohl's two dimensions. Every outcome is phrased as a user story — <em>a student can &lt;do&gt;, so &lt;value&gt;</em> — the same actor + goal + value shape used elsewhere in the LRD template family (see <code>LRD_Ontwerpende_Onderzoeksvragen_v2.docx.md</code> §4.1). The value clause is anchored to the student's <strong>future professional role</strong> (§3.1), not to the handbook artifact alone — the artifact is the practice ground, the role is the point. A third tag, <strong>Durable skill</strong>, names which §2.4 sub-skill the outcome practises — the capability that role will still need after the model underneath it changes.</p>
+
+    <h3>3.1 The two future roles</h3>
+    <p>Each module trains a distinct professional role — deliberately decoupled from a student's original degree (§4). A business-background student choosing the Engineer role, or an engineering-background student choosing the Product Owner role, is the programme working as intended, not an outlier. Both roles work inside the same team on the same weekly artifact (Part 6.1) — the role defines what a student is individually assessed on, not who they work apart from. Defining the roles first makes every "so" clause below answerable in one sentence: <em>does this skill matter to that role, or not?</em></p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th></th><th>DIAIA graduate</th><th>Technical-module graduate</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Role</strong></td><td><strong>AI Product Owner / Value Translator</strong></td><td><strong>AI/Agentic Systems Engineer</strong></td></tr>
+        <tr><td><strong>Defines success as</strong></td><td>Did this AI initiative earn its keep for the business and the person who has to use it?</td><td>Does this system keep doing what it promised, safely, after I've moved on to the next thing?</td></tr>
+        <tr><td><strong>Core accountability</strong></td><td>Understanding the value-seeking reader/end-user well enough to decide what's worth building, and defending that call to stakeholders</td><td>Designing, building, evaluating and maintaining the technical architecture that the Product Owner's call depends on</td></tr>
+        <tr><td><strong>Fails by</strong></td><td>Greenlighting AI work that looks impressive but never reaches the P&amp;L, or exposes the firm to risk it didn't see coming</td><td>Shipping an architecture that breaks under real load, or that nobody — including future-them — can explain or maintain</td></tr>
+        <tr><td><strong>Primary durable skills (§2.4)</strong></td><td>Critical Thinking — <strong>Evaluate &amp; Judge</strong>; Collaboration — <strong>Conflict Resolution</strong></td><td>Critical Thinking — <strong>AI-Supported Verification</strong>; Collaboration — <strong>Project Management</strong></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>3.2 DIAIA — learning outcomes</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Outcome</th><th>Bloom</th><th>Durable skill</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>A student can <strong>frame</strong> a decision problem for a specific SME archetype, <strong>select</strong> the topic and data that will drive the team's agentic system, and <strong>construct</strong> a business case for AI support, so that <em>as a future Product Owner</em> they can justify to stakeholders why an AI capability deserves investment before a single line of it gets built.</td><td>[Analyze–Create / Conceptual]</td><td>Critical Thinking — Evaluate &amp; Judge</td></tr>
+        <tr><td>2</td><td>A student can <strong>apply</strong> a strategy framework (theory of winning, the value stick, dynamic capabilities) to position an AI initiative and <strong>articulate</strong> an "infinite game" posture where appropriate, so that <em>as a Product Owner</em> they can set a roadmap that outlasts one successful pilot.</td><td>[Apply / Procedural]</td><td>Creativity — Evaluating Ideas</td></tr>
+        <tr><td>3</td><td>A student can <strong>diagnose</strong> an organisation's AI adoption maturity and <strong>differentiate</strong> genuine value from the micro-productivity trap, so that <em>as a Product Owner</em> they don't greenlight work that looks impressive but never reaches the P&amp;L.</td><td>[Analyze / Conceptual]</td><td>Critical Thinking — Evaluate &amp; Judge</td></tr>
+        <tr><td>4</td><td>A student can <strong>analyse</strong> the economic and labour-market effects of an AI deployment (automation vs. augmentation, deskilling vs. durable skills), so that <em>as a Product Owner</em> they can defend a roadmap that protects the people who'll use what they commission, not just the margin.</td><td>[Analyze / Conceptual]</td><td>Collaboration — Conflict Resolution</td></tr>
+        <tr><td>5</td><td>A student can <strong>evaluate</strong> responsible-AI and societal risks against GDPR and governance criteria, and <strong>propose</strong> mitigations, so that <em>as a Product Owner</em> they can sign off on an AI capability without exposing the firm — or themselves — to legal or reputational risk they didn't see coming.</td><td>[Evaluate–Create / Procedural]</td><td>Critical Thinking — Evaluate &amp; Judge</td></tr>
+        <tr><td>6</td><td>A student can <strong>recommend</strong> a build/buy/partner boundary, <strong>critically vet</strong> what the team's agentic system generated against their own business judgment, <strong>defend</strong> the full chain of reasoning at the criterion-based interview, and <strong>reflect</strong> on how Socratic and peer feedback changed the chapter, so that <em>as a Product Owner</em> they can make — and defend — the make-or-buy call that will define their team's roadmap for years, not just this project.</td><td>[Evaluate / Metacognitive]</td><td>Collaboration — Conflict Resolution</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>3.3 AEAIS — learning outcomes</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Outcome</th><th>Bloom</th><th>Durable skill</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>A student can <strong>design</strong> an agent harness across Context, Constraints, Contracts and Compounding layers for their team's chapter-generating agentic system, so that <em>as an Agentic Systems Engineer</em> they can hand off an architecture their Product Owner teammates can rely on, not a prototype that breaks under real load.</td><td>[Create / Procedural]</td><td>Creativity — Building on Ideas</td></tr>
+        <tr><td>2</td><td>A student can <strong>evaluate</strong> and <strong>select</strong> a knowledge architecture (RAG / LLM-Wiki / Fat-Skills) for their team's chapter-generation pipeline, and <strong>justify</strong> the choice against the topic and data the team chose, so that <em>as an Agentic Systems Engineer</em> they can defend the design decision to their Product Owner teammates — or an auditor — long after they've moved on.</td><td>[Evaluate / Conceptual]</td><td>Critical Thinking — Evaluate &amp; Judge</td></tr>
+        <tr><td>3</td><td>A student can <strong>build</strong> an evaluation pipeline with rubrics and LLM-as-judge scoring, applied to their own team's chapter-generating system against the shared quality/design criteria (Part 6.2), so that <em>as an Agentic Systems Engineer</em> they can prove a system works before a Product Owner stakes a business decision on it.</td><td>[Create / Procedural]</td><td>Critical Thinking — AI-Supported Verification</td></tr>
+        <tr><td>4</td><td>A student can <strong>instrument</strong> deployment and monitoring across the agent development lifecycle for their team's own chapter-generating pipeline, so that <em>as an Agentic Systems Engineer</em> they catch a failure before their Product Owner teammates — or the SME reader — do.</td><td>[Apply / Procedural]</td><td>Collaboration — Project Management</td></tr>
+        <tr><td>5</td><td>A student can <strong>apply</strong> agentic-engineering discipline (spec-first, the ratchet principle) and <strong>distinguish</strong> it from vibe-coding when under deadline pressure, so that <em>as an Agentic Systems Engineer</em> a shortcut taken in week 6 doesn't become the outage that pages them at 2am in week 7.</td><td>[Apply–Analyze / Metacognitive]</td><td>Critical Thinking — Interpret &amp; Analyze</td></tr>
+        <tr><td>6</td><td>A student can <strong>build</strong> and <strong>maintain</strong> the shared hosting platform — the AI Wiki/Quartz site and the gate-status dashboard — that every team's chapter runs on, and <strong>critique</strong> its own failure modes (a broken build blocking every team at once) in a ratchet retrospective, so that <em>as an Agentic Systems Engineer</em> they can own infrastructure other teams depend on, not just their own team's system.</td><td>[Create–Evaluate / Metacognitive]</td><td>Collaboration — Project Management</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 4 — Target audience &amp; prior knowledge</h2>
+    <p>There is no discipline-specific admittance requirement — the minor is open to any student with at least three years of prior university study. Two populations naturally apply: <strong>business-oriented students</strong> preparing for an AI- and data-driven environment, and <strong>IT/Engineering students</strong> seeking deeper Machine Learning knowledge who also value the business modules. Module choice is not a re-run of a student's degree — the programme encourages students to take the role that stretches them. A business-background student may choose AEAIS to build real ML/coding fluency, so they can collaborate with an engineer as a peer, not a translator; an engineering-background student may choose DIAIA to build genuine business fluency.</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th></th><th>DIAIA</th><th>AEAIS</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Profile</strong></td><td>Students choosing to build the Product Owner skillset — typically, but not necessarily, business-oriented by prior study; no coding assumed or required</td><td>Students choosing to build the Agentic Systems Engineer skillset — typically, but not necessarily, IT/Engineering by prior study; coding-confident by choice, not by a formal admittance prerequisite</td></tr>
+        <tr><td><strong>Assumes</strong></td><td>Some exposure to business/strategy vocabulary, or willingness to build it fast; the intern analogy from week 1</td><td>Working Python, or willingness to ramp fast in week 1–2; comfort with an agent SDK develops over the module</td></tr>
+        <tr><td><strong>Does not assume</strong></td><td>Any prior AI-agent building experience, or a business degree</td><td>Prior formal business-strategy training, or a technical degree — working inside one team with Product Owner teammates (Part 6.1) is exactly where that gap gets bridged, in both directions</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p><strong>Team size.</strong> Every team combines both roles — DIAIA and AEAIS members working together for the module's duration — rather than running as two separate teams that pair up. Team stability matters twice over: within the team, so the chapter-generating pipeline has continuity; and across the cohort, so each team's peer-review partnership (Part 6.5) stays stable for the full 7 weeks.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 5 — Design criteria</h2>
+
+    <h3>5.1 KISS, stated as constraints</h3>
+    <p>"Keep It Super Simple" is not an aspiration in this LRD — it is a set of things this system is <strong>not allowed to become</strong>, because each of the alternatives was considered and rejected during design:</p>
+    <ul>
+      <li><strong>No adaptive-difficulty algorithm.</strong> A tiered-branching or Socratic-depth-ladder system was considered and rejected in favour of a single binary gate per checkpoint — one mechanism, one rule, no scoring model to maintain or explain.</li>
+      <li><strong>No student-visible scores.</strong> Students see open/locked and Socratic questions. Nothing numeric. This is a direct consequence of §2.3 (UnBlooms) as much as of KISS.</li>
+      <li><strong>One team, not two paired teams.</strong> Business and technical members work inside a single team producing a single artifact — not two role-split teams reviewing each other. A separate, single peer-review partnership (one other team, stable for 7 weeks) is where structured outside feedback comes from instead (Part 6.5); rotating peer pools were considered, for exposure diversity, and rejected as unnecessary complexity.</li>
+      <li><strong>One shared Socratic-agent component, instructor-owned, not built by anyone it grades.</strong> The module owners build and maintain it once (Part 6.4); every team consumes the same instance. No parallel, per-team or student-built tutoring systems, and no student control over the thing that gates them.</li>
+      <li><strong>One shared rubric, not per-team custom criteria.</strong> Instructors publish one quality/design bar (Part 6.2) that every team's output is measured against — no bespoke grading standard to maintain per team.</li>
+      <li><strong>Reuse existing infrastructure.</strong> The AI Wiki / Quartz template already specified in <a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html §3.2</a> is the platform. This LRD adds a gating layer and a peer-review-partner registry on top of it — it does not stand up new shared infrastructure. Each team's own agentic system is small, disposable, and theirs alone to run.</li>
+    </ul>
+
+    <h3>5.2 What "manageable" means for a teacher</h3>
+    <p>A single instructor dashboard (Part 6.6) must answer, for every team, in under a minute: <em>where are they, is the gate open, has an override been used, does the peer feedback look genuine.</em> If a teacher cannot answer those four questions in under a minute per team, the system has failed its own KISS test — regardless of how pedagogically elegant it is.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 6 — The integrated learning-path system</h2>
+    <p>This is the new mechanism this LRD contributes. Every team runs the same production pipeline (6.1) against the same published bar (6.2), and can only advance through a gate (6.3) built from two checks: a Socratic AI tutor (6.4) and a cross-team peer partnership (6.5). An instructor dashboard (6.6) makes it all visible.</p>
+
+    <h3>6.1 The team's production pipeline</h3>
+    <p>Each week, a team turns one input into one output: it picks (or refines) the topic and data for that week's chapter section, feeds both into its own agentic system, and the system generates the section. This is a genuine pipeline, not a writing exercise with an AI assist bolted on — the team's job is to curate the inputs and engineer the system, not to hand-write the prose. <strong>DIAIA members</strong> lead the topic and data choices and critically vet what comes out; <strong>AEAIS members</strong> build and tune the system that produces it — but both roles sit inside the one team, and the one weekly checkpoint is the generated section itself.</p>
+    <p>This is deliberately different from the shared platform infrastructure (§1.2): every team builds and owns its own pipeline; no team runs another team's system.</p>
+
+    <h3>6.2 Shared quality &amp; design criteria</h3>
+    <p>Before week 1, instructors publish one quality/design bar — the same criteria every team's output is measured against, no bespoke rubric per team. It reuses the existing chapter rubric (<a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html §5.1</a>: clarity, accuracy, responsible-AI coverage, usefulness to an SME owner) plus a matching design bar for the system itself (harness soundness, evaluation coverage). Two things happen with it:</p>
+    <ul>
+      <li>The <strong>peer gate</strong> (§6.5) uses it directly — a peer team reviews this week's generated section against the published criteria, not against its own judgement of what's good.</li>
+      <li>A well-engineered team's own pipeline checks against it automatically, before submission — this is what AEAIS's evaluation-pipeline learning outcome (§3.3 #3) is for. Teams that skip this find out from their peer team instead, a week later.</li>
+    </ul>
+    <p>Publishing the bar up front is itself a KISS move: it replaces "what does the instructor want" guessing with one fixed target, known from day one and unchanged mid-cohort (NFR-07).</p>
+
+    <h3>6.3 Gated progression</h3>
+    <p>Each of the 7 weeks has exactly one checkpoint artifact per team: that week's generated chapter section (§6.1). A team cannot start the <em>next</em> week's checkpoint until <strong>both</strong> conditions are met on the current one:</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Gate condition</th><th>Who/what checks it</th><th>What "met" means</th><th>Durable skill (§2.4)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A — Socratic gate</strong></td><td>The Socratic AI agent (6.4)</td><td>The team has submitted a written response to the agent's questions that is a genuine revision, not a resubmission — the hidden rubric's <em>process</em> dimension (not polish) clears a fixed threshold.</td><td>Critical Thinking — AI-Supported Verification</td></tr>
+        <tr><td><strong>B — Peer gate</strong></td><td>The peer team (6.5)</td><td>The team has both given and received one round of feedback with its peer team on this week's checkpoint, against the shared criteria (§6.2).</td><td>Collaboration — Conflict Resolution, Project Management</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Naming this matters: gate condition A drills the exact sub-skill — <strong>AI-Supported Verification</strong> — that the durable-skills literature (§2.4) flags as most at risk of atrophying without deliberate practice; gate condition B drills Collaboration's two most measurable sub-skills, every week, for seven weeks.</p>
+    <p>Both conditions, no partial credit, no numeric composite. The Socratic side is deliberately single-shot: <strong>one report per team per week</strong> (§6.4), not an unlimited resubmit-until-it-passes loop. If gate A doesn't clear on that one report, the team gets no second Socratic consult that week — the unresolved feedback carries into next week's submission alongside that week's new topic, and addressing it becomes part of what next week's report checks for. The peer gate (§6.5) has no such limit; a team can lean on its peer team as often as it likes between Socratic consults.</p>
+    <p>This is deliberately the "gated progression" option, not tiered branching or a depth ladder (§5.1) — the autoregression is in <em>whether</em> a team advances, not in <em>which content</em> it sees next. What varies between teams isn't how many times they can retry a single week — nobody can — it's how many weeks it takes to clear a carried-forward gate. The system rewards genuine week-over-week growth (§6.4), not speed or persistence.</p>
+    <p><strong>A locked gate is not a penalty.</strong> It carries no grade consequence by itself (Part 9) — it is Pink's <em>informational</em> feedback, not <em>controlling</em> feedback (§2.2): a prompt to revise, not a mark against the team.</p>
+
+    <h3>6.4 The Socratic AI agent</h3>
+    <p><strong>Owned by:</strong> the module owners/instructors — not students, not any team, not AEAIS's infrastructure build-group. The same people it evaluates cannot also control how it evaluates them; this is a deliberate exception to "AEAIS builds everything technical" (§1.2). Extends the agent already sketched in <a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html §5.3</a> — same dual-audience design, now also a gate condition rather than a pre-publication review step only.</p>
+    <ul>
+      <li><strong>The protocol:</strong> a team submits its checkpoint once and receives exactly <strong>one report per week</strong> — not an open-ended chat, not an unlimited resubmit-and-recheck loop. One submission, one report, once a week, per team.</li>
+      <li><strong>To the team (visible):</strong> the report is Socratic questions only. Never a verdict, never "this is good/bad," never a score. Questions target the UnBlooms loop directly — why this topic and data, why this system design, and — now that the section itself is machine-generated — did the team critically vet what it produced, or just accept it.</li>
+      <li><strong>To the instructor (visible):</strong> the exact same report the team received, <strong>plus</strong> a rubric score against that week's CRISP-DM phase (DIAIA) or harness/ADLC layer (AEAIS), <strong>plus</strong> the binary gate-A signal. Nothing is hidden from instructors — only from students.</li>
+      <li><strong>Grows, or it isn't doing its job.</strong> Every report is generated with the team's full history of prior reports as context, under one standing instruction: never repeat a question that's already been answered, and never let a team coast on one that hasn't. A week's report that reads like a copy of last week's is a defect in the shared system, not an acceptable outcome — see Part 12 for how that's caught.</li>
+    </ul>
+
+    <h3>6.5 Cross-team peer network</h3>
+    <p>Every team is paired, for the full 7 weeks, with exactly one other team. This is the "force optimal use of the peer network" mechanism: the peer network is not self-selected or optional — it is a structural assignment, reviewed reciprocally every week. Because both teams in a partnership already contain both roles, the review itself is naturally holistic rather than split by lens.</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>What the peer team checks</th><th>Against the shared criteria (§6.2)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Business feasibility</strong></td><td>Would an SME owner trust and use this; does it fit the "first five steps" the chapter promises?</td></tr>
+        <tr><td><strong>Engineering soundness</strong></td><td>Does the "Recommended tooling" section reflect what the team's own system actually generated and could build, at what effort?</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Because every team has both kinds of expertise on hand, no review needs a translator — the peer team checks both angles in one pass, on one artifact.</p>
+    <p><strong>Fallback.</strong> If a team's peer-review partner falls behind or drops the module, the instructor reassigns the partnership rather than blocking the other team (FR-08, Part 7) — mirrors the persona/archetype fallback already used for SME access in <a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html §3.3</a>.</p>
+
+    <h3>6.6 Instructor dashboard</h3>
+    <p>One screen, per team: current week, gate-A / gate-B status, this week's Socratic report and score, shared-criteria compliance from the last peer review, how many consecutive weeks (if any) gate A has carried forward, and an <strong>override</strong> control. The override exists because no binary gate should become a bureaucratic trap — an instructor can open a gate manually with one click, logged for the calibration record (Part 11, AC-07 bounds how often that should be needed).</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 7 — Functional &amp; non-functional requirements</h2>
+
+    <h3>7.1 Functional requirements</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+      <tbody>
+        <tr><td>FR-01</td><td>Define one checkpoint artifact per team per week: the chapter section generated by the team's own agentic system from its chosen topic and data (§6.1).</td></tr>
+        <tr><td>FR-02</td><td>Publish the shared quality/design criteria (§6.2) before week 1 of a cohort; version it if it changes between cohorts.</td></tr>
+        <tr><td>FR-03</td><td>Socratic AI gate: accept exactly one submission and generate exactly one report per team per week — probing topic/data/system choices and critical vetting of the generated output, conditioned on the team's full prior-week history so no question repeats and unaddressed feedback carries forward; score the hidden process rubric; emit gate-A open/closed. Surface only the report to the team, never the score or a verdict; surface both the report and the score to instructors.</td></tr>
+        <tr><td>FR-04</td><td>Peer gate: register a completed give-and-receive review cycle between peer-partner teams, using the shared criteria (§6.2) as the review rubric; emit gate-B open/closed.</td></tr>
+        <tr><td>FR-05</td><td>Combine gate-A and gate-B into a single binary "next week unlocked" signal, visible to the team as open/locked only.</td></tr>
+        <tr><td>FR-06</td><td>Instructor dashboard: per-team status, hidden scores, shared-criteria compliance, iteration counts, override control, override log (Part 6.6).</td></tr>
+        <tr><td>FR-07</td><td>Peer-review partner registry: assign one other team as peer-review partner per team at module start; support instructor-triggered reassignment (fallback, §6.5).</td></tr>
+        <tr><td>FR-08</td><td>Fallback reassignment must not block the unaffected team's own gate progress while a new partner is arranged.</td></tr>
+        <tr><td>FR-09</td><td>Export: a team's full gate/iteration/feedback history exportable (PDF/doc) for the CBI and for the individual reflection (Part 9).</td></tr>
+        <tr><td>FR-10</td><td>The Socratic AI agent's prompts, rubric and configuration are owned and maintained by the module owners/instructors — no student or team has write access to it, removing any conflict between who is graded and who controls the grader.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>7.2 Non-functional requirements</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+      <tbody>
+        <tr><td>NFR-01</td><td>No adaptive-difficulty logic beyond the single binary gate (§5.1) — this bounds scope as much as it specifies behaviour.</td></tr>
+        <tr><td>NFR-02</td><td>The shared platform is built once, on the existing AI Wiki / Quartz template (<a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html §3.2</a>) — no new hosting/infra stood up. Each team's own agentic system is its own small build, not shared infrastructure.</td></tr>
+        <tr><td>NFR-03</td><td>Instructor can assess any team's full status in under 1 minute (mirrors the workshop-LRD precedent, <code>background-docs/LRD_Workshop_Onderzoekend_Vermogen.md</code> AC-04-equivalent).</td></tr>
+        <tr><td>NFR-04</td><td>Socratic feedback returned within a session-usable time window (target: under a few minutes, not overnight) so it doesn't break a team's working flow state (§2.2, Flow).</td></tr>
+        <tr><td>NFR-05</td><td>Works with the SME persona/archetype fallback already specified for teams without a real-firm partner.</td></tr>
+        <tr><td>NFR-06</td><td>Privacy: peer review shares the artifact, not grades or identities beyond team level, consistent with the existing GDPR/confidentiality stance (<a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html §5.1</a>).</td></tr>
+        <tr><td>NFR-07</td><td>The shared quality/design criteria (§6.2), once published for a cohort, do not change mid-cohort — teams build against a fixed target.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 8 — Weekly programme, one team, two lenses, with gates</h2>
+    <p>Every team's weekly topic/data focus follows DIAIA's SME-facing themes (<a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html Part 4</a>); its weekly system-build focus follows AEAIS's Sketch-3 topics (<code>module-redesign-sketches.md</code> §4a). Both feed the same weekly checkpoint — one generated chapter section (§6.1) — and are cross-gated per Part 6.</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Wk</th><th>Topic &amp; data focus (drives that week's generated section)</th><th>Agentic-system focus (builds the pipeline that generates it)</th><th>Gate condition</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Decision framing &amp; the intern analogy</td><td>Software 3.0 &amp; agent fundamentals — pipeline skeleton</td><td>Socratic (self) + peer (peer team)</td></tr>
+        <tr><td>2</td><td>Strategy &amp; the infinite game</td><td>Harness Context &amp; Constraints layers</td><td>Socratic + peer</td></tr>
+        <tr><td>3</td><td>Dynamic capabilities &amp; foresight</td><td>Knowledge architecture decision (RAG / LLM-Wiki / Fat-Skills)</td><td>Socratic + peer</td></tr>
+        <tr><td>4</td><td>Adoption, maturity &amp; the productivity trap</td><td>Contracts &amp; evaluation — rubric + LLM-as-judge design, checked against §6.2</td><td>Socratic + peer</td></tr>
+        <tr><td>5</td><td>Economics &amp; labour</td><td>Deploy/monitor instrumentation for the team's own pipeline</td><td>Socratic + peer</td></tr>
+        <tr><td>6</td><td>Responsible AI &amp; society</td><td>Agentic engineering vs. vibe coding — production discipline applied to the team's own pipeline</td><td>Socratic + peer</td></tr>
+        <tr><td>7</td><td>Firm-boundary decisions &amp; capstone chapter — final generated section</td><td>Capstone demo of the team's pipeline + ratchet retrospective</td><td>Final Socratic + peer review feeds the CBI, not a further gate</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 9 — Assessment alignment</h2>
+    <p>Gates are <strong>formative</strong>; the criterion-based interview (CBI) stays the sole summative instrument, unchanged in shape from <a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html §5.4</a>:</p>
+    <ul>
+      <li>A locked gate never itself changes a grade. It is a revision prompt, consistent with Pink's informational-feedback principle (§2.2).</li>
+      <li>The Socratic agent's hidden rubric score is an <strong>instructor calibration signal only</strong> — exactly as already specified for the pre-publication review in programme.html. This LRD extends its use from "before publication" to "at every weekly gate," but does not change its evidentiary status. Instructors see the same report the team received, plus the score behind it (§6.4) — nothing about a team's weekly gate is opaque to the people grading them, only to the students being gated.</li>
+      <li><strong>Two CBIs, one shared history.</strong> Each module runs its own CBI, even though the weekly work is joint. A DIAIA student defends the topic and data choices, the business case inside the generated section, and how critically they vetted what the team's system produced; an AEAIS student defends the pipeline that produced it — the harness, the architecture choice, the eval coverage. Both draw on the same exported gate/iteration history (FR-09), read through a different lens.</li>
+      <li>At the CBI, a student defends not just the chapter/pipeline but <strong>how they responded</strong> to the Socratic questions and to their peer team across the seven gates — directly assessing the metacognitive-knowledge outcomes in Part 3 (DIAIA #6, AEAIS #6).</li>
+      <li>The exported gate/iteration history (FR-09) is the evidence base for that defence — not a score sheet, a process trail.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 10 — Deliverables</h2>
+    <ol>
+      <li>One published (curated) handbook chapter per team, generated by that team's own agentic system from the topic and data it chose — unchanged in shape from programme.html's chapter anatomy, including a "Recommended tooling" section grounded in what the team's own system actually builds.</li>
+      <li>Each team's own chapter-generating agentic system (harness + knowledge architecture + eval loop + deployment/monitoring), demoed at the capstone alongside the chapter it produced.</li>
+      <li>The shared platform: the hosting/dashboard built once by AEAIS's infrastructure build-group as their own capstone-within-the-capstone, and the Socratic AI tutor itself built and maintained separately by the module owners (§6.4).</li>
+      <li>A per-team exported gate/iteration/feedback history (FR-09), feeding both the DIAIA and AEAIS CBI for that team's members.</li>
+      <li>An instructor dashboard (Part 6.6) usable from week 1 of the pilot onward.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 11 — Acceptance criteria</h2>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Criterion</th><th>Measured by</th></tr></thead>
+      <tbody>
+        <tr><td>AC-01</td><td>At least 80% of teams reach the week-7 checkpoint without an instructor override on more than one gate.</td><td>Dashboard export at module end.</td></tr>
+        <tr><td>AC-02</td><td>Every team has both given and received peer review from its peer-review partner team every week it advanced, using the shared criteria (§6.2) as the rubric.</td><td>Peer-gate log (FR-04).</td></tr>
+        <tr><td>AC-03</td><td>The Socratic agent never emits a score or verdict to a student-facing transcript.</td><td>Spot-audit of transcripts each cohort.</td></tr>
+        <tr><td>AC-04</td><td>An instructor can assess any team's full status in under 1 minute.</td><td>Timed dashboard walkthrough.</td></tr>
+        <tr><td>AC-05</td><td>At least 90% of weekly Socratic reports (weeks 2–7) demonstrably reference and build on the previous week's report — evidence the growth-tracking requirement (§6.4) is functioning, not decorative.</td><td>Spot-audit of report history (FR-03).</td></tr>
+        <tr><td>AC-06</td><td>At the CBI, students can articulate a specific instance where a Socratic question or peer comment changed their work.</td><td>CBI observation notes.</td></tr>
+        <tr><td>AC-07</td><td>Instructor overrides are used on fewer than 15% of all gates across a cohort.</td><td>Override log (FR-06) — a higher rate signals the gate criteria need recalibrating, not that overrides are wrong to use.</td></tr>
+        <tr><td>AC-08</td><td>At least 70% of generated chapter sections meet the shared quality/design criteria (§6.2) on the first peer review pass.</td><td>Peer-review outcome log (FR-04) — a lower rate signals a team's own eval pipeline (§3.3 #3) isn't catching problems before submission.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 12 — Risks &amp; mitigations</h2>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A team defers judgment entirely to whatever its agentic system generates, rather than critically vetting it</strong></td><td>Three independent checks on the same failure mode, not one: the Socratic gate explicitly probes critical vetting of the generated output (§6.4); the shared criteria (§6.2) catch mechanical gaps the team might wave through; and the peer team (§6.5) reviews the actual generated content against those criteria, not the team's self-report of it. No single check has to catch everything.</td></tr>
+        <tr><td><strong>Gate becomes a bureaucratic bottleneck / demotivating</strong></td><td>Binary, informational framing (§6.3); one-click instructor override (§6.6); AC-07 tracks whether overrides are needed too often, which is itself a signal to loosen the threshold.</td></tr>
+        <tr><td><strong>A team's peer-review partnership creates a single point of failure</strong></td><td>Instructor-triggered fallback reassignment (FR-07/08) that never blocks the unaffected team.</td></tr>
+        <tr><td><strong>Teams game the Socratic agent with shallow answers to unlock faster</strong></td><td>Hidden rubric flags shallow-pattern responses to the instructor (same mechanism already specified in <a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html §5.5</a> for "shallow or gamed feedback"). The single-report-per-week limit (§6.4) also removes the main incentive to game it — there is no faster path through repeated resubmission to farm for.</td></tr>
+        <tr><td><strong>The Socratic agent's own feedback goes stale or repetitive, undermining the growth requirement it's meant to enforce</strong></td><td>Repetition is a defect in the shared, instructor-owned system (§6.4), not a per-team problem, so it's fixed once centrally rather than 20+ times independently. AC-05 audits a sample of report histories each cohort specifically for genuine week-over-week variation, using the same spot-check discipline already applied to verdict-leakage (AC-03).</td></tr>
+        <tr><td><strong>Sustained reliance on the Socratic gate erodes the verification judgment it's meant to build</strong></td><td>Structural, not procedural: gate condition A requires a <em>genuine revision</em> each week, not a resubmission (§6.3) — by design incompatible with rote reliance on the agent's questions. AC-06 already requires each student to articulate, at the CBI, a specific instance where a Socratic question changed their work; a student who can't is exactly this failure mode, and it surfaces at the one summative checkpoint that matters (Part 9), without a new metric or mechanism.</td></tr>
+        <tr><td><strong>AEAIS's shared-infrastructure build-group over-invests in the platform at the expense of its own six learning outcomes</strong></td><td>The shared platform is explicitly scoped as one deliverable mapped to two of the six Sketch-3-derived outcomes (§3.3 #3, #6), sized into weeks 4–6 (contracts/eval + ADLC), not a separate project.</td></tr>
+        <tr><td><strong>Quality/liability — real SMEs still read the published chapters</strong></td><td>Unchanged from programme.html §5.5: editorial curation + "educational, not consultancy" disclaimer before anything reaches an SME. The gate system governs weekly progression, not publication.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Part 13 — Roadmap</h2>
+    <ol>
+      <li><strong>Publish the shared quality/design criteria</strong> (§6.2) before anything else — every downstream step depends on a fixed target existing first.</li>
+      <li><strong>Pilot the gate on Theme 1 only.</strong> One cohort, week 1 checkpoint only, manual instructor grading of the Socratic transcripts before trusting the hidden rubric — confirms the mechanism before it runs unattended for 7 weeks.</li>
+      <li><strong>Stand up the peer-review-partner registry and dashboard</strong> (FR-06/07) alongside the week-1 pilot.</li>
+      <li><strong>Full 7-week gated run, one cohort.</strong> Both modules, all checkpoints gated, override logging live from day one.</li>
+      <li><strong>Calibrate</strong> the hidden-rubric threshold and the shared criteria against AC-05/AC-07/AC-08 at cohort end; adjust before the next intake.</li>
+      <li><strong>Compounding.</strong> Subsequent cohorts inherit the shared platform and criteria as infrastructure — only the checkpoint content (weekly topics, harness scope) needs refreshing, per the living-artifact model already established for the handbook.</li>
+    </ol>
+    <p><em>Suggested owners: course team (DIAIA + AEAIS), with AEAIS's shared-infrastructure build-group owning the hosting platform's engineering as their own deliverable each cohort, and the module owners owning the Socratic AI tutor itself (§6.4) — not delegated to any student build-group.</em></p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Appendix A — Sources</h2>
+    <ul>
+      <li><strong>Pedagogical quality system</strong> (<code>background-docs/education-design/</code>): Anderson, L.W. &amp; Krathwohl, D.R. (Eds.) (2001). <em>A Taxonomy for Learning, Teaching, and Assessing: A Revision of Bloom's Taxonomy of Educational Objectives.</em> Longman — via the Iowa State CELT handout, <em>A Model of Learning Objectives</em> (Rex Heer, CC BY-SA 4.0). · Austin, T. (2026). <em>The Evolution of Bloom's Taxonomy, And Where It Was Always Heading in the Age of AI</em> — the UnBlooms™ framework. · <em>The Synthesis of Motivation and Flow in Educational Paradigms</em> (background-doc synthesising Pink, D.H. (2009) <em>Drive</em>; Csikszentmihalyi, M., <em>Flow</em>; Deci, E. &amp; Ryan, R., Self-Determination Theory; Vygotsky, L., Zone of Proximal Development) · <a target="_blank" rel="noopener" href="https://businessdatasolutions.github.io/ai-wiki/concepts/durable-skills">AI Wiki, <em>Durable Skills</em></a> — synthesising Globerson et al. (2026), <em>Towards Scalable Measurement of Durable Skills</em> (Google Research; cited without a public URL in <a target="_blank" rel="noopener" href="ai-for-smes-programme.html">programme.html</a> Theme 5B) and McKinsey Global Institute, <em>Skill Change Index</em> (2025).</li>
+      <li><strong>LRD template precedent</strong> (workshop background-docs): <em>LRD_Workshop_Onderzoekend_Vermogen.md</em> and <em>LRD_Ontwerpende_Onderzoeksvragen_v2.docx.md</em> — the HAN Learner Requirement Document format this LRD follows.</li>
+      <li><strong>Module context:</strong> <a target="_blank" rel="noopener" href="ai-for-smes-programme.html">ai-for-smes-programme.html</a> (the handbook, mission, seven themes, existing Socratic-agent sketch) · <a target="_blank" rel="noopener" href="module-overview.md">module-overview.md</a> (current DIAIA) · <a target="_blank" rel="noopener" href="module-redesign-sketches.md">module-redesign-sketches.md</a> (Sketch 3, committed here).</li>
+    </ul>
+    <p><em>This LRD is a design document for review, not a finalised curriculum. Figures in the acceptance criteria (Part 11) are starting targets to be calibrated against the Theme-1 pilot (Part 13), not validated benchmarks.</em></p>
+  </section>
+
+</main>
+
+<footer class="bds-footer">
+  <div class="bds-footer-inner">
+    <a href="#top" class="bds-wordmark">
+      <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Business Data Solutions">
+        <g fill="#1a1a1a">
+          <polygon points="9,29 11,10 17,10 19,29"/>
+          <polygon points="8,8.5 20,8.5 19,10 9,10"/>
+          <rect x="11" y="5" width="6" height="3.5"/>
+          <path d="M10.5 5 Q10.5 1.5 14 1.5 Q17.5 1.5 17.5 5 Z"/>
+          <rect x="13.5" y="0" width="1" height="1.8"/>
+        </g>
+        <rect x="13" y="6" width="2" height="2" fill="#d4db3e"/>
+        <g stroke="#d4db3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <path d="M21 4 L26 7 L21 10"/>
+          <path d="M26 4 L31 7 L26 10"/>
+        </g>
+      </svg>
+      <span>Business Data Solutions</span>
+    </a>
+    <p>Integrated LRD — DIAIA &amp; AEAIS</p>
+  </div>
+</footer>
+
+</body>
+</html>
