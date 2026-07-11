@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LRD — Operational Excellence</title>
+<style>
+/* ================================================================
+   Huisstijl "palette C strict minimal" — merk-eyebrow neutraal gemaakt.
+   ================================================================ */
+:root {
+  --primary: #d4db3e;
+  --supporting: #1a1a1a;
+  --cream: #f5f0e6;
+  --bg-yellow: #fafbf0;
+  --bg-cream: #f5f0e6;
+  --bg-cream-2: #f0ebe0;
+  --bg-off-white: #f9f8f4;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --bg-page: #ffffff;
+  --bg-section: #f9fafb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text-xs: 0.75rem;  --text-sm: 0.875rem; --text-base: 1rem;
+  --text-lg: 1.125rem; --text-xl: 1.25rem;  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem; --text-4xl: 2.25rem; --text-5xl: 3rem;
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem; --space-16: 4rem;
+  --space-20: 5rem;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-md: 0 2px 4px rgba(0,0,0,.06), 0 8px 16px rgba(0,0,0,.06);
+  --shadow-lg: 0 4px 8px rgba(0,0,0,.08), 0 16px 32px rgba(0,0,0,.08);
+  --radius-sm: 6px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 9999px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+a:hover { background: var(--bg-yellow); }
+
+/* NAV */
+.bds-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-4) var(--space-8);
+}
+.bds-nav-inner {
+  max-width: 1024px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-6); flex-wrap: wrap;
+}
+.bds-wordmark {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-weight: 700; font-size: var(--text-xl);
+  text-decoration: none; color: var(--text-primary);
+}
+.bds-wordmark .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+.bds-wordmark:hover { background: transparent; }
+.bds-nav-tag {
+  font-size: var(--text-sm); color: var(--text-muted);
+}
+
+/* PAGE LAYOUT */
+.bds-page {
+  max-width: 880px; margin: 0 auto;
+  padding: var(--space-12) var(--space-8) var(--space-20);
+}
+.bds-page-header {
+  margin-bottom: var(--space-12);
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+.bds-eyebrow {
+  font-size: var(--text-xs); text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted);
+  font-weight: 600; margin-bottom: var(--space-2);
+}
+h1.bds-h1 { font-size: var(--text-4xl); font-weight: 700; margin: 0 0 var(--space-6); line-height: 1.15; }
+
+.lead-quote {
+  margin: 0 0 var(--space-6); padding: var(--space-4) var(--space-6);
+  border-left: 4px solid var(--primary);
+  background: var(--bg-yellow);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-lg); color: var(--text-secondary);
+}
+.lead-quote em { font-style: italic; }
+
+/* Part headers (markdown level-1 "# Deel …" / "# Bijlage …") */
+h2.bds-part {
+  font-size: var(--text-3xl); font-weight: 700; line-height: 1.2;
+  margin: var(--space-20) 0 var(--space-6);
+  padding-top: var(--space-8);
+  border-top: 2px solid var(--supporting);
+}
+h2.bds-part::before {
+  content: ""; display: block;
+  width: 48px; height: 5px; background: var(--primary);
+  border-radius: var(--radius-full); margin-bottom: var(--space-4);
+}
+
+/* Sub-sections (markdown level-2 "## …") */
+h3 {
+  font-size: var(--text-xl); font-weight: 700;
+  margin: var(--space-12) 0 var(--space-3); line-height: 1.3;
+}
+h4 {
+  font-size: var(--text-lg); font-weight: 700;
+  margin: var(--space-8) 0 var(--space-2); line-height: 1.3;
+}
+
+p { margin: 0 0 var(--space-4); }
+ul, ol { margin: 0 0 var(--space-4); padding-left: var(--space-6); }
+li { margin: 0 0 var(--space-2); }
+li > ul, li > ol { margin-top: var(--space-2); }
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+
+hr { border: none; border-top: 1px solid var(--border); margin: var(--space-12) 0; }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; margin: var(--space-6) 0; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+thead th {
+  background: var(--bg-cream);
+  text-align: left; font-weight: 700;
+  border-bottom: 2px solid var(--border-strong);
+}
+th, td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  vertical-align: top; line-height: 1.5;
+}
+th:last-child, td:last-child { border-right: none; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: var(--bg-off-white); }
+td a { word-break: break-word; }
+
+/* Theme / foundation / module cards */
+.theme {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-8);
+  margin: var(--space-8) 0;
+}
+.theme h3 { margin-top: 0; }
+.theme-help { color: var(--text-secondary); }
+
+/* Meta table (document header) */
+.meta-tbl th { width: 180px; background: var(--bg-cream-2); }
+
+code {
+  font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.9em; background: var(--bg-section);
+  padding: 0.15em 0.4em; border-radius: 4px; border: 1px solid var(--border);
+}
+
+/* 4D "je-bent-hier" navigatiediagram */
+.navdiagram {
+  display: flex; flex-wrap: wrap; gap: var(--space-4);
+  margin: var(--space-6) 0; justify-content: center;
+}
+.navdiagram .d-node {
+  flex: 1 1 150px; min-width: 130px; text-align: center;
+  padding: var(--space-4); border-radius: var(--radius-md);
+  border: 2px solid var(--border-strong); background: var(--bg-section);
+  font-weight: 700;
+}
+.navdiagram .d-node.active {
+  border-color: var(--supporting); background: var(--bg-yellow);
+  box-shadow: var(--shadow-sm);
+}
+.navdiagram .d-node .sub { display: block; font-weight: 400; font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-1); }
+.navdiagram .arrow { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: var(--text-xl); flex: 0 0 24px; }
+
+.bds-footer {
+  border-top: 1px solid var(--border);
+  padding: var(--space-8); background: var(--bg-section);
+  text-align: center; color: var(--text-muted); font-size: var(--text-sm);
+}
+.bds-footer-inner { max-width: 1024px; margin: 0 auto; }
+.bds-footer .bds-wordmark { font-size: var(--text-base); margin-bottom: var(--space-2); justify-content: center; }
+
+@media (max-width: 640px) {
+  .bds-nav { padding: var(--space-3) var(--space-4); }
+  .bds-page { padding: var(--space-8) var(--space-4) var(--space-12); }
+  h1.bds-h1 { font-size: var(--text-3xl); }
+  h2.bds-part { font-size: var(--text-2xl); }
+  .theme { padding: var(--space-4) var(--space-4); }
+  .navdiagram .arrow { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="bds-nav">
+  <div class="bds-nav-inner">
+    <a href="#top" class="bds-wordmark">
+      <span class="dot"></span>
+      <span>HAN · Operational Excellence</span>
+    </a>
+    <span class="bds-nav-tag">Learner Requirement Document</span>
+  </div>
+</nav>
+
+<main class="bds-page" id="top">
+
+  <header class="bds-page-header">
+    <div class="bds-eyebrow">HAN University of Applied Sciences · Nieuwe cursus</div>
+    <h1 class="bds-h1">LRD — Operational Excellence</h1>
+    <blockquote class="lead-quote"><em>Eén boek, één levende wiki, één cyclus: elk team doorgrondt een zelfgekozen bedrijfscase langs de vier fasen van operations — Direct, Design, Deliver, Develop — en gaat pas door naar de volgende fase als een Socratische AI-tutor én een collega-team allebei vinden dat het <strong>denken</strong> erachter klopt, niet alleen het antwoord. Elke student sluit individueel af.</em></blockquote>
+
+    <div class="tbl-wrap">
+    <table class="meta-tbl">
+      <tbody>
+        <tr><th>Document</th><td>Learner Requirement Document (LRD)</td></tr>
+        <tr><th>Versie</th><td>0.1 — concept ter review</td></tr>
+        <tr><th>Datum</th><td>10 juli 2026</td></tr>
+        <tr><th>Programma</th><td>HAN University of Applied Sciences — cursus <strong>Operational Excellence</strong></td></tr>
+        <tr><th>Scope</th><td>Eén regulier semestervak (15 weken), gestructureerd volgens het <strong>4D-model</strong> (Direct → Design → Deliver → Develop) uit het bronboek</td></tr>
+        <tr><th>Auteur</th><td>Witek ten Hove — cursusontwerp</td></tr>
+        <tr><th>Gerelateerde documenten</th><td><code>background-material/</code> (fotomateriaal uit het bronboek: inhoudsopgave, bedrijfscasegids, didactische instructiepagina's) · <code>design-documents/SPEC.md</code> (Open Knowledge Format v0.1) · de <a target="_blank" rel="noopener" href="https://github.com/witoldtenhove/wiki-template">wiki-template</a>-repository (LLM-Wiki-implementatie)</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>Hoe te lezen.</strong> Deel 1 legt uit wat dit LRD wel en niet zelf uitvindt, en hoe de structuur van het bronboek de ontologie van de cursus wordt. Deel 2 zet het <em>pedagogisch kwaliteitssysteem</em> neer: vijf onderbouwde kaders waar elke ontwerpkeuze op terug te voeren is. Deel 3 geeft Bloom-getagde leeruitkomsten. Delen 4–5 behandelen doelgroep en design-criteria. <strong>Deel 6 is de kern van dit document</strong> — de kennisbasis (de wiki), de gate-architectuur en de technische architectuur die latere agentic uitbreiding mogelijk maakt. Delen 7–13 vertalen dat naar requirements, een weekprogramma, toetsing, deliverables, acceptatiecriteria, risico's en een uitrol-roadmap.</p>
+  </header>
+
+  <section>
+    <h2 class="bds-part">Deel 1 — Context &amp; positionering</h2>
+
+    <h3>1.1 Wat dit LRD is, en wat niet</h3>
+    <p>Dit document vindt <strong>niet zelf een curriculum operations management uit</strong>. De inhoudelijke ruggengraat — de vier fasen Direct/Design/Deliver/Develop, de 19 hoofdstukken en de 130+ bedrijfscases (Pret a Manger, IKEA, Toyota, Ryanair, Michelin, Amazon, en vele andere) — is rechtstreeks overgenomen uit <em>Slack, Brandon-Jones &amp; Johnston, Operations Management, 9th edition (Pearson, 2019)</em>, zoals gefotografeerd in <code>background-material/</code>. Dit LRD voegt daar drie dingen aan toe:</p>
+    <ul>
+      <li>Een formeel <strong>Learner Requirement Document</strong> in het format dat bij HAN al gebruikt wordt voor cursus- en workshopontwerp — leeruitkomsten, design-criteria, functionele/non-functionele requirements, deliverables, acceptatiecriteria.</li>
+      <li>Een <strong>levende kennisbasis</strong> (Deel 6): een Operational-Excellence Wiki, opgezet volgens het Open Knowledge Format (<code>design-documents/SPEC.md</code>) en gebouwd op de bestaande <a target="_blank" rel="noopener" href="https://github.com/witoldtenhove/wiki-template">wiki-template</a>-implementatie, met een eigen 4D-ontologie erbovenop. Dit is <strong>de nieuwe bijdrage</strong> van dit LRD: het boek levert de inhoud, de wiki maakt die inhoud doorzoekbaar, koppelbaar en uitbreidbaar met agentic functionaliteit.</li>
+      <li>Een <strong>gated leerpad-systeem</strong> — elk van de vier D-fasen sluit af met een checkpoint dat pas opengaat na een Socratische AI-toets én peer-review.</li>
+    </ul>
+
+    <h3>1.2 Waarom de eigen structuur van het boek de ontologie wordt</h3>
+    <p>Het bronboek is zelf al ontworpen rond een navigatiemodel: elk hoofdstuk opent met een cirkeldiagram dat toont waar het hoofdstuk past binnen de vier fasen Direct → Design → Deliver → Develop (zie de gefotografeerde openingspagina's van hoofdstuk 1 en 2, <code>background-material/</code>). In plaats van een nieuwe navigatiemetafoor te verzinnen, hergebruikt dit LRD die structuur <strong>letterlijk</strong> als informatiearchitectuur van de cursus-wiki (Deel 6.2) — inclusief een eigen "je bent hier"-diagram per week (Deel 8).</p>
+
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 2 — Pedagogisch kwaliteitssysteem</h2>
+    <p>Vijf onderbouwde kaders disciplineren elke ontwerpkeuze in dit LRD. Vier bouwen voort op <code>background-docs/education-design/</code> en de AI Wiki; het vijfde komt rechtstreeks uit het bronboek zelf. Ze staan hier als ontwerp-axioma's, niet als literatuursamenvatting.</p>
+
+    <div class="theme">
+      <h3>2.1 Bloom's revised taxonomy — precisie in wat we vragen</h3>
+      <p class="theme-help">Anderson &amp; Krathwohl (2001) kruisen een zesledige <strong>Cognitive Process Dimension</strong> (Remember → Understand → Apply → Analyze → Evaluate → Create) met een vierledige <strong>Knowledge Dimension</strong> (Factual → Conceptual → Procedural → Metacognitive). Een leeruitkomst is een werkwoord (proces) plus een object (kennistype) — nooit een leeractiviteit vermomd als doel.</p>
+      <p><strong>Ontwerp-axioma:</strong> elke leeruitkomst in Deel 3 is getagd met haar Bloom-cel. Omdat de vier D's van laag naar hoog in abstractie lopen (Direct = strategisch begrijpen, Develop = zelf een verbeteraanpak kiezen en verdedigen), klimt de leerlijn vanzelf van Understand/Analyze (week 1-4) naar Evaluate/Create (week 13-15) — en, doordat het gate-systeem in Deel 6 studenten expliciet laat reflecteren op hun eigen herzieningsproces, tot in <strong>metacognitieve kennis</strong>, de dimensie die klassieke rubrics zelden bereiken.</p>
+    </div>
+
+    <div class="theme">
+      <h3>2.2 Motivatie &amp; Flow — waarom gates gekalibreerd zijn, niet arbitrair</h3>
+      <p class="theme-help">Pink's <em>Motivation 3.0</em> (Autonomie, Meesterschap, Zingeving) operationaliseert Deci &amp; Ryan's Self-Determination Theory; Csikszentmihalyi's <em>Flow</em> voegt het ervaringsmechanisme toe — een taak moet in het smalle kanaal tussen verveling (te makkelijk) en angst (te moeilijk) vallen, wat rechtstreeks aansluit op Vygotsky's Zone of Proximal Development. Feedback moet <em>informationeel</em> zijn ("zo kun je het verbeteren"), niet <em>controlerend</em> ("dit is je cijfer"), om intrinsieke motivatie te behouden.</p>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Pink-motivator</th><th>Mechanisme in dit LRD</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Autonomie</strong></td><td>Teams kiezen hun eigen bedrijfscase en de invalshoek waarmee ze die per D-fase analyseren; de gate schrijft nooit <em>hoe</em> voor, alleen of het denken erachter zichtbaar is.</td></tr>
+          <tr><td><strong>Meesterschap</strong></td><td>Elke gate is gekalibreerd op wat die D-fase daadwerkelijk heeft onderwezen (Deel 6.4) — een team wordt nooit geblokkeerd door een doel waar het redelijkerwijs niet aan kan voldoen.</td></tr>
+          <tr><td><strong>Zingeving</strong></td><td>Elke checkpoint-case is een echte analyse van een zelfgekozen, bestaand bedrijf — geen kunstmatige oefencasus.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="theme">
+      <h3>2.3 UnBlooms — beoordeel het denken, niet de output</h3>
+      <p class="theme-help">Austin (2026) betoogt dat generatieve AI de aanname onderuithaalt die in elke Bloom-piramide besloten ligt — dat je eerst door Remember/Understand/Apply moet klimmen voordat je mag Creëren. Een student kan nu direct een AI-tool openen en meteen een gepolijst artefact produceren. Haar antwoord is geen omgekeerde piramide, maar een <strong>metacognitieve reflectielus</strong> — Questioning → Generating → Critiquing → Refining — waarbij "AI aan de zijlijn" productieve wrijving biedt via Socratische begeleiding.</p>
+      <p><strong>Ontwerp-axioma:</strong> dit is de directe voorouder van de Socratische AI-agent in Deel 6.5. Precies daarom mag die agent nooit zeggen dat het werk goed, fout of hoog/laag gescoord is — een verdict zou de reflectielus kortsluiten die UnBlooms juist beschermt. Dit weegt hier zwaarder dan in een gewoon vak: studenten kunnen de AI-tutor en de wiki gebruiken om <em>elk</em> boekconcept direct te laten uitleggen en toepassen op hun case — precies de collaps die UnBlooms beschrijft. De gate dwingt het denken terug.</p>
+    </div>
+
+    <div class="theme">
+      <h3>2.4 Durable skills — het vermogen dat wordt beschermd</h3>
+      <p class="theme-help">Globerson et al. (2026), gesynthetiseerd op de <em>Durable Skills</em>-pagina van de AI Wiki, definiëren een duurzame vaardigheid via drie criteria: <strong>open-eindig</strong>, <strong>sociaal/contextueel gesitueerd</strong>, en <strong>langzaam-veranderend</strong>. De kerncluster is Collaboration, Creativity en Critical Thinking — waarbij Critical Thinking nu expliciet <strong>AI-Supported Exploration</strong> en <strong>AI-Supported Verification</strong> als subvaardigheden omvat. McKinsey Global Institute's <em>Skill Change Index</em> (2025) bevestigt dit vanuit de arbeidsmarkt: oordeelsvorming zit in het laagste-automatiseringsrisico-kwartiel.</p>
+      <p><strong>Ontwerp-axioma:</strong> elke leeruitkomst in Deel 3 is getagd met de durable skill die ze oefent, en het gate-systeem zelf (Deel 6.4) is herkaderd als wekelijkse, structurele oefening van twee subvaardigheden: AI-Supported Verification (bij de Socratische gate) en Collaboration (bij de peer-gate).</p>
+    </div>
+
+    <div class="theme">
+      <h3>2.5 De eigen 4D-navigatie &amp; het drielaags beoordelingsmodel van het bronboek</h3>
+      <p class="theme-help">Slack, Brandon-Jones &amp; Johnston bouwen hun boek zelf al volgens didactische ontwerpprincipes (gefotografeerd in <code>background-material/</code>): elk hoofdstuk opent met een "je bent hier"-cirkeldiagram binnen het 4D-cyclusmodel; de "To the student"-sectie leert studenten <strong>niet-lineair</strong> te studeren en elke casus te toetsen aan twee kernvragen (<em>Hoe probeert deze organisatie te concurreren? Wat kan de operationele functie daaraan bijdragen?</em>); en "Ten steps to a better grade" beschrijft een <strong>drielaags oplopend beoordelingsmodel</strong> — (a) kennis &amp; begrip, (b) illustreren &amp; toepassen, (c) kritisch bediscussiëren &amp; analyseren.</p>
+      <p><strong>Ontwerp-axioma:</strong> dit is geen losse vijfde theorie, maar de <strong>directe bron</strong> voor twee concrete ontwerpkeuzes elders in dit LRD: het weekprogramma hergebruikt het "je bent hier"-diagram letterlijk als wiki-navigatie (Deel 6.2, Deel 8), en de gedeelde beoordelingscriteria per checkpoint (Deel 6.3) volgen dezelfde drie oplopende lagen — zodat wat een student al uit het boek kent, in de wiki en bij de gates herkenbaar terugkomt.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 3 — Leeruitkomsten (Bloom-getagd)</h2>
+    <p>Werkwoorden komen uit de herziene-taxonomie-werkwoordenbank (§2.1). <code>[Proces / Kennis]</code>-tags volgen Anderson &amp; Krathwohl's twee dimensies. Elke uitkomst is geformuleerd als user story — <em>een student kan &lt;doen&gt;, zodat &lt;waarde&gt;</em> — verankerd aan de toekomstige beroepsrol van de student, niet alleen aan het cursusartefact. Een tweede tag, <strong>durable skill</strong>, benoemt welke §2.4-subvaardigheid de uitkomst oefent.</p>
+
+    <h3>3.1 De toekomstige rol</h3>
+    <p>De cursus traint één duidelijk afgebakende rol: de <strong>Operational Excellence Analist</strong> — iemand die de operations van een organisatie doorgrondt, de prestaties ervan beoordeelt tegen de vijf performance-objectives (kwaliteit, snelheid, betrouwbaarheid, flexibiliteit, kosten) en een onderbouwd verbeter- of ontwerpvoorstel doet, mét kritische verificatie van wat AI-ondersteuning daarbij oplevert.</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Slaagt door</th><th>Faalt door</th></tr></thead>
+      <tbody>
+        <tr><td>De operations doorgronden vóórdat een verbetering wordt voorgesteld; AI-output kritisch verifiëren i.p.v. klakkeloos overnemen; helder communiceren met stakeholders binnen én buiten operations.</td><td>Een pasklaar AI-antwoord doorsturen zonder eigen redenering; een verbetering voorstellen die de volume-variëteitspositie of de strategie van de organisatie negeert.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>3.2 Leeruitkomsten</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Uitkomst</th><th>Bloom</th><th>Durable skill</th><th>D-fase</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Een student kan het input-transformatie-output-model <strong>toelichten</strong> en de vijf performance-objectives (kwaliteit, snelheid, betrouwbaarheid, flexibiliteit, kosten) <strong>diagnosticeren</strong> voor een zelfgekozen bedrijfscase, zodat deze <em>als toekomstig OE-analist</em> de operations kan doorgronden vóórdat er een verbetervoorstel volgt.</td><td>[Understand–Analyze / Conceptual]</td><td>Critical Thinking — Interpret &amp; Analyze</td><td>Direct</td></tr>
+        <tr><td>2</td><td>Een student kan een operations-strategie <strong>positioneren</strong> (top-down/bottom-up, inside-out/outside-in) en <strong>beoordelen</strong> of product- of dienstinnovatie daarop aansluit, zodat deze <em>als OE-analist</em> een strategische-fit-argument kan verdedigen tegenover stakeholders.</td><td>[Apply–Evaluate / Procedural]</td><td>Critical Thinking — Evaluate &amp; Judge</td><td>Direct</td></tr>
+        <tr><td>3</td><td>Een student kan een procesontwerp — netwerk, layout, procestechnologie, mensen in operations — <strong>ontwerpen</strong> dat past bij de volume-variëteitspositie van de case, zodat deze <em>als OE-analist</em> een samenhangend, met de beschikbare middelen realistisch herontwerp kan voorstellen.</td><td>[Apply–Create / Procedural]</td><td>Creativity — Building on Ideas</td><td>Design</td></tr>
+        <tr><td>4</td><td>Een student kan planning- en controlbeslissingen — capaciteit, supply chain, voorraad, lean — <strong>analyseren</strong> en onderling <strong>afstemmen</strong>, zodat deze <em>als OE-analist</em> kan aanwijzen waar in een supply chain waarde weglekt.</td><td>[Analyze / Procedural]</td><td>Critical Thinking — Interpret &amp; Analyze</td><td>Deliver</td></tr>
+        <tr><td>5</td><td>Een student kan een verbeter-, kwaliteits-, risico- of projectaanpak <strong>selecteren</strong> en <strong>onderbouwen</strong> voor een geconstateerd operations-probleem, zodat deze <em>als OE-analist</em> een continu-verbeterinitiatief kan aansturen dat kritische toetsing doorstaat.</td><td>[Evaluate–Create / Conceptual]</td><td>Creativity — Evaluating Ideas</td><td>Develop</td></tr>
+        <tr><td>6</td><td>Een student kan de Socratische vragen van de AI-tutor en de feedback van het peer-partnerteam <strong>kritisch verwerken</strong> tot een aantoonbaar herziene analyse, en <strong>reflecteren</strong> op hoe dit het eigen denken heeft veranderd, zodat deze <em>als OE-analist</em> AI-ondersteunde output leert verifiëren in plaats van klakkeloos over te nemen.</td><td>[Evaluate / Metacognitive]</td><td>Critical Thinking — AI-Supported Verification</td><td>Alle vier (doorlopend)</td></tr>
+        <tr><td>7</td><td>Een student kan effectief <strong>samenwerken</strong> binnen het eigen team en met het peer-partnerteam om cases te bespreken en van feedback te voorzien, zodat deze <em>als OE-analist</em> kan functioneren als betrouwbare collega-beoordelaar in een verbeterteam.</td><td>[Apply / Procedural]</td><td>Collaboration — Conflict Resolution</td><td>Alle vier (doorlopend)</td></tr>
+        <tr><td>8</td><td>Een student kan, met <strong>Lean 4.0</strong> (Gomaa, 2025) als kritische lens, per D-fase <strong>beoordelen</strong> welke klassieke operations-concepten en -tools uit het boek verouderd, versterkt, of onveranderd relevant blijven wanneer Industrie 4.0-technologie wordt toegevoegd, en welke nieuwe risico's (kosten, cybersecurity, weerstand, MKB-schaalbaarheid) dat digitale alternatief zelf introduceert, zodat deze <em>als OE-analist</em> niet "digitaal = beter" aanneemt maar een onderbouwd oordeel velt.</td><td>[Evaluate / Conceptual]</td><td>Critical Thinking — Evaluate &amp; Judge</td><td>Alle vier (doorlopend)</td></tr>
+        <tr><td>9</td><td>Een student kan <strong>beargumenteren</strong> waarom conformance aan een kwaliteitsspecificatie (Ch17) niet gelijkstaat aan Operational Excellence, en <strong>toetsen</strong> of een verbetervoorstel voor de eigen case werkelijk meerdere performance-objectives tegelijk, duurzaam en cultureel verankerd verbetert — of slechts één technische norm haalt — zodat deze <em>als OE-analist</em> het verschil tussen "de norm halen" en "blijvend excelleren" kan uitleggen aan stakeholders.</td><td>[Evaluate / Conceptual]</td><td>Critical Thinking — Evaluate &amp; Judge</td><td>Alle vier (doorlopend)</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 4 — Doelgroep &amp; voorkennis</h2>
+    <p>De cursus is bedoeld voor HAN-bachelorstudenten in een bedrijfskundige, logistieke of technisch-bedrijfskundige opleiding, in het tweede of derde studiejaar. Er wordt <strong>geen</strong> voorkennis van operations management verondersteld, en er wordt <strong>geen</strong> programmeer- of agent-bouwervaring verwacht — in tegenstelling tot een technisch bouwvak bouwt geen enkele student hier de wiki of de AI-tutor zelf (Deel 5.1). Studenten zijn <em>power users</em> van de kennisbank en de agentic hulpmiddelen, geen bouwers ervan.</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th></th><th>Verondersteld</th><th>Niet verondersteld</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Vakinhoudelijk</strong></td><td>Basale bedrijfskundige vocabulaire; vermogen om een tabel/grafiek uit een jaarverslag of nieuwsartikel te lezen</td><td>Eerdere kennis van operations management, lean, kwaliteitsmanagement of supply chain</td></tr>
+        <tr><td><strong>Technisch</strong></td><td>Comfortabel met het bevragen van een doorzoekbare website/wiki en het gebruiken van een chat-achtige AI-tutor</td><td>Programmeren, prompting-op-expertniveau, of het zelf inrichten van een kennisbank</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p><strong>Teamgrootte &amp; stabiliteit.</strong> Studenten werken in vaste teams van 4–5 voor het volledige semester, elk gekoppeld aan precies één ander team als peer-partnerschap (Deel 6.6) — stabiel voor de hele 15 weken, zodat zowel de eigen casuspijplijn als de peer-feedbackrelatie continuïteit heeft. <strong>Toetsing blijft individueel</strong> (Deel 9): het team is het werkverband, niet de beoordelingseenheid.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 5 — Design-criteria</h2>
+
+    <h3>5.1 KISS, geformuleerd als afwijzingen</h3>
+    <p>"Keep It Super Simple" is in dit LRD geen aspiratie maar een set dingen die dit systeem <strong>niet mag worden</strong>, omdat elk alternatief tijdens het ontwerp is overwogen en verworpen:</p>
+    <ul>
+      <li><strong>Geen adaptieve-moeilijkheidsalgoritme.</strong> Een gelaagd vertakkend systeem of Socratische-diepteladder is overwogen en verworpen ten gunste van één binaire poort per checkpoint — één mechanisme, één regel, geen scoringsmodel om te onderhouden of uit te leggen.</li>
+      <li><strong>Geen studentzichtbare scores.</strong> Studenten zien open/dicht en Socratische vragen. Niets numeriek. Dit volgt net zo goed uit §2.3 (UnBlooms) als uit KISS.</li>
+      <li><strong>Geen student-gebouwde wiki of agent-harnas.</strong> Overwogen en verworpen: dit is een bedrijfskundig vak, geen technisch bouwvak. Module-eigenaren zetten de kennisbank éénmalig op en onderhouden haar (Deel 6.1); studenten zijn power-users, geen bouwers.</li>
+      <li><strong>Eén gedeelde Socratische-agent-component, docent-eigendom, niet gebouwd door wie hij beoordeelt.</strong> Module-eigenaren bouwen en onderhouden hem eenmalig (Deel 6.5); elk team gebruikt dezelfde instantie. Geen per-team of student-gebouwde tutoringsystemen, en geen studentcontrole over wat hen gate't.</li>
+      <li><strong>Eén gedeelde rubriek per D-checkpoint, geen per-team maatwerk.</strong> Docenten publiceren één kwaliteits- en ontwerpnorm per fase (Deel 6.3) waar de output van elk team tegen wordt afgezet.</li>
+      <li><strong>Hergebruik van bestaande infrastructuur.</strong> De <a target="_blank" rel="noopener" href="https://github.com/witoldtenhove/wiki-template">wiki-template</a>/Quartz-stack bestaat al en wordt hergebruikt zoals gespecificeerd (Deel 6.7) — dit LRD voegt een 4D/OKF-domeinlens en een gate-laag toe, het bouwt geen nieuwe hosting.</li>
+      <li><strong>Eén vast peer-partnerschap voor het hele semester.</strong> Roterende peer-pools zijn overwogen (voor blootstellingsdiversiteit) en verworpen als onnodige complexiteit.</li>
+    </ul>
+
+    <h3>5.2 Wat "beheersbaar" betekent voor een docent</h3>
+    <p>Eén instructor-dashboard (Deel 6.7) moet voor elk team binnen een minuut antwoord geven op: <em>waar staan ze, is de poort open, is er een override gebruikt, oogt de peer-feedback oprecht.</em> Als een docent deze vier vragen niet binnen een minuut per team kan beantwoorden, heeft het systeem zijn eigen KISS-toets niet doorstaan — ongeacht hoe pedagogisch elegant het verder is.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 6 — De Operational-Excellence Wiki &amp; het gate-systeem</h2>
+    <p>Dit is de nieuwe bijdrage van dit LRD. Eén gedeelde, docent-curated kennisbasis (6.1) met een eigen 4D/OKF-ontologie (6.2) voedt zowel de studentnavigatie als de Socratische AI-tutor. Elke D-fase heeft één checkpoint (6.3), gated (6.4) door diezelfde tutor (6.5) en een peer-partnerschap (6.6). Een instructor-dashboard (6.7) maakt alles zichtbaar. Paragraaf 6.8 legt de technische architectuur vast — expliciet zo ontworpen dat latere agentic uitbreiding geen herbouw vereist. Paragraaf 6.9 voegt een terugkerende kritische lens toe — Lean 4.0 (Gomaa, 2025) — waarmee elk checkpoint niet alleen de klassieke boekconcepten toepast, maar ze ook expliciet bevraagt.</p>
+
+    <h3>6.1 De kennisbasis: wie bouwt en onderhoudt de wiki</h3>
+    <p>Vóór aanvang van het cohort zetten module-eigenaren de kennisbasis op: één pagina per boekconcept (de 19 hoofdstukthema's + kernbegrippen), één pagina per bedrijfscase uit de "Guide to operations in practice" (de 130+ cases uit <code>background-material/</code>, zoals IKEA, Toyota, Ryanair, Michelin), en een startskelet voor de eigen gekozen bedrijfscase van elk team. Daarnaast worden twee Lean 4.0-referentiesets vooraf geladen (6.9, FR-14): de 23 Lean-tool↔Industrie-4.0-koppelingen uit Gomaa (2025) Tabel VII, en één "Lean 4.0-paradoxen"-pagina die de spanningen uit de literatuur catalogiseert. Studenten <strong>vullen</strong> hun eigen team-casuspagina's aan (het antwoord op de twee kernvragen uit §2.5 én de kritische-lens-vraag uit 6.9, per D-fase); ze richten <strong>niet</strong> de kennisarchitectuur zelf in (Deel 5.1). Jaarlijks voeren docenten een Ingest-ronde uit (nieuwe of vervangen praktijkcases) zodat de wiki meegroeit met elk cohort zonder dit LRD te herschrijven (FR-12).</p>
+
+    <h3>6.2 De 4D/OKF-ontologie: navigatie én agentic fundament</h3>
+    <p>Elke wiki-pagina is een OKF-concept (<code>design-documents/SPEC.md</code> §4): verplichte <code>type</code> (<code>boek-concept</code> | <code>bedrijfscase-bron</code> | <code>team-case</code> | <code>entiteit</code> | <code>concept</code> voor de Lean 4.0-referentiepagina's uit 6.9), aanbevolen <code>title</code>/<code>description</code>/<code>tags</code>. Daarbovenop komt een cursus-eigen, gesloten domeinlens — vergelijkbaar met de "dynamic-capabilities"-lens uit <code>llm-wiki.md</code> §12, maar dan voor operations: een verplicht <code>stage</code>-veld (<code>direct</code> | <code>design</code> | <code>deliver</code> | <code>develop</code>) plus een hoofdstuk-tag (<code>ch01</code>…<code>ch19</code>). Elke Tabel-VII-koppeling erft de <code>stage</code> van het klassieke Lean-tool dat ze aanvult (bv. <em>Kaizen + Collaborative Platforms</em> → <code>stage: develop</code>, <code>ch16</code>; <em>Kanban + Digitale Kanban-borden</em> → <code>stage: deliver</code>, <code>ch15</code>) plus de tags <code>[lean-tool, industrie4.0]</code> — het eerste concrete bewijs dat de ontologie agentic filtering al ondersteunt, niet pas na een herstructurering. Dit is precies wat het "je bent hier"-diagram uit §2.5 machineleesbaar maakt: elke week-landingspagina (Deel 8) rendert het diagram hieronder, met de huidige <code>stage</code> gemarkeerd — en omdat de tag in frontmatter staat, kan een latere agent (zoekagent, auto-vraaggenerator) er zonder herstructurering op filteren.</p>
+    <div class="navdiagram">
+      <div class="d-node active">Direct<span class="sub">wk 1–4</span></div>
+      <div class="arrow">→</div>
+      <div class="d-node">Design<span class="sub">wk 5–9</span></div>
+      <div class="arrow">→</div>
+      <div class="d-node">Deliver<span class="sub">wk 10–12</span></div>
+      <div class="arrow">→</div>
+      <div class="d-node">Develop<span class="sub">wk 13–14</span></div>
+    </div>
+    <p class="illus" style="text-align:center;">Voorbeeldweergave van de wekelijkse "je bent hier"-navigatie (hier: week 1, fase Direct gemarkeerd) — rechtstreeks nagebouwd naar de hoofdstukopeningsdiagrammen in <code>background-material/</code>.</p>
+
+    <h3>6.3 Gedeelde kwaliteitscriteria per checkpoint</h3>
+    <p>Vóór elke D-fase publiceren docenten één kwaliteits- en ontwerpnorm, opgebouwd volgens het drielaags model uit §2.5: (a) kennis &amp; begrip van de relevante boekconcepten, (b) correcte toepassing ervan op de eigen case, (c) kritische discussie van afwegingen en trade-offs — inclusief de Lean 4.0-kritische-lens-paragraaf uit 6.9. Dezelfde norm wordt gebruikt door de peer-gate (6.6, direct) én door de Socratische tutor (6.5, indirect, als toetssteen voor haar vragen).</p>
+    <p><strong>Optionele digitale-KPI-laag.</strong> Naast de vijf klassieke performance-objectives (kwaliteit, snelheid, betrouwbaarheid, flexibiliteit, kosten — Ch2, leeruitkomst 1) mag/moet een team 2–3 relevante KPI's uit Gomaa (2025) Tabel XII kiezen en verantwoorden voor hun case (bv. Overall Equipment Effectiveness, First Pass Yield, Real-Time Data Utilization, Predictive Maintenance Accuracy) — een aanvulling op, geen vervanging van, de klassieke vijf.</p>
+
+    <h3>6.4 Gate-progressie</h3>
+    <p>Elke van de vier D-fasen heeft precies één checkpoint per team: de casuspagina van dat team voor die fase (6.1). Een team kan niet aan het volgende D-checkpoint beginnen voordat <strong>beide</strong> voorwaarden op het huidige checkpoint zijn vervuld:</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Gate-voorwaarde</th><th>Wie/wat checkt het</th><th>Wat "vervuld" betekent</th><th>Durable skill (§2.4)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A — Socratische gate</strong></td><td>De Socratische AI-agent (6.5)</td><td>Het team heeft een schriftelijke reactie op de vragen van de agent ingediend die een echte herziening is, geen resubmissie — de verborgen procesrubriek haalt een vaste drempel.</td><td>Critical Thinking — AI-Supported Verification</td></tr>
+        <tr><td><strong>B — Peer-gate</strong></td><td>Het peer-partnerteam (6.6)</td><td>Het team heeft zowel feedback gegeven als ontvangen van het peer-partnerteam op dit checkpoint, tegen de gedeelde criteria (6.3).</td><td>Collaboration — Conflict Resolution</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Beide voorwaarden, geen deelscore, geen numeriek composiet. De Socratische kant is bewust single-shot: <strong>één rapport per team per checkpoint</strong> (6.5), geen onbeperkte resubmit-tot-het-lukt-lus. Haalt gate A niet op dat ene rapport, dan krijgt het team geen tweede Socratisch consult op dat checkpoint — de onopgeloste feedback loopt mee naar het volgende D-checkpoint. <strong>Een gesloten poort is geen straf</strong> — ze telt op zichzelf niet mee voor het cijfer (Deel 9); het is Pink's <em>informationele</em> feedback (§2.2), geen <em>controlerende</em>.</p>
+
+    <h3>6.5 De Socratische AI-tutor</h3>
+    <p><strong>Eigendom:</strong> de module-eigenaren/docenten — niet studenten, niet een team. Dezelfde mensen die worden beoordeeld, mogen niet ook bepalen hoe ze beoordeeld worden.</p>
+    <ul>
+      <li><strong>Het protocol:</strong> een team dient zijn checkpoint eenmaal in en ontvangt precies <strong>één rapport per checkpoint</strong> — geen open-eind chat, geen onbeperkte resubmit-en-hertoets-lus.</li>
+      <li><strong>Naar het team (zichtbaar):</strong> uitsluitend Socratische vragen, gebouwd op de wiki-kennisbank (6.1–6.2) zodat de agent kan verwijzen naar specifieke boekconcepten of vergelijkbare bedrijfscases als hint. Nooit een verdict, nooit "dit is goed/fout", nooit een score.</li>
+      <li><strong>Naar de docent (zichtbaar):</strong> hetzelfde rapport dat het team ontving, <strong>plus</strong> een rubriekscore tegen de gedeelde criteria (6.3) van die D-fase, <strong>plus</strong> het binaire gate-A-signaal.</li>
+      <li><strong>Groeit, of het doet zijn werk niet.</strong> Elk rapport wordt gegenereerd met de volledige eerdere-rapportgeschiedenis van het team als context, onder één staande instructie: herhaal nooit een reeds beantwoorde vraag, en laat een team nooit meeliften op een onbeantwoorde.</li>
+    </ul>
+
+    <h3>6.6 Cross-team peer-partnerschap</h3>
+    <p>Elk team wordt voor het volledige semester gekoppeld aan precies één ander team. Het peer-partnerschap is een structurele toewijzing, wederzijds getoetst bij elk van de vier checkpoints, tegen de gedeelde criteria (6.3): past dit bij hoe de gekozen organisatie concurreert (§2.5), en is het procesontwerp/de aanpak realistisch gezien de middelen die de case beschrijft?</p>
+    <p><strong>Fallback.</strong> Valt een peer-partnerteam uit of loopt het achter, dan wijst de docent het partnerschap opnieuw toe zonder het andere team te blokkeren (FR-08).</p>
+
+    <h3>6.7 Instructor-dashboard</h3>
+    <p>Eén scherm, per team: huidige D-fase, gate-A/gate-B-status, het laatste Socratische rapport en de score erachter, naleving van de gedeelde criteria uit de laatste peer-review, en een <strong>override</strong>-knop — zodat geen enkele binaire poort een bureaucratische valkuil wordt.</p>
+
+    <h3>6.8 Technische architectuur &amp; doorgroei naar agentic functionaliteit</h3>
+    <p>De wiki draait op de bestaande <a target="_blank" rel="noopener" href="https://github.com/witoldtenhove/wiki-template">wiki-template</a>-implementatie: <code>raw/</code> (immutable bronmateriaal — de gescande boekpagina's, case-PDF's) → <code>wiki/sources|concepts|entities|threads|syntheses</code> (de LLM-onderhouden kennislaag) → publicatie via Quartz. Dezelfde vier operaties uit <code>llm-wiki.md</code> gelden: <strong>Ingest</strong> (nieuwe boek- of praktijkcases opnemen), <strong>Query</strong> (studenten en de Socratische tutor bevragen de wiki), <strong>Lint</strong> (periodieke controle op tegenstrijdigheden, verouderde claims, ontbrekende cross-references), <strong>Synthesize</strong> (de afgesloten D-fase van een team wordt een synthese-pagina). Omdat de ontologie (6.2) al in frontmatter vastligt en de wiki al OKF-conformant is (§9, <code>SPEC.md</code>), kunnen latere cohorten agentic functionaliteit toevoegen — een zoekagent, geautomatiseerde vraaggeneratie voor de Socratische tutor, automatische case-matching — <strong>zonder de kennisbank te herstructureren</strong>. Dit is precies het doel waarvoor de OKF- en wiki-investering in dit LRD wordt gedaan.</p>
+
+    <h3>6.9 De Lean 4.0 / Industry 5.0-kritische lens</h3>
+    <p><strong>Bron:</strong> Gomaa, A.H. (2025). <em>Lean 4.0: A Strategic Roadmap for Operational Excellence and Innovation in Smart Manufacturing.</em> De paper laat zien dat Industrie 4.0-technologie klassieke Lean-tools <strong>versterkt, niet vervangt</strong> (23 expliciete koppelingen, Tabel VII), maar de literatuur die Gomaa zelf citeert signaleert ook paradoxen: IoT-gedreven besluitvorming kan botsen met klassiek Lean-probleemoplossen (Johansson et al., 2024), en automatisering kan Lean-principes verzwakken in plaats van versterken (Frank et al., 2024). Dit LRD gebruikt die spanning bewust als een <strong>terugkerende kritische lens</strong>, niet als een eenmalige zijopmerking — precies wat leeruitkomst 8 (Deel 3) toetst. <strong>Pant, R., Singh, R., Gehlot, A. &amp; Thakur, A.K. (2025)</strong> voegen daar een tweede, complementaire laag aan toe: Industry 5.0 (I5.0) is een expliciete correctie op Industry 4.0's automatiseringsfocus — mensgerichtheid, veerkracht en duurzaamheid in plaats van pure efficiëntie. Beide bronnen signaleren onafhankelijk van elkaar dezelfde barrières (workforce-weerstand, vaardigheidstekort, kosten, cybersecurity) wanneer technologie zonder culturele of menselijke verankering wordt ingevoerd — precies wat leeruitkomst 9 (Deel 3) toetst.</p>
+    <p><strong>Het mechanisme.</strong> Elk van de vier checkpoints (6.4) krijgt, naast de twee kernvragen uit §2.5, een verplichte derde vraag als onderdeel van hetzelfde checkpoint-antwoord (FR-01, FR-15) — <strong>geen nieuwe gate, geen extra indienronde</strong> (Deel 5.1 KISS blijft intact):</p>
+    <blockquote class="lead-quote"><em>Welke concepten of tools uit het boekdeel van deze D-fase zijn, gezien vanuit Lean 4.0, verouderd, versterkt, of onveranderd relevant voor jullie case — en welk nieuw risico brengt het digitale alternatief zelf met zich mee (kosten, cybersecurity, weerstand tegen verandering, schaalbaarheid)?</em></blockquote>
+    <p>De vraag is bewust <strong>tweezijdig</strong>: ze vraagt niet alleen "wat is hier verouderd", maar dwingt ook een antwoord op "wat kan het digitale alternatief zelf breken" — gegrond in Gomaa's eigen challenges- en research-gap-secties (hoge investeringskosten, workforce-weerstand, MKB-schaalbaarheid, cybersecurity). Zonder die tweede helft verwordt de lens tot naïef technologie-optimisme (Deel 12).</p>
+    <p><strong>De tweede as: Industry 4.0 of Industry 5.0?</strong> Bovenop de Lean 4.0-vraag voegt de kritische lens een tweede afweging toe (Pant et al., 2025): is de voorgestelde digitale oplossing vooral een <strong>Industry 4.0-antwoord</strong> (efficiëntie, automatisering, connectiviteit) of een <strong>Industry 5.0-antwoord</strong> (mensgericht, veerkrachtig, duurzaam) — en welke past beter bij wat de case daadwerkelijk nodig heeft? Geen van beide is per definitie beter; de vraag dwingt het team te beargumenteren welke keuze, en waarom, in plaats van automatisch voor "meer technologie" te kiezen. Dit is dezelfde onderliggende afweging als leeruitkomst 9: conformance aan een technische norm (I4.0-efficiëntie) is niet hetzelfde als blijvende excellentie (I5.0-veerkracht en mensgerichtheid).</p>
+    <p><strong>In de Socratische tutor (6.5).</strong> De kritische-lens-vraag is een staande categorie in de promptbank van de tutor, die kan verwijzen naar de vooraf geladen Lean 4.0-referentiepagina's (6.1) — de 23 Tabel-VII-koppelingen en de "Lean 4.0-paradoxen"-pagina — zonder ooit zelf te verklappen welk antwoord "goed" is (§2.3, UnBlooms).</p>
+    <p><strong>In het weekprogramma (Deel 8).</strong> De Lean 4.0-vraag is het scherpst zichtbaar bij Gate 3 (week 12, Ch14–15: Lean operations) en Gate 4 (week 13–14, Ch16: Operations improvement) waar het boek zelf Lean behandelt; de Industry 5.0-as komt daarnaast expliciet terug in week 6 (Mass Customisation), week 8 (I5.0-technologieën), week 9 (Human-CPS/cobots), week 11 (supply chain als netwerk) en week 14 (resilience) — maar geldt <strong>bij alle vier checkpoints</strong>, ook Direct/Design/Deliver bevatten concepten die onder Lean 4.0 of Industry 5.0 anders wegen (bv. is klassieke capaciteitsplanning nog houdbaar met real-time vraagdetectie?).</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 7 — Functionele &amp; non-functionele requirements</h2>
+
+    <h3>7.1 Functionele requirements</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+      <tbody>
+        <tr><td>FR-01</td><td>Eén checkpoint-artefact per team per D-fase: een casuspagina die de twee kernvragen (§2.5) beantwoordt voor het gekozen bedrijf, opgeslagen als OKF-conforme wiki-pagina (Deel 6.1).</td></tr>
+        <tr><td>FR-02</td><td>Publiceer de gedeelde kwaliteitscriteria per D-checkpoint (6.3) vóór het begin van die fase; versioneer bij wijziging tussen cohorten.</td></tr>
+        <tr><td>FR-03</td><td>Socratische AI-gate: accepteer precies één inzending en genereer precies één rapport per team per checkpoint, gebouwd op de wiki-kennisbank, geconditioneerd op de volledige eerdere geschiedenis van het team zodat geen vraag herhaalt; score de verborgen procesrubriek; geef gate-A open/dicht af. Toon alleen het rapport aan het team, nooit de score; toon aan docenten beide.</td></tr>
+        <tr><td>FR-04</td><td>Peer-gate: registreer een voltooide geef-en-ontvang-feedbackronde tussen partnerteams, met de gedeelde criteria (6.3) als rubriek; geef gate-B open/dicht af.</td></tr>
+        <tr><td>FR-05</td><td>Combineer gate-A en gate-B tot één binair "volgende fase ontgrendeld"-signaal, voor het team alleen zichtbaar als open/dicht.</td></tr>
+        <tr><td>FR-06</td><td>Instructor-dashboard: per-team status, verborgen scores, naleving van de gedeelde criteria, override-knop, override-log (6.7).</td></tr>
+        <tr><td>FR-07</td><td>Peer-partnerregister: wijs bij aanvang van het cohort elk team één ander team toe als peer-partner; ondersteun docent-getriggerde herverdeling (fallback, 6.6).</td></tr>
+        <tr><td>FR-08</td><td>Herverdeling van een uitgevallen peer-partnerschap mag de eigen gate-voortgang van het niet-getroffen team niet blokkeren.</td></tr>
+        <tr><td>FR-09</td><td>Exporteer per student de volledige gate/iteratie/feedbackgeschiedenis (PDF/doc) ten behoeve van het criterion-based interview (Deel 9).</td></tr>
+        <tr><td>FR-10</td><td>De prompts, rubriek en configuratie van de Socratische AI-agent zijn uitsluitend in eigendom en beheer van de module-eigenaren — geen student of team heeft schrijftoegang.</td></tr>
+        <tr><td>FR-11</td><td>Elke wiki-pagina volgt het OKF v0.1-frontmatter-contract (verplicht <code>type</code>; aanbevolen <code>title</code>/<code>description</code>/<code>tags</code>) plus de cursus-eigen <code>stage</code>-tag en hoofdstuk-tag (Deel 6.2).</td></tr>
+        <tr><td>FR-12</td><td>Docenten voeren jaarlijks een Ingest-ronde uit (Acquire+Process, per <code>llm-wiki.md</code>) om nieuwe of vervangen bedrijfscases toe te voegen, zonder de kernwiki (boekconcepten) te herschrijven.</td></tr>
+        <tr><td>FR-13</td><td>Elke week-landingspagina toont het 4D-"je bent hier"-diagram (6.2) met het huidige thema gemarkeerd.</td></tr>
+        <tr><td>FR-14</td><td>De wiki bevat vooraf geladen referentiepagina's voor alle 23 Lean-tool↔Industrie-4.0-koppelingen uit Gomaa (2025) Tabel VII, plus één Lean 4.0-paradoxenpagina, OKF-conform getagd (6.9).</td></tr>
+        <tr><td>FR-15</td><td>Elk checkpoint bevat verplicht een Lean 4.0 / Industry 5.0-kritische-lens-antwoord (welke boekconcepten verouderd/versterkt/onveranderd, welk nieuw risico, én of de voorgestelde oplossing vooral een Industry 4.0- of een Industry 5.0-antwoord is) als onderdeel van hetzelfde checkpoint-antwoord (FR-01); de Socratische tutor toetst dit mee binnen het bestaande, enkele rapport per checkpoint (6.9) — geen extra gate, geen nieuwe submission-ronde.</td></tr>
+        <tr><td>FR-16</td><td>De gedeelde criteria per checkpoint (6.3) bevatten een optionele digitale-KPI-laag uit Gomaa (2025) Tabel XII, naast de vijf klassieke performance-objectives.</td></tr>
+        <tr><td>FR-17</td><td>De week-15-capstone-synthese volgt het DMAIC-format (Define-Measure-Analyze-Improve-Control); elke fase is traceerbaar naar een eerder D-checkpoint (Deel 8, Deel 9).</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>7.2 Non-functionele requirements</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+      <tbody>
+        <tr><td>NFR-01</td><td>Geen adaptieve-moeilijkheidslogica buiten de enkele binaire poort (5.1) — dit begrenst de scope net zo goed als het gedrag specificeert.</td></tr>
+        <tr><td>NFR-02</td><td>De gedeelde wiki draait op de bestaande wiki-template/Quartz-stack (6.8) — geen nieuwe hosting/infrastructuur.</td></tr>
+        <tr><td>NFR-03</td><td>Een docent kan de volledige status van elk team binnen 1 minuut beoordelen via het dashboard.</td></tr>
+        <tr><td>NFR-04</td><td>Socratische feedback komt terug binnen een sessiebruikbaar tijdsbestek (streefdoel: enkele minuten, niet overnacht) zodat het de flow van een team niet doorbreekt (§2.2).</td></tr>
+        <tr><td>NFR-05</td><td>Privacy: peer review deelt het artefact, geen cijfers of identiteiten voorbij teamniveau.</td></tr>
+        <tr><td>NFR-06</td><td>De gedeelde criteria per D-checkpoint (6.3), eenmaal gepubliceerd voor een cohort, wijzigen niet gedurende dat cohort.</td></tr>
+        <tr><td>NFR-07</td><td>De wiki blijft OKF-conformant volgens <code>design-documents/SPEC.md</code> §9 (elke pagina parseable frontmatter met een niet-lege <code>type</code>).</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 8 — Weekprogramma</h2>
+    <p>Het programma volgt de eigen vier delen en 19 hoofdstukken van het bronboek, gecomprimeerd tot een semester van 15 weken: 4 weken Direct, 5 weken Design, 3 weken Deliver, 2 weken Develop, 1 capstone-week. Elke fase sluit af met een gate (Deel 6.4). Vanaf week 12 krijgt het programma een Lean 4.0-laag (6.9, FR-14/15): eerst de koppeling van klassieke Lean-tools aan Industrie 4.0-technologie, dan de kritische-lens-vraag op Ch16/17, en in de capstone (week 15) een DMAIC-synthese waarbij Define≈Direct, Measure≈Design/Deliver-diagnose, Analyze≈Deliver, en Improve/Control≈Develop. Vijf weken krijgen daarnaast een Industry 5.0-verrijking (Pant et al., 2025, §6.9): week 6 (Mass Customisation), week 8 (I5.0-technologieën), week 9 (Human-CPS/cobots), week 11 (supply chain als netwerk) en week 14 (resilience).</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Wk</th><th>Boekthema (hoofdstuk)</th><th>D-fase</th><th>Gate</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Kick-off + Ch1 Operations management — teams gevormd, peer-partner toegewezen, intro wiki &amp; AI-tutor<br><br><em>Wat is operations, en wat doet een operations manager? Het input-transformatie-outputmodel en de proceshiërarchie laten zien dat elke organisatie — groot of klein, profit of non-profit — in de kern processen bestuurt. Deze week introduceert bovendien de wiki en de AI-tutor waarmee dat denken de rest van het semester wordt geoefend.</em></td><td>Direct</td><td>—</td></tr>
+        <tr><td>2</td><td>Ch2 Operations performance<br><br><em>Waarom is operationele prestatie cruciaal, op maatschappelijk, strategisch én operationeel niveau? De vijf performance-objectives — kwaliteit, snelheid, betrouwbaarheid, flexibiliteit, kosten — bepalen hoe prestaties gemeten en beoordeeld worden. Centraal staat hoe deze doelstellingen tegen elkaar worden afgewogen wanneer ze conflicteren.</em></td><td>Direct</td><td>—</td></tr>
+        <tr><td>3</td><td>Ch3 Operations strategy<br><br><em>Wat is operations-strategie, en hoe verhoudt die zich tot de bedrijfsstrategie? Vier perspectieven — top-down, bottom-up, marktgedreven en resource-gedreven — moeten verzoend worden tot één samenhangende strategie. Deze week leert studenten waarom geen van de vier op zichzelf volstaat.</em></td><td>Direct</td><td>—</td></tr>
+        <tr><td>4</td><td>Ch4 Managing product and service innovation<br><br><em>Wat is product- en dienstinnovatie, en welke strategische rol speelt ze in concurrentievoordeel? De fasen van het innovatieproces — van idee tot marktintroductie — bepalen hoe vernieuwing georganiseerd en gefinancierd wordt. Gate 1 toetst of teams deze denklijn kunnen toepassen op hun eigen case.</em></td><td>Direct</td><td><strong>Gate 1</strong> (Socratisch + peer)</td></tr>
+        <tr><td>5</td><td>Ch5 The structure and scope of operations<br><br><em>Hoe wordt het netwerk van processen geconfigureerd: hoeveel capaciteit, waar gevestigd, hoe verticaal geïntegreerd? De make-or-buy-vraag — welke activiteiten in-house blijven en welke worden uitbesteed — bepaalt de grenzen van de organisatie. Deze week opent het Design-deel van de cursus.</em></td><td>Design</td><td>—</td></tr>
+        <tr><td>6</td><td>Ch6 Process design <strong>+ Mass Customisation-laag</strong> (Pant et al., 2025): SIoT en cyber-physical systems<br><br><em>Wat is procesontwerp, en welke doelstellingen moet het dienen? Volume en variëteit bepalen fundamenteel hoe een proces wordt ingericht — Mass Customisation, mogelijk gemaakt door het Social Internet of Things, laat zien hoe cyber-physical systems massaproductie tóch individueel aanpasbaar maken. Studenten ontwerpen een proces dat past bij de volume-variëteitspositie van hun eigen case.</em></td><td>Design</td><td>—</td></tr>
+        <tr><td>7</td><td>Ch7 The layout and look of facilities<br><br><em>Hoe beïnvloedt de indeling en uitstraling van faciliteiten de operationele prestaties? De basale layout-typen — van vaste positie tot productlijn — hebben elk hun eigen sterke en zwakke punten. Ook de fysieke uitstraling blijkt direct invloed te hebben op klantbeleving en medewerkersgedrag.</em></td><td>Design</td><td>—</td></tr>
+        <tr><td>8</td><td>Ch8 Process technology <strong>+ Industry 5.0-technologieën</strong> (Pant et al., 2025): digital twins, AR/VR, cobots, quantum/edge computing<br><br><em>Wat is procestechnologie, en waarom wordt haar belang steeds groter? Nieuwe technologieën moeten beoordeeld worden op hun potentieel vóórdat ze ontwikkeld en geïmplementeerd worden — digital twins, AR/VR en cobots zijn actuele voorbeelden die al vooruitblikken op de kritische lens uit §6.9. Deze week legt zo de klassieke basis waar zowel Lean 4.0 als Industry 5.0 later in het semester kritisch op voortbouwen.</em></td><td>Design</td><td>—</td></tr>
+        <tr><td>9</td><td>Ch9 People in operations <strong>+ Human-CPS-laag</strong> (Pant et al., 2025): human-robotinteractie, cobots, human-centricity<br><br><em>Waarom zijn mensen zo bepalend voor het functioneren van een organisatie, en hoe wordt de operationele functie georganiseerd? Baanontwerp en werktijdallocatie bepalen hoe medewerkers hun werk ervaren en uitvoeren — Industry 5.0 voegt toe dat mens-robotsamenwerking (cobots) en welzijn evengoed ontwerpkeuzes zijn, niet een sluitpost van automatisering. Gate 2 sluit het Design-deel af.</em></td><td>Design</td><td><strong>Gate 2</strong> (Socratisch + peer)</td></tr>
+        <tr><td>10</td><td>Ch10 Planning and control + Ch11 Capacity management<br><br><em>Planning en control draait om het balanceren van vraag en aanbod door de tijd heen. Capaciteitsmanagement voegt daar de vraag aan toe hoeveel capaciteit een organisatie moet hebben en hoe vraag en aanbod gemeten worden. Samen vormen ze het fundament van het Deliver-deel.</em></td><td>Deliver</td><td>—</td></tr>
+        <tr><td>11</td><td>Ch12 Supply chain management + Ch13 Inventory management <strong>+ netwerkperspectief</strong> (Pant et al., 2025): van "chain" naar "network", blockchain-traceerbaarheid<br><br><em>Supply chain management onderzoekt hoe ketens concurreren en hoe relaties tussen schakels — aan zowel de vraag- als de aanbodzijde — beheerd worden; Pant et al. pleiten ervoor "chain" te vervangen door "network", omdat leveranciers-van-leveranciers en klanten-van-klanten de praktijk beter beschrijven, met blockchain voor traceerbaarheid. Voorraadmanagement beantwoordt de klassieke volume- en timingvraag: hoeveel bestellen, en wanneer? Beide onderwerpen laten zien waar in een keten waarde kan weglekken.</em></td><td>Deliver</td><td>—</td></tr>
+        <tr><td>12</td><td>Ch14 Planning and control systems + Ch15 Lean operations <strong>+ Lean 4.0-laag</strong> (Gomaa, 2025): koppel elk klassiek Lean-tool aan een Industrie 4.0-technologie (Tabel VII, 6.9)<br><br><em>Planning- en controlsystemen, met ERP als ruggengraat, coördineren vraag en aanbod door de hele organisatie. Lean elimineert verspilling via tools als Kaizen, JIT en Kanban — deze week worden die klassieke tools expliciet gekoppeld aan een Industrie 4.0-technologie. Gate 3 sluit het Deliver-deel af.</em></td><td>Deliver</td><td><strong>Gate 3</strong> (Socratisch + peer)</td></tr>
+        <tr><td>13</td><td>Ch16 Operations improvement + Ch17 Quality management <strong>+ Lean 4.0-kritische lens</strong> (6.9): welke Ch16/17-concepten zijn verouderd/versterkt/onveranderd?<br><br><em>Operations improvement onderzoekt hoe verbetering wordt aangepakt, gemeten en gemanaged; kwaliteitsmanagement voegt daar conformance-aan-specificatie en TQM aan toe. Deze week wordt voor het eerst expliciet gevraagd welke van deze klassieke concepten onder Lean 4.0 verouderd, versterkt, of onveranderd relevant zijn. Dit bereidt direct voor op de DMAIC-capstone in week 15.</em></td><td>Develop</td><td>—</td></tr>
+        <tr><td>14</td><td>Ch18 Managing risk and recovery + Ch19 Project management <strong>+ resilience-lens</strong> (Pant et al., 2025)<br><br><em>Risicomanagement onderzoekt hoe organisaties oorzaken en gevolgen van falen inschatten, voorkomen, beperken en herstellen — Industry 5.0 herkadert dit van reactief herstellen naar proactief <strong>veerkrachtig ontwerpen</strong> (resilience), één van de drie sustainable-development-waarden uit Pant et al. Projectmanagement voegt daar de planning, uitvoering en beheersing van eenmalige, tijdelijke initiatieven aan toe. Gate 4 sluit het Develop-deel én het reguliere collegeprogramma af.</em></td><td>Develop</td><td><strong>Gate 4</strong> (Socratisch + peer)</td></tr>
+        <tr><td>15</td><td>Capstone — <strong>DMAIC-synthese</strong> (Define-Measure-Analyze-Improve-Control, Gomaa Tabel XI) van alle vier checkpoints, elk met een expliciete Lean 4.0-kritische-lens-paragraaf (6.9), + individueel criterion-based interview<br><br><em>Studenten brengen alle vier checkpoints samen in één DMAIC-synthese: welk boekconcept hoort bij welke fase, en wat heeft de Lean 4.0-lens daarover geleerd? Bij het criterion-based interview verdedigt elke student individueel die redenering — niet alleen het eindresultaat, maar ook hoe die tot stand kwam.</em></td><td>—</td><td>Eindgesprek, geen verdere poort</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 9 — Toetsing</h2>
+    <p>Gates zijn <strong>formatief</strong>; het criterion-based interview (CBI) is het enige <strong>summatieve</strong> instrument, individueel per student:</p>
+    <ul>
+      <li>Een gesloten poort verandert nooit zelf een cijfer. Het is een herzieningsprompt, consistent met Pink's informationele-feedbackprincipe (§2.2).</li>
+      <li>De verborgen rubriekscore van de Socratische agent is een <strong>docentkalibratiesignaal</strong> — nooit zelf het cijfer.</li>
+      <li>Bij het CBI verdedigt elke student individueel de eigen bijdrage aan de teamcase over alle vier D-fasen, én <strong>hoe die reageerde</strong> op de Socratische vragen en de peer-feedback bij elk van de vier gates — dit toetst rechtstreeks leeruitkomst 6 (metacognitief).</li>
+      <li>Het CBI toetst bovendien of de student de eigen case coherent langs de DMAIC-structuur (FR-17, Deel 8 week 15) kan presenteren, mét een onderbouwde Lean 4.0-kritische-lens-beoordeling per fase — dit toetst rechtstreeks leeruitkomst 8.</li>
+      <li>De geëxporteerde gate/iteratiegeschiedenis (FR-09) is het bewijsmateriaal voor die verdediging — geen scorekaart, een procesdossier.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 10 — Deliverables</h2>
+    <ol>
+      <li>Een gepubliceerde Operational-Excellence Wiki (Quartz-site) met boekconcepten, de bedrijfscase-bibliotheek, en alle team-casuspagina's.</li>
+      <li>Per team: vier checkpoint-cases (één per D-fase) plus één eindcase-synthese in week 15.</li>
+      <li>Een instructor-dashboard, bruikbaar vanaf week 1 van de pilot (Deel 13).</li>
+      <li>Per student een geëxporteerde gate/iteratie/feedbackgeschiedenis (FR-09) ten behoeve van het CBI.</li>
+      <li>De Socratische AI-tutor zelf, gebouwd en onderhouden door de module-eigenaren en herbruikbaar in het volgende cohort (Deel 6.5).</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 11 — Acceptatiecriteria</h2>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Criterium</th><th>Gemeten door</th></tr></thead>
+      <tbody>
+        <tr><td>AC-01</td><td>Ten minste 80% van de teams bereikt elke gate zonder meer dan één instructor-override.</td><td>Dashboard-export aan het einde van elke fase.</td></tr>
+        <tr><td>AC-02</td><td>Elk team heeft bij elk van de vier gates zowel peer-feedback gegeven als ontvangen van het partnerteam.</td><td>Peer-gate-log (FR-04).</td></tr>
+        <tr><td>AC-03</td><td>De Socratische tutor geeft nooit een score of verdict in een studentgericht transcript.</td><td>Steekproefcontrole van transcripten per cohort.</td></tr>
+        <tr><td>AC-04</td><td>Een docent kan de volledige status van elk team binnen 1 minuut beoordelen.</td><td>Getimede dashboard-doorloop.</td></tr>
+        <tr><td>AC-05</td><td>Ten minste 90% van de Socratische rapporten bij gate 2–4 bouwt aantoonbaar voort op het vorige rapport.</td><td>Steekproefcontrole van rapportgeschiedenis (FR-03).</td></tr>
+        <tr><td>AC-06</td><td>Bij het CBI kan elke student een concreet moment benoemen waarop een Socratische vraag of peer-opmerking het werk veranderde.</td><td>CBI-observatienotities.</td></tr>
+        <tr><td>AC-07</td><td>Instructor-overrides worden op minder dan 15% van alle gates in een cohort gebruikt.</td><td>Override-log (FR-06) — een hoger percentage signaleert dat de gate-criteria herkalibratie nodig hebben.</td></tr>
+        <tr><td>AC-08</td><td>Ten minste 70% van de checkpoint-cases voldoet bij de eerste peer-review-ronde aan de gedeelde criteria (6.3).</td><td>Peer-review-uitkomstenlog (FR-04).</td></tr>
+        <tr><td>AC-09</td><td>Elke wiki-pagina die aan het einde van het cohort gepubliceerd is, voldoet aan de OKF-conformance-eisen.</td><td>Conformance-check tegen <code>design-documents/SPEC.md</code> §9.</td></tr>
+        <tr><td>AC-10</td><td>Bij elk checkpoint bevat de teamcase een expliciete Lean 4.0 / Industry 5.0-kritische-lens-paragraaf die minstens één boekconcept uit die D-fase evalueert op verouderd/versterkt/onveranderd, mét onderbouwing van eventuele nieuwe risico's én een beargumenteerde I4.0-vs-I5.0-afweging.</td><td>Steekproefcontrole van checkpoint-pagina's (FR-15).</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 12 — Risico's &amp; mitigaties</h2>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Risico</th><th>Mitigatie</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Een team laat het oordeel volledig aan de AI-tutor of het peer-team over, in plaats van zelf kritisch te toetsen</strong></td><td>Drie onafhankelijke controles op hetzelfde faalpatroon: de Socratische gate vraagt expliciet naar eigen redenering (6.5); de gedeelde criteria (6.3) vangen mechanische gaten; het peer-team toetst de inhoud zelf, niet de zelfrapportage erover.</td></tr>
+        <tr><td><strong>De gate wordt een bureaucratisch obstakel / demotiverend</strong></td><td>Binaire, informationele framing (6.4); one-click instructor-override (6.7); AC-07 signaleert te vaak gebruikte overrides als teken dat de drempel te streng staat.</td></tr>
+        <tr><td><strong>Het peer-partnerschap wordt een single point of failure</strong></td><td>Docent-getriggerde herverdeling (FR-07/08) die het niet-getroffen team nooit blokkeert.</td></tr>
+        <tr><td><strong>Teams gamen de Socratische tutor met oppervlakkige antwoorden om sneller door te gaan</strong></td><td>De verborgen rubriek signaleert oppervlakkige-patroonantwoorden aan de docent; de limiet van één rapport per checkpoint neemt bovendien de belangrijkste prikkel weg om te gamen via herhaald indienen.</td></tr>
+        <tr><td><strong>De feedback van de Socratische tutor wordt stale of repetitief, en ondermijnt zo de groei-eis die ze juist moet afdwingen</strong></td><td>Herhaling is een fout in het gedeelde, docent-eigendom systeem (6.5), niet een per-team probleem, dus eenmalig centraal te herstellen. AC-05 controleert elk cohort een steekproef van rapportgeschiedenissen specifiek op echte week-op-week variatie.</td></tr>
+        <tr><td><strong>De onderhoudslast van een groeiende wiki wordt te zwaar voor docenten naast regulier collegewerk</strong></td><td>Hergebruik van de bestaande automatisering uit de wiki-template (hooks, lint-scripts, kwaliteitsscore uit <code>llm-wiki.md</code> §8/§14) zodat bookkeeping vrijwel gratis blijft; docenten schrijven alleen nieuwe content, geen handmatig cross-reference-onderhoud (FR-12).</td></tr>
+        <tr><td><strong>Kwaliteit/aansprakelijkheid — studenten gebruiken echte bedrijfsnamen in hun cases</strong></td><td>Educatieve disclaimer bij publicatie; instructor-curatie vóór een teamcase in de gedeelde wiki verschijnt; optie tot een geanonimiseerd archetype wanneer een team geen toegang heeft tot een reëel bedrijf.</td></tr>
+        <tr><td><strong>De wiki raakt niet-OKF-conform naarmate meerdere docenten onafhankelijk van elkaar content toevoegen</strong></td><td>Periodieke lint-controle vóór elk cohort (vergelijkbaar met <code>scripts/lint-page.mjs</code> uit de wiki-template) tegen AC-09.</td></tr>
+        <tr><td><strong>Studenten nemen Lean 4.0/Industry 5.0/digitalisering klakkeloos aan als "beter" zonder kritische afweging (technologie-solutionisme)</strong></td><td>De kritische-lens-vraag (6.9, FR-15) vraagt expliciet ook naar nieuwe risico's van het digitale alternatief én een beargumenteerde I4.0-vs-I5.0-afweging, gegrond in Gomaa's en Pant et al.'s eigen challenges- en research-gap-secties (kosten, cybersecurity, weerstand tegen verandering, MKB-schaalbaarheid) — dit maakt de lens tweezijdig, niet een verkapte promotie van digitalisering. AC-10 audit of die tweede helft ook echt beantwoord wordt.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 13 — Roadmap</h2>
+    <ol>
+      <li><strong>Zet eerst de basiswiki op</strong> — boekconcepten en de bedrijfscase-bibliotheek geïngest (6.1), en publiceer de gedeelde criteria voor Gate 1 (6.3) — alles daarna hangt hiervan af.</li>
+      <li><strong>Pilot: alleen de Direct-fase (week 1–4), één cohort.</strong> Handmatige beoordeling van de Socratische transcripten vóór de verborgen rubriek te vertrouwen — bevestigt het mechanisme voordat het onbewaakt door alle vier fasen draait.</li>
+      <li><strong>Zet het peer-partnerregister en dashboard op</strong> (FR-06/07) naast de week-1-pilot.</li>
+      <li><strong>Volledige 15-weekse cyclus, één cohort.</strong> Alle vier gates live, override-logging vanaf dag één.</li>
+      <li><strong>Kalibreer</strong> de verborgen-rubriekdrempel en de gedeelde criteria tegen AC-05/AC-07/AC-08 aan het einde van het cohort; stel bij vóór de volgende instroom.</li>
+      <li><strong>Compounding.</strong> Volgende cohorten erven de wiki en de gedeelde criteria als infrastructuur — alleen de teamcases (jaarlijks verse praktijkcases) hoeven ververst te worden, volgens een levende-artefact-model.</li>
+    </ol>
+    <p><em>Voorgestelde eigenaarschap: het cursusteam bouwt en onderhoudt de kennisbasis en de Socratische tutor gezamenlijk; geen enkel onderdeel wordt gedelegeerd aan een studentbouwgroep (Deel 5.1).</em></p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Bijlage A — Bronnen</h2>
+    <ul>
+      <li><strong>Cursusinhoud &amp; didactische pagina's</strong> (<code>background-material/</code>): Slack, N., Brandon-Jones, A. &amp; Johnston, R. (2019). <em>Operations Management</em>, 9th edition. Pearson — inhoudsopgave, "Guide to 'operations in practice', examples, short cases and case studies", "To the instructor…", "To the student…", "Ten steps to getting a better grade in operations management" (Nigel Slack &amp; Alistair Brandon-Jones), en de hoofdstukopeningen van Ch1 (Operations management) en Ch2 (Operations performance).</li>
+      <li><strong>Technische architectuur</strong>: Open Knowledge Format v0.1 (<code>design-documents/SPEC.md</code>) · <a target="_blank" rel="noopener" href="https://github.com/witoldtenhove/wiki-template">wiki-template</a> — <code>llm-wiki.md</code> (systeemblauwdruk) en <code>CLAUDE.md</code> (operationeel schema).</li>
+      <li><strong>Pedagogisch kwaliteitssysteem</strong>: Anderson, L.W. &amp; Krathwohl, D.R. (Eds.) (2001). <em>A Taxonomy for Learning, Teaching, and Assessing: A Revision of Bloom's Taxonomy of Educational Objectives.</em> Longman. · Austin, T. (2026). <em>The Evolution of Bloom's Taxonomy, And Where It Was Always Heading in the Age of AI</em> — het UnBlooms™-kader. · Pink, D.H. (2009). <em>Drive</em>; Csikszentmihalyi, M., <em>Flow</em>; Deci, E. &amp; Ryan, R., Self-Determination Theory; Vygotsky, L., Zone of Proximal Development. · Globerson et al. (2026), <em>Towards Scalable Measurement of Durable Skills</em> (Google Research), gesynthetiseerd op de <em>Durable Skills</em>-pagina van de AI Wiki; McKinsey Global Institute, <em>Skill Change Index</em> (2025).</li>
+      <li><strong>Lean 4.0 / Industry 5.0-kritische lens</strong> (Deel 6.9, leeruitkomst 8–9, Deel 8 week 6/8/9/11/12–15): Gomaa, A.H. (2025). <em>Lean 4.0: A Strategic Roadmap for Operational Excellence and Innovation in Smart Manufacturing.</em> International Journal of Emerging Science and Engineering (IJESE), 13(5). Tabel VII (23 Lean-tool↔Industrie-4.0-koppelingen) en Tabel XII (KPI's) zijn de directe bron voor de referentiepagina's en de digitale-KPI-laag in Deel 6.9/6.3; Tabel XI (DMAIC) voor de week-15-capstone-structuur (Deel 8/9); Tabel III–VI (paradoxen, o.a. Johansson et al. 2024, Frank et al. 2024) voor de tweezijdige kritische-lens-vraag. · Pant, R., Singh, R., Gehlot, A. &amp; Thakur, A.K. (2025). <em>A Systematic Review of Emerging Industry 5.0 Technologies: Enhancing Agile Manufacturing for Sustainability.</em> Operations Research Forum, 6:29. Levert de Industry 4.0-vs-Industry 5.0-as van de kritische lens (§6.9) en de inhoudelijke verrijking van week 6 (Mass Customisation/SIoT), week 8 (digital twins/AR/VR/cobots/quantum/edge computing), week 9 (Human-CPS), week 11 (supply chain als netwerk) en week 14 (resilience als sustainable-development-waarde).</li>
+    </ul>
+    <p><em>Dit LRD is een ontwerpdocument ter review, geen vastgesteld curriculum. De cijfers in de acceptatiecriteria (Deel 11) zijn startdoelen om te kalibreren tegen de Direct-fase-pilot (Deel 13), geen gevalideerde benchmarks. De weekindeling (Deel 8) en de gekozen studiebelasting zijn nog niet getoetst aan het daadwerkelijke HAN-rooster.</em></p>
+  </section>
+
+</main>
+
+<footer class="bds-footer">
+  <div class="bds-footer-inner">
+    <a href="#top" class="bds-wordmark">
+      <span class="dot"></span>
+      <span>HAN · Operational Excellence</span>
+    </a>
+    <p>Learner Requirement Document — Operational Excellence</p>
+  </div>
+</footer>
+
+</body>
+</html>
