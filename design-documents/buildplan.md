@@ -37,6 +37,7 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 | 4 | **Task 5** (volledige cyclus, integratie) | Task 3 én Task 4 gepusht | Nee — integratietaak, raakt bestanden van beide vorige tasks |
 | 4b | **Task 10** (studentdossier) | Task 4 én Task 8 gepusht | Ja — parallel aan Task 5, eigen submap (`agents/dashboard_query/` uitbreiding + `frontend/src/routes/instructor/dossier/`) |
 | 5 | **Task 6** (kalibratie) | Task 5 gepusht | Nee — vereist pilotdata uit Task 5 |
+| 5b | **Task 11** (HAN Huisstijl-ontwerpsysteem) | Task 5 én Task 10 gepusht | Ja — parallel aan Task 6: CSS/componentretrofit raakt geen Python, geen overlap met kalibratie |
 | 6 | **Task 7** (deployment hardening) | Task 6 gepusht (scaffolding uit 7.1–7.2 mag al eerder starten, parallel aan golf 3–5) | Deels — Dockerfile/CI-CD-scaffolding (7.1, 7.4) kan een aparte subagent zijn zodra Task 0 klaar is; de uiteindelijke smoke-test (7.6) niet |
 
 **Vuistregel voor de orkestrerende agent:** als twee main tasks in dezelfde golf staan én geen gedeelde bestanden aanraken (zie de submap-hints), spawn ze als aparte subagents/teammates. Laat elke subagent zijn eigen main task volledig afsluiten (incl. test gate + commit + push) vóórdat de volgende golf begint.
@@ -332,6 +333,45 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 ---
 
+## Main Task 11: HAN Huisstijl-ontwerpsysteem toepassen
+
+*(Golf 5 — vereist Task 5 én Task 10 gepusht, want retrofit raakt bestanden van beide. Niet parallelliseerbaar met iets anders in dezelfde golf.)*
+
+**Waarom dit een aparte task is, laat toegevoegd:** TDD Deel 6 noemt `design-documents/frontent-design/HAN Huisstijl Flightpath.dc.html` expliciet als "bindend ontwerp voor de eerste implementatie", maar dat is in dit buildplan nooit vertaald naar een uitvoerbare subtask — Tasks 4/5/9/10 kregen alleen functionele component-eisen (TDD Deel 6.1), geen visuele. Resultaat: elk scherm dat tot nu toe gebouwd is, gebruikt een generiek maar wél al semantisch CSS-custom-property-systeem (`--surface`, `--good`, `--warn`, `--neutral`, …) — geen HAN-kleuren, geen Arial, geen logo. Omdat het al een tokensysteem is en geen hardcoded kleuren per component, is dit een **waarden-vervanging op één centrale plek**, geen herschrijving per scherm.
+
+**Geëxtraheerde tokens uit de mockup** (`frontent-design/HAN Huisstijl Flightpath.dc.html`, direct gelezen, niet uit het geheugen):
+- Merkroze `#e5007d` (knoppen, links, actieve fase-cirkel, Gate-B-accent, footer-CTA), hover `#a80060`
+- Near-black `#1a1a1a` (tekst, headerrand, footerbalk, Socrates-avatar-cirkel)
+- Grijstinten: paginabg `#f0f0f0`, kaartbg `#fafafa`/`#fff`, subtiele badge `#f5f5f5`, randen `#e2e2e2`/`#ddd`/`#eee`, gedempte tekst `#6b6b6b`/`#999`, footer-tekst `#d9d9d9`
+- Semantisch: gate-open groen `#16a34a`/`#3a7a4e`; gate-pending gebruikt bewust **merkroze**, geen geel/oranje (`#e5007d`/`#a83e6c`); lichtroze badge-bg `#fce6f2`; footer-accent `#ff5fa8`
+- Typografie: uitsluitend `Arial, Helvetica, sans-serif`, geen custom webfont; gewichten 800/700/400
+- Vorm: 4px/6px border-radius, 1px randen, kaarten met optioneel 4px gekleurde linkerrand voor gate-status
+
+**Bestanden:**
+- Create: `frontend/src/styles/han-huisstijl-tokens.css` (of vergelijkbaar, centrale tokendefinitie), `frontend/src/components/HanHeader.tsx`, `frontend/src/components/PhaseTracker.tsx`, `frontend/src/components/NoGradeFooter.tsx`
+- Modify: `frontend/src/routes/instructor/Dashboard.{tsx,css}` (Task 4), `frontend/src/routes/admin/*.{tsx,css}` (Task 9), `frontend/src/routes/team/CheckpointView.{tsx,css}` (Task 5), `frontend/src/routes/instructor/dossier/StudentDossier.{tsx,css}` (Task 10)
+
+- [ ] **11.1** Definieer de geëxtraheerde tokens hierboven als CSS custom properties op `:root` in `han-huisstijl-tokens.css`; importeer dit bestand als enige plek waar deze waarden letterlijk voorkomen.
+- [ ] **11.2** Herwijs de bestaande custom properties (`--surface`, `--good`, `--warn`, `--neutral`, `--text`, `--text-muted`, …) in élk bestaand stylesheet naar de nieuwe HAN-tokens — waarden-vervanging, geen structuurwijziging van de bestaande componenten.
+- [ ] **11.3** Bouw `HanHeader.tsx`: het roze-vlag-logomerk (rotated rectangle, exact zoals de mockup) + "HAN_UNIVERSITY OF APPLIED SCIENCES"-wordmark (roze underscore-accent) links, cursusnaam rechts, witte achtergrond, 4px zwarte onderrand. Eén gedeelde component, gebruikt op elke route (team/instructor/admin).
+- [ ] **11.4** Bouw `PhaseTracker.tsx`: de 4-fasen-cirkeltracker (Direct/Design/Deliver/Develop) met verbindingslijn, actieve fase roze-gevuld, inactieve fasen grijs-gevuld, team-initialen-cirkeltjes per fase — dit is het visueel meest onderscheidende element uit de mockup, bouw het nauwkeurig. Hergebruik in `Dashboard.tsx` (cohortbreed) én `CheckpointView.tsx` (één team); overweeg of dezelfde component met een `scope`-prop beide aankan of dat twee lichte varianten nodig zijn — jouw call, documenteer de keuze.
+- [ ] **11.5** Bouw `NoGradeFooter.tsx`: zwarte balk, lichtgrijze tekst, roze accent voor de "volgende stap"-boodschap — reproduceer de mockup's exacte formulering "Geen cijfer hier — alleen open of dicht" op elk team-gericht scherm waar dat relevant is (rechtstreekse echo van FR-05/AC-03, nu ook zichtbaar, niet alleen technisch afgedwongen).
+- [ ] **11.6** Retrofit `Dashboard.tsx`/`.css` (Task 4): `HanHeader`, tokens, kaartstijl met gekleurde linkerrand voor gate-status.
+- [ ] **11.7** Retrofit de admin-schermen (Task 9): `HanHeader`, tokens — admin heeft geen `PhaseTracker`/`NoGradeFooter` nodig (geen team-gate-context).
+- [ ] **11.8** Retrofit `CheckpointView.tsx`/`.css` (Task 5): `HanHeader`, `PhaseTracker`, `NoGradeFooter`, Socrates-kaart (zwarte cirkel-avatar, geciteerde-vraag-stijl, roze CTA-knop), peer-partnerkaart, Gate A/B-kaarten met gekleurde linkerrand — dit scherm staat het dichtst bij de mockup zelf, vergelijk 1-op-1.
+- [ ] **11.9** Retrofit `StudentDossier.tsx`/`.css` (Task 10): `HanHeader`, tokens (geen `PhaseTracker`/`NoGradeFooter` — instructor-only, geen team-gate-weergave).
+
+### Test Gate — Task 11
+- **Automatisch:** bestaande testsuites (alle vorige tasks) blijven groen — dit is een CSS/component-retrofit, geen functiewijziging; `pytest` (volledige suite) en `npm run build` slagen ongewijzigd.
+- **Mens-testbaar artefact:** `npm run dev`, screenshot elk scherm (team/instructor/admin/dossier) naast de originele mockup (`frontent-design/HAN Huisstijl Flightpath.dc.html`, open lokaal in een browser) — een mens moet de kleuren, het lettertype, het logo en de fase-tracker herkennen als "hetzelfde ontwerp", niet slechts "vergelijkbaar". Rapporteer expliciet welke elementen wél en welke (nog) niet 1-op-1 matchen.
+
+### Commit & push — Task 11
+- [ ] Commit met boodschap die refereert aan TDD Deel 6 ("bindend ontwerp").
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 11 afgerond**.
+
+---
+
 ## Voortgangsoverzicht (samenvatting — werk bovenstaande secties bij, dit is alleen een snelle scan)
 
 - [x] Main Task 0 — Repository- en projectscaffolding ✅ https://github.com/businessdatasolutions/oe-gate-system
@@ -345,5 +385,6 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 - [x] Main Task 8 — Wiki Quality Check Agent ✅ vier deterministische tools (extract/check_duplicates/validate_citations/compute_points) + evalset (4 cases, deterministisch geverifieerd) + `demo_submit.py` (3 scenario's handmatig gedraaid) — similariteitscheck gebruikt een TF-IDF-placeholder (embedding-pad wél gebouwd, ongebruikt zonder API-key), kalibratie volgt in Task 6/AC-13, commit `e9ba394`
 - [x] Main Task 9 — Admin-onderdeel ✅ CRUD voor course-period/team-roster/assessment-schedule (admin/klas-lakehouses), team-roster↔ring-fallback-integratie (echte end-to-end-test tégen Task 4's eigen module, niet een mock), FR-20-uploadroutering (team/ring/klas via de data-laag; "iedereen" via een gedocumenteerd-maar-nog-niet-uitgevoerd wiki-commit-integratiepunt, nooit stilzwijgend), vier admin-schermen incl. een zware "iedereen"-bevestigingsdialoog (LRD 6.10), 36+18 tests (CRUD + twee tijdens de build gevonden-en-gerepareerde beveiligingsfixes: path traversal, CORS-wildcard), commit `c18c28f`
 - [ ] Main Task 10 — Studentdossier + AI-CBI-voorbereiding
+- [ ] Main Task 11 — HAN Huisstijl-ontwerpsysteem toepassen
 
 **Traceerbaarheid:** elke main task citeert de FR/NFR/AC-nummers die hij dekt (zie de commit-boodschap-eisen per task). Voor de volledige matrix, zie TDD Deel 8.
