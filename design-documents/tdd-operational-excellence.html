@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TDD — Operational Excellence Gate-systeem</title>
+<style>
+/* ================================================================
+   Huisstijl "palette C strict minimal" — hergebruikt uit lrd-operational-excellence.html
+   voor visuele/navigatie-consistentie binnen design-documents/.
+   ================================================================ */
+:root {
+  --primary: #d4db3e;
+  --supporting: #1a1a1a;
+  --cream: #f5f0e6;
+  --bg-yellow: #fafbf0;
+  --bg-cream: #f5f0e6;
+  --bg-cream-2: #f0ebe0;
+  --bg-off-white: #f9f8f4;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --bg-page: #ffffff;
+  --bg-section: #f9fafb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text-xs: 0.75rem;  --text-sm: 0.875rem; --text-base: 1rem;
+  --text-lg: 1.125rem; --text-xl: 1.25rem;  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem; --text-4xl: 2.25rem; --text-5xl: 3rem;
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem; --space-16: 4rem;
+  --space-20: 5rem;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-md: 0 2px 4px rgba(0,0,0,.06), 0 8px 16px rgba(0,0,0,.06);
+  --shadow-lg: 0 4px 8px rgba(0,0,0,.08), 0 16px 32px rgba(0,0,0,.08);
+  --radius-sm: 6px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 9999px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+a:hover { background: var(--bg-yellow); }
+
+/* NAV */
+.bds-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-4) var(--space-8);
+}
+.bds-nav-inner {
+  max-width: 1024px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-6); flex-wrap: wrap;
+}
+.bds-wordmark {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-weight: 700; font-size: var(--text-xl);
+  text-decoration: none; color: var(--text-primary);
+}
+.bds-wordmark .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+.bds-wordmark:hover { background: transparent; }
+.bds-nav-tag {
+  font-size: var(--text-sm); color: var(--text-muted);
+}
+
+/* PAGE LAYOUT */
+.bds-page {
+  max-width: 880px; margin: 0 auto;
+  padding: var(--space-12) var(--space-8) var(--space-20);
+}
+.bds-page-header {
+  margin-bottom: var(--space-12);
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+.bds-eyebrow {
+  font-size: var(--text-xs); text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted);
+  font-weight: 600; margin-bottom: var(--space-2);
+}
+h1.bds-h1 { font-size: var(--text-4xl); font-weight: 700; margin: 0 0 var(--space-6); line-height: 1.15; }
+
+.lead-quote {
+  margin: 0 0 var(--space-6); padding: var(--space-4) var(--space-6);
+  border-left: 4px solid var(--primary);
+  background: var(--bg-yellow);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-lg); color: var(--text-secondary);
+}
+.lead-quote em { font-style: italic; }
+
+/* Part headers (markdown level-1 "# Deel …" / "# Bijlage …") */
+h2.bds-part {
+  font-size: var(--text-3xl); font-weight: 700; line-height: 1.2;
+  margin: var(--space-20) 0 var(--space-6);
+  padding-top: var(--space-8);
+  border-top: 2px solid var(--supporting);
+}
+h2.bds-part::before {
+  content: ""; display: block;
+  width: 48px; height: 5px; background: var(--primary);
+  border-radius: var(--radius-full); margin-bottom: var(--space-4);
+}
+
+/* Sub-sections (markdown level-2 "## …") */
+h3 {
+  font-size: var(--text-xl); font-weight: 700;
+  margin: var(--space-12) 0 var(--space-3); line-height: 1.3;
+}
+h4 {
+  font-size: var(--text-lg); font-weight: 700;
+  margin: var(--space-8) 0 var(--space-2); line-height: 1.3;
+}
+
+p { margin: 0 0 var(--space-4); }
+ul, ol { margin: 0 0 var(--space-4); padding-left: var(--space-6); }
+li { margin: 0 0 var(--space-2); }
+li > ul, li > ol { margin-top: var(--space-2); }
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+
+hr { border: none; border-top: 1px solid var(--border); margin: var(--space-12) 0; }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; margin: var(--space-6) 0; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+thead th {
+  background: var(--bg-cream);
+  text-align: left; font-weight: 700;
+  border-bottom: 2px solid var(--border-strong);
+}
+th, td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  vertical-align: top; line-height: 1.5;
+}
+th:last-child, td:last-child { border-right: none; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: var(--bg-off-white); }
+td a { word-break: break-word; }
+
+/* Theme / foundation / module cards */
+.theme {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-8);
+  margin: var(--space-8) 0;
+}
+.theme h3 { margin-top: 0; }
+.theme-help { color: var(--text-secondary); }
+
+/* Meta table (document header) */
+.meta-tbl th { width: 180px; background: var(--bg-cream-2); }
+
+code {
+  font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.9em; background: var(--bg-section);
+  padding: 0.15em 0.4em; border-radius: 4px; border: 1px solid var(--border);
+}
+pre {
+  font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.82em; background: var(--bg-section);
+  padding: var(--space-4) var(--space-5); border-radius: var(--radius-md);
+  border: 1px solid var(--border); overflow-x: auto; line-height: 1.5;
+  margin: 0 0 var(--space-4);
+}
+pre code { background: none; border: none; padding: 0; }
+
+/* 4D "je-bent-hier" / pipeline / flow diagrams (hergebruikt uit LRD) */
+.navdiagram {
+  display: flex; flex-wrap: wrap; gap: var(--space-4);
+  margin: var(--space-6) 0; justify-content: center;
+}
+.navdiagram .d-node {
+  flex: 1 1 150px; min-width: 130px; text-align: center;
+  padding: var(--space-4); border-radius: var(--radius-md);
+  border: 2px solid var(--border-strong); background: var(--bg-section);
+  font-weight: 700;
+}
+.navdiagram .d-node.active {
+  border-color: var(--supporting); background: var(--bg-yellow);
+  box-shadow: var(--shadow-sm);
+}
+.navdiagram .d-node .sub { display: block; font-weight: 400; font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-1); }
+.navdiagram .arrow { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: var(--text-xl); flex: 0 0 24px; }
+
+/* Architectuur-laagstapel (nieuw t.o.v. LRD, zelfde designtokens — Deel 2) */
+.archstack { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-6) 0; }
+.archstack .layer {
+  border: 2px solid var(--border-strong); border-radius: var(--radius-md);
+  background: var(--bg-section); padding: var(--space-4) var(--space-6);
+}
+.archstack .layer.new { border-color: var(--supporting); background: var(--bg-yellow); }
+.archstack .layer .layer-name { font-weight: 700; font-size: var(--text-lg); }
+.archstack .layer .layer-blueprint { font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-1); }
+.archstack .stack-arrow { text-align: center; color: var(--text-muted); font-size: var(--text-lg); line-height: 1; }
+
+/* Blueprint-herkomst badges */
+.tag-blueprint {
+  display: inline-block; font-size: var(--text-xs); font-weight: 600;
+  padding: 0.15em 0.6em; border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong); background: var(--bg-cream-2);
+  color: var(--text-secondary); margin: 0 var(--space-2) var(--space-1) 0;
+  white-space: nowrap;
+}
+.tag-blueprint.new { background: var(--bg-yellow); border-color: var(--primary); color: var(--text-primary); }
+
+.bds-footer {
+  border-top: 1px solid var(--border);
+  padding: var(--space-8); background: var(--bg-section);
+  text-align: center; color: var(--text-muted); font-size: var(--text-sm);
+}
+.bds-footer-inner { max-width: 1024px; margin: 0 auto; }
+.bds-footer .bds-wordmark { font-size: var(--text-base); margin-bottom: var(--space-2); justify-content: center; }
+
+@media (max-width: 640px) {
+  .bds-nav { padding: var(--space-3) var(--space-4); }
+  .bds-page { padding: var(--space-8) var(--space-4) var(--space-12); }
+  h1.bds-h1 { font-size: var(--text-3xl); }
+  h2.bds-part { font-size: var(--text-2xl); }
+  .theme { padding: var(--space-4) var(--space-4); }
+  .navdiagram .arrow { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="bds-nav">
+  <div class="bds-nav-inner">
+    <a href="#top" class="bds-wordmark">
+      <span class="dot"></span>
+      <span>HAN · Operational Excellence</span>
+    </a>
+    <span class="bds-nav-tag">Technical Design Document</span>
+  </div>
+</nav>
+
+<main class="bds-page" id="top">
+
+  <header class="bds-page-header">
+    <div class="bds-eyebrow">HAN University of Applied Sciences · Technisch ontwerp</div>
+    <h1 class="bds-h1">TDD — Operational Excellence Gate-systeem</h1>
+    <blockquote class="lead-quote"><em>Dit document bouwt niets nieuws uit. Drie bestaande blueprints — een wiki-stack, een agentic data lake en een agent-orkestratielaag — worden samengevoegd tot de kennisbasis, gate-architectuur en dashboards die het LRD in Deel 6 specificeert. Wat een blueprint al kan, wordt hergebruikt; alleen het domeinspecifieke (review-ring, escrow, Socratische toetsing) wordt nieuw gebouwd.</em></blockquote>
+
+    <div class="tbl-wrap">
+    <table class="meta-tbl">
+      <tbody>
+        <tr><th>Document</th><td>Technical Design Document (TDD)</td></tr>
+        <tr><th>Versie</th><td>0.1 — concept ter review</td></tr>
+        <tr><th>Datum</th><td>11 juli 2026</td></tr>
+        <tr><th>Programma</th><td>HAN University of Applied Sciences — cursus <strong>Operational Excellence</strong></td></tr>
+        <tr><th>Scope</th><td>Technische realisatie van <a href="lrd-operational-excellence.html">LRD Deel 6</a> — de Operational-Excellence Wiki en het gate-systeem (Socratische AI-gate, peer-gate, review-ring, instructor-dashboard)</td></tr>
+        <tr><th>Auteur</th><td>Witek ten Hove — technisch ontwerp</td></tr>
+        <tr><th>Gerelateerde documenten</th><td><a href="lrd-operational-excellence.html"><code>lrd-operational-excellence.html</code></a> (functionele/non-functionele requirements, Deel 6–7, 11) · <code>design-documents/SPEC.md</code> (Open Knowledge Format v0.1) · drie architectuur-blueprints (Bijlage A)</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>Hoe te lezen.</strong> Deel 1 legt de traceerbaarheid naar het LRD vast. Deel 2 geeft het architectuuroverzicht: vier lagen, elk met een eigen blueprint. Delen 3–6 werken elke laag uit (wiki, data, agentic services, frontend). Deel 7 specificeert het datamodel, bewust zonder persoonsgegevens. <strong>Deel 8 is de kern van dit document</strong> — de volledige FR/NFR/AC-traceerbaarheidsmatrix die aantoont dat elke LRD-eis een technisch thuis heeft. Delen 9–12 behandelen privacy, deployment, beveiliging en teststrategie. Delen 13–14 sluiten af met een fasering die aansluit op de uitrol-roadmap van het LRD (Deel 13), en de risico's/open beslissingen die nog bevestiging vragen.</p>
+  </header>
+
+  <section>
+    <h2 class="bds-part">Deel 1 — Doel &amp; traceerbaarheid</h2>
+
+    <h3>1.1 Wat dit TDD wel en niet doet</h3>
+    <p>Dit document vindt <strong>geen nieuwe architectuur uit</strong>. Drie bestaande, lokaal draaiende blueprint-projecten leveren het patroon voor elke laag van het gate-systeem; dit TDD kiest, combineert en specificeert waar het domeinspecifieke werk (review-ring, escrow, Socratische toetsing, instructor-dashboard) op die patronen aansluit. Waar een blueprint iets al oplost, hergebruikt dit TDD het letterlijk; waar niets bestaat (peer-review-escrow, review-ring-toewijzing, de UI), specificeert dit TDD het nieuw. Elk onderdeel in Delen 3–7 draagt daarom een herkomst-label: <span class="tag-blueprint">wiki-template</span> <span class="tag-blueprint">small-medium-data-lake</span> <span class="tag-blueprint">adk2-blueprint</span> of <span class="tag-blueprint new">net-new</span>.</p>
+
+    <h3>1.2 Relatie tot het LRD</h3>
+    <p>Het LRD (Deel 6) beschrijft <em>wat</em> het gate-systeem moet doen en <em>waarom</em> — pedagogisch gemotiveerd, met functionele/non-functionele requirements (Deel 7) en acceptatiecriteria (Deel 11). Dit TDD beschrijft <em>hoe</em>: welke componenten, welk datamodel, welke deployment. Elke ontwerpbeslissing hieronder citeert het FR/NFR/AC-nummer dat ze dient; Deel 8 bundelt dat in één matrix. Waar het LRD zelf al een technische aanwijzing geeft (met name Deel 6.8, dat de wiki-laag op hoofdlijnen al vastlegt), <strong>breidt dit TDD dat uit</strong> in plaats van het te herhalen of tegen te spreken.</p>
+
+    <h3>1.3 Randvoorwaarde: geen persoonsgegevens</h3>
+    <p>Op expliciet verzoek van de opdrachtgever verzamelt het gate-systeem <strong>geen persoonsgegevens</strong>. Deelnemers worden uitsluitend geïdentificeerd via <strong>voornaam + team + cohort</strong>; docenten disambigueren via context die ze al hebben (klas, projectteam). Dit is een ontwerprandvoorwaarde die door heel dit document loopt (uitgewerkt in Deel 7.3 en Deel 9) — geen los privacy-hoofdstuk achteraf.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 2 — Architectuuroverzicht</h2>
+    <p>Het gate-systeem bestaat uit vier lagen. Drie ervan zijn een direct hergebruik van een bestaande blueprint; de vierde (frontend) is net-new omdat geen van de blueprints een UI-laag bevat.</p>
+
+    <div class="archstack">
+      <div class="layer">
+        <div class="layer-name">Frontend — student- &amp; instructor-oppervlak</div>
+        <div class="layer-blueprint"><span class="tag-blueprint new">net-new</span> mapt op de HAN Huisstijl Flightpath-mockup (Deel 6)</div>
+      </div>
+      <div class="stack-arrow">↕ HTTP/JSON</div>
+      <div class="layer new">
+        <div class="layer-name">Agentic services — Socratische tutor, review-ring-coordinator, dashboard-agent</div>
+        <div class="layer-blueprint"><span class="tag-blueprint">adk2-blueprint</span> (Google ADK 2.0) — grotendeels hergebruikt patroon, domeinlogica net-new (Deel 5)</div>
+      </div>
+      <div class="stack-arrow">↕ leest/schrijft</div>
+      <div class="layer">
+        <div class="layer-name">Data-laag — per-team lakehouse (OKF-bundels + DuckLake-tabellen)</div>
+        <div class="layer-blueprint"><span class="tag-blueprint">small-medium-data-lake</span> — <code>client_id</code> → <code>team_id</code>, verder ongewijzigd patroon (Deel 4)</div>
+      </div>
+      <div class="stack-arrow">↕ leest content/tags</div>
+      <div class="layer">
+        <div class="layer-name">Wiki/content-laag — boekconcepten, bedrijfscases, gepubliceerde site</div>
+        <div class="layer-blueprint"><span class="tag-blueprint">wiki-template</span> (Quartz + GitHub Pages) — ongewijzigd, al gespecificeerd in LRD 6.8 (Deel 3)</div>
+      </div>
+    </div>
+
+    <h3>2.1 Waarom deze indeling</h3>
+    <p>De indeling volgt de blueprints, niet een abstract lagenmodel: elke laag is precies wat het overeenkomstige blueprint-project al is, met één vertaalslag. <code>small-medium-data-lake</code>'s multi-tenant-primitief (<code>client_id</code>) wordt <code>team_id</code>; <code>adk2-blueprint</code>'s generieke agent/workflow-patronen krijgen domeininstructies en -tools voor Socratische toetsing en review-ring-logica; <code>wiki-template</code> blijft functioneel ongewijzigd omdat het LRD (6.8, NFR-02) dat al zo specificeert. Alleen de frontend heeft geen blueprint — Deel 6 maakt daar een expliciete, gemotiveerde keuze voor.</p>
+
+    <h3>2.2 NFR-02 herzien: welke laag mag nieuwe infrastructuur zijn</h3>
+    <p>NFR-02 stelt dat de wiki op de bestaande wiki-template/Quartz-stack draait, <strong>geen nieuwe hosting/infrastructuur</strong>. Quartz is een statische-site-generator (bouwtijd-rendering via GitHub Actions, gepubliceerd op GitHub Pages) zonder backend, database of auth (bevestigd door directe inspectie van <code>wiki-template</code>: geen serverframework, geen DB-driver in <code>package.json</code>). Een Socratische multi-turn-chatgesprek, een escrow-toestandsmachine met een vervalvenster, en een dashboard dat binnen 1 minuut per-team-status toont (NFR-03), kunnen structureel niet op een build-tijd-gerenderde statische site draaien — dat vereist compute en state <em>per request</em>, niet per deploy.</p>
+    <p>Dit TDD interpreteert NFR-02 daarom als: <strong>de wiki zelf verhuist niet en krijgt geen nieuwe hosting</strong> (Deel 10.1) — de bestaande <code>wiki-template</code>/Quartz/GitHub-Pages-stack blijft exact zoals die is. De agentic-services- en data-laag, die in geen van de drie blueprints als statische content bestaan, vormen een <strong>nieuwe, minimale</strong> infrastructuurtoevoeging (Deel 10.2) — geen herbouw van de wiki, wel een net-new laag ernaast. Dit is een expliciete, beargumenteerde afwijking van de letterlijke NFR-02-tekst; zie Deel 14 voor bevestiging als open punt.</p>
+
+    <h3>2.3 Cross-cutting: systeembrede actielogging (NFR-08)</h3>
+    <p>Naast de vier lagen in de stack hierboven loopt er één cross-cutting concern dwars door alle vier heen: <strong>elke handeling</strong> die frontend, agentic services of data-laag uitvoert — een API-aanroep, een agent-tool-call, een gate-transitie, een data-schrijfactie — wordt gelogd met tijdstempel en uitkomst (succes/fout), conform NFR-08. Dit is geen vijfde laag in de archstack, maar een schrijf-verantwoordelijkheid die elke laag deelt, analoog aan hoe <code>small-medium-data-lake</code>'s append-only <code>log.md</code> (Deel 4.2) nu al elke schrijfactie in de data-laag registreert — alleen dan systeembreed en mét foutuitkomsten. Zie Deel 4.8 voor het datamodel en de opslag, Deel 5.6 voor de schrijfverantwoordelijkheid in de agentic-laag.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 3 — Wiki/content-laag <span class="tag-blueprint">wiki-template</span></h2>
+
+    <h3>3.1 Ongewijzigd hergebruik</h3>
+    <p>De wiki-laag is al vastgelegd in LRD 6.8: <code>raw/</code> (immutable bronmateriaal) → <code>wiki/{sources,concepts,entities,threads,syntheses}</code> (OKF-markdown) → publicatie via Quartz, met de vier operaties Ingest/Query/Lint/Synthesize uit <code>llm-wiki.md</code>. Dit TDD verandert daar niets aan: geen nieuwe hosting (NFR-02), geen nieuw contentformat. De directe inspectie van <code>wiki-template</code> bevestigt dat deze stack draait op Quartz v4 (Preact SSR, d3 voor graph-view, flexsearch voor client-side zoeken), gepubliceerd via GitHub Actions (<code>.github/workflows/deploy.yml</code>) naar GitHub Pages — volledig statisch, geen serverkosten, geen nieuw beheer.</p>
+
+    <h3>3.2 Hoe het gate-systeem in de wiki verschijnt zonder de wiki te herbouwen</h3>
+    <p>Quartz rendert bij <em>build</em>-tijd (bij elke push naar <code>main</code>), niet per request. Gate-status (open/dicht, escrow-status) verandert echter continu — die kan dus niet in de statisch gegenereerde HTML gebakken worden zonder de site voortdurend te herbouwen, wat NFR-02 zou schenden en überhaupt geen bruikbare latency geeft (NFR-04: reactie binnen minuten). De oplossing: een klein <strong>client-side widget</strong> (een Quartz-extensiecomponent, zie <code>wiki-template/extensions/*.tsx</code>) op elke teampagina dat ná het laden van de statische pagina de actuele gate-status ophaalt bij de agentic-services-laag (Deel 5) via een read-only API-call. De wiki blijft dus 100% statisch <em>gehost</em>; alleen dat ene widget praat client-side met de nieuwe laag. Dit is <span class="tag-blueprint new">net-new</span> maar minimaal: één component, geen wijziging aan het Quartz-buildproces zelf.</p>
+
+    <h3>3.3 Hergebruik van de 4D/OKF-ontologie</h3>
+    <p>De <code>stage</code>-tag (<code>direct|design|deliver|develop</code>) en hoofdstuk-tags (<code>ch01</code>…<code>ch19</code>) uit LRD 6.2 blijven ongewijzigd frontmatter-velden. De Socratische Tutor Agent (Deel 5.1) leest deze rechtstreeks uit de gepubliceerde wiki-content om te verwijzen naar het juiste boekconcept of vergelijkbare bedrijfscase — geen nieuwe ontologie, geen nieuwe taxonomiewijziging nodig.</p>
+
+    <h3>3.4 Synthese-pagina's als terugschrijfpad</h3>
+    <p>LRD 6.8 noemt <strong>Synthesize</strong> als vierde operatie: bij afsluiting van een D-fase wordt de teamcase een synthese-pagina. Dit TDD specificeert dat mechanisme: wanneer beide gates van een checkpoint sluiten, schrijft de Review-Ring Coordinator (Deel 5.2) een OKF-conforme synthesepagina naar <code>wiki/syntheses/&lt;cohort&gt;/&lt;team_id&gt;-&lt;stage&gt;.md</code> — dezelfde locatie/conventie als <code>wiki-template</code> al gebruikt, alleen nu machinaal getriggerd in plaats van docent-handmatig. Dit is de enige plek waar de agentic-services-laag <em>schrijft</em> naar de wiki-content-laag; het gebeurt via een gewone git-commit in de CI-pijplijn (Deel 10.4), niet via een runtime-databaseverbinding — de wiki blijft dus git-native, zoals <code>wiki-template</code> het ontwerpt.</p>
+
+    <h3>3.5 Instructeur-documenten met scope "iedereen"</h3>
+    <p>Wanneer een instructeur een document uploadt (Deel 6.4) met distributiescope <strong>iedereen</strong>, wordt het na ingestie (Deel 4.7) omgezet naar OKF-markdown en via dezelfde git-commit-terugschrijfmechaniek als 3.4 gecommit naar <code>wiki/sources/</code> (of <code>wiki/concepts/</code>, afhankelijk van het brontype), en gepubliceerd bij de eerstvolgende Quartz-build. Functioneel is dit een ad-hoc, tussentijdse variant van het jaarlijkse Ingest-proces uit FR-12: geen nieuw publicatiemechanisme, wel een nieuwe trigger (instructeur-geïnitieerd, midden in het cohort, willekeurig brondocumentformaat in plaats van uitsluitend voorbewerkt boek-/casemateriaal). <strong>Let op:</strong> eenmaal gepubliceerd is een "iedereen"-document net zo publiek als al het andere wiki-materiaal (Deel 2.2, geen toegangscontrole) — de upload-UI (6.4) moet dat expliciet aan de instructeur bevestigen vóórdat deze scope wordt gekozen.</p>
+
+    <h3>3.6 Kwaliteitscontrole vóór publicatie in de wiki (FR-21) <span class="tag-blueprint new">net-new</span></h3>
+    <p>De Synthesize-stap (3.4) schrijft een teamcase als synthesepagina naar <code>wiki/syntheses/</code> zodra beide gates van een checkpoint sluiten. FR-21 voegt daar één stap vóór toe: vóórdat de Review-Ring Coordinator (Deel 5.2) die git-commit daadwerkelijk uitvoert, roept hij de Wiki Quality Check Agent (Deel 5.7) aan. Accepteert die de bijdrage, dan verloopt 3.4 ongewijzigd; wijst die de bijdrage af (duplicaat of ontbrekende/onjuiste bronvermelding), dan wordt de git-commit niet uitgevoerd, ontvangt het team een melding met de reden, en schrijft de coordinator een regel naar <code>wiki_quality_log</code> (Deel 7.2) én <code>action_log</code> (Deel 4.8, NFR-08). Dit is bewust <strong>geen wijziging van gate A/B zelf</strong> (FR-05 blijft binair en ongewijzigd) — het is een kwaliteitspoort op het wiki-<em>schrijfpad</em>, ná de gates, niet ervoor.</p>
+    <p>Omdat deze controle vóór de git-commit plaatsvindt, blijft NFR-02 (geen nieuwe hosting voor de wiki zelf) onaangetast: Quartz/GitHub Pages publiceren nog steeds precies wat er in <code>wiki/</code> staat, ongewijzigd bouwproces. De nieuwe logica zit volledig in de agentic-services-laag (Deel 5.7), niet in de wiki-laag zelf.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 4 — Data-laag <span class="tag-blueprint">small-medium-data-lake</span></h2>
+
+    <h3>4.1 Van <code>client_id</code> naar <code>team_id</code></h3>
+    <p><code>small-medium-data-lake</code> modelleert multi-tenancy als één <code>Lakehouse</code>-instantie per <code>client_id</code>: een eigen <code>lakehouse/&lt;id&gt;/</code>-map met <code>resources/</code> (immutable bron + DuckLake-tabellen), <code>okf_bundle/</code> (OKF-concepten + append-only <code>log.md</code>) en <code>system/</code> (catalogus, ingest-runs, kwaliteit) — met als expliciete architectuurregel "geen cross-client-catalogus" (blueprint §3.2/§10). Dit TDD hergebruikt die abstractie 1-op-1: <code>client_id</code> wordt <code>&lt;cohort&gt;-&lt;team_id&gt;</code>, en de "geen cross-client"-regel wordt "geen cross-team" — precies de isolatie die NFR-05 (peer review deelt artefact, geen identiteit voorbij teamniveau) technisch afdwingt in plaats van alleen procedureel belooft.</p>
+
+    <h3>4.2 OKF-bundel per team</h3>
+    <p>Binnen elk team-lakehouse's <code>okf_bundle/</code> worden vier nieuwe concept-types toegevoegd aan het bestaande <code>Concept</code>/<code>Bundle</code>-patroon (<code>smdl/okf.py</code>), naast de al bestaande course-content-concepten uit de wiki-laag:</p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Concept-type</th><th>Herkomst</th><th>Doel</th></tr></thead>
+      <tbody>
+        <tr><td><code>checkpoint-submission</code></td><td><span class="tag-blueprint new">net-new</span></td><td>De teamcase-inzending per D-fase (FR-01) — de twee kernvragen, de kritische-lens-vraag (FR-15).</td></tr>
+        <tr><td><code>gate-pass-event</code></td><td><span class="tag-blueprint new">net-new</span></td><td>Eén record per gate-statuswijziging (open/dicht, override) — append-only, direct bruikbaar voor FR-09-export.</td></tr>
+        <tr><td><code>escrow-state</code></td><td><span class="tag-blueprint new">net-new</span></td><td>Peer-review-inzending + onthullingsstatus (FR-18) — zie Deel 4.5 voor de isolatie tussen geven/ontvangen.</td></tr>
+        <tr><td><code>reviewring-assignment</code></td><td><span class="tag-blueprint new">net-new</span></td><td>De A→B→C→A-ringpositie van dit team (FR-07), inclusief herconfiguratiegeschiedenis (FR-08).</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Elk concept volgt hetzelfde OKF-frontmatter-contract als de wiki-content (NFR-07, <code>SPEC.md</code> §9): verplicht <code>type</code>, plus de course-tags <code>stage</code>/hoofdstuk waar relevant. <code>log.md</code> (append-only, <code>Bundle.append_log</code> in <code>smdl/okf.py</code>) registreert elke schrijfactie chronologisch — dit is letterlijk de FR-09-geschiedenis-export, zonder dat er een apart exportmechanisme gebouwd hoeft te worden.</p>
+
+    <h3>4.3 DuckLake-tabellen voor het dashboard</h3>
+    <p>Waar OKF-concepten de leesbare/traceerbare laag zijn, gaan geaggregeerde/query-bare velden naar DuckLake-tabellen (<code>smdl/ducklake.py</code>: <code>write_table</code>, <code>latest_snapshot</code>, <code>query_at</code>) — exact het patroon dat <code>small-medium-data-lake</code> al gebruikt voor gestructureerde data naast de conceptgraaf. Zie Deel 7.2 voor de tabelschema's. DuckLake's atomaire commits met snapshot-id's geven de gate-geschiedenis <strong>gratis tijdreizen</strong> (<code>AT (VERSION =&gt; n)</code>) — bruikbaar voor een eventuele latere audit van "wat was de status op moment X", zonder dat dit TDD daar zelf iets voor hoeft te bouwen.</p>
+
+    <h3>4.4 Query-patroon: nooit cijfers verzinnen</h3>
+    <p><code>smdl/query.py</code> implementeert een deterministische queryloop (index.md bootstrappen → conceptgraaf doorlopen → DuckDB-SQL → antwoord+citaties+SQL+confidence), en <code>adk_demo/lakehouse_agent/agent.py</code> laat zien hoe een ADK-agent die loop als tool aanroept zonder zelf getallen te verzinnen. Dit TDD hergebruikt dat patroon letterlijk voor de Dashboard Query Agent (Deel 5.3) — cruciaal omdat NFR-03/AC-04 een <em>betrouwbaar</em>, niet alleen snel, dashboard vereisen.</p>
+
+    <h3>4.5 Isolatie tussen geven en ontvangen (escrow)</h3>
+    <p>NFR-05 en de escrow-regel (FR-18, LRD 6.6) vereisen dat een team de van zijn voorganger ontvangen feedback pas ziet <em>nadat</em> het zijn eigen feedback aan zijn opvolger heeft ingediend. Omdat elk team een eigen, geïsoleerd lakehouse heeft (4.1), kan géén team rechtstreeks in het <code>escrow-state</code>-concept van een ander team lezen. De reveal-actie is een gecontroleerde schrijfoperatie: pas wanneer de Review-Ring Coordinator (Deel 5.2) bevestigt dat team A zijn review aan team B heeft ingediend, kopieert de coordinator de voor-A-bestemde feedback van team C naar team A's eigen <code>okf_bundle</code>. Er bestaat dus geen enkel API-pad waarlangs een team vroegtijdig bij andermans feedback kan — de isolatie zit in de data-architectuur, niet alleen in applicatielogica.</p>
+
+    <h3>4.6 Distributiescope: team, review-ring, klas, iedereen</h3>
+    <p>Instructeur-geüploade documenten (Deel 4.7) kennen vier mogelijke doelgroepen, in een hiërarchie: <strong>cohort</strong> (de volledige vakuitvoering in een studiejaar, mogelijk meerdere klassen) ⊃ <strong>klas</strong> (één klassikale groep binnen dat cohort) ⊃ <strong>review-ring</strong> (drie teams, LRD 6.6) ⊃ <strong>team</strong>. "Iedereen" loopt altijd via de publieke wiki (Deel 3.5), nooit via de data-laag — dat scheidingspunt is al vastgelegd. Voor de overige drie niveaus (team/ring/klas) geldt: elk krijgt een <strong>eigen gedeeld lakehouse</strong>, naast het reeds bestaande privé-lakehouse per team (4.1) — <code>lakehouse/&lt;cohort&gt;-team-&lt;team_id&gt;/</code>, <code>lakehouse/&lt;cohort&gt;-ring-&lt;ring_id&gt;/</code>, <code>lakehouse/&lt;cohort&gt;-klas-&lt;klas_id&gt;/</code>. Een <code>klas-roster</code>-concept (analoog aan <code>reviewring-assignment</code>, Deel 7.1) registreert welke teams tot welke klas behoren.</p>
+    <p>Dit is een bewuste, begrensde verruiming van de "geen cross-team"-isolatieregel uit 4.1 — <strong>uitsluitend</strong> voor het nieuwe concept-type <code>instructor-document</code>. De harde grens verandert niet: <code>checkpoint-submission</code>, <code>gate-pass-event</code>, <code>escrow-state</code> en <code>reviewring-assignment</code> blijven <strong>altijd</strong> team-privé, nooit op ring- of klasniveau, ongeacht wat een instructeur uploadt (NFR-05 blijft dus onaangetast). Een team-agent leest na deze uitbreiding drie lakehouses: het eigen team-lakehouse (privé), het eigen ring-lakehouse (gedeeld) en het eigen klas-lakehouse (gedeeld) — nooit het privé-lakehouse van een ander team.</p>
+    <p><strong>Waarom geen duplicatie naar elk team afzonderlijk?</strong> Dat zou eenvoudiger zijn om te bouwen, maar introduceert een update-drift-risico: een correctie op een geüpload document zou naar elke teamkopie apart moeten worden doorgezet, met reële kans dat sommige kopieën stale blijven. Eén canonieke kopie per ring/klas, met verruimd leesrecht in plaats van gekopieerde data, voorkomt die inconsistentieklasse structureel.</p>
+
+    <h3>4.7 Ingestie van instructeur-documenten (PDF/Excel/CSV)</h3>
+    <p><code>small-medium-data-lake</code> heeft al deterministische ingesters voor <code>.xls</code>/<code>.xlsx</code> (<code>smdl/ingest_excel.py</code>) en een Gemini-vision-gebaseerde ingester voor <code>.pdf</code> (<code>smdl/ingest_pdf.py</code>), gerouteerd op bestandsextensie in <code>smdl/service.py</code> (<code>EXCEL_EXTS</code>, <code>PDF_EXTS</code>). <strong>CSV wordt in de huidige blueprint niet ondersteund</strong> — directe inspectie bevestigt geen <code>ingest_csv.py</code> en geen <code>.csv</code> in de routeringstabel. Dit TDD specificeert een <span class="tag-blueprint new">net-new</span> <code>ingest_csv.py</code> naar hetzelfde deterministische patroon als <code>ingest_excel.py</code> (CSV is enkelvoudig-tabulair, dus eenvoudiger dan Excel's multi-sheet-geval), plus een uitbreiding van <code>service.py</code>'s routeringstabel met <code>.csv</code>.</p>
+    <p><strong>Pijplijn:</strong> instructeur uploadt via de frontend (Deel 6.4) met een gekozen scope → bestand landt in staging → routering op extensie (PDF → <code>ingest_pdf.py</code>; Excel/CSV → <code>ingest_excel.py</code>/<code>ingest_csv.py</code>) → output wordt een <code>instructor-document</code>-OKF-concept (Deel 7.1) plus, voor tabulaire bestanden, een DuckLake-tabel met de ruwe rijdata (zelfde patroon als <code>smdl/ducklake.py</code> al gebruikt voor gestructureerde data) → schrijfbestemming volgt de scope uit 4.6: team-, ring- of klas-lakehouse, of — bij "iedereen" — de wiki-terugschrijfroute uit 3.5 in plaats van de data-laag. De routering zelf is, net als de Review-Ring Coordinator (5.2), deterministische logica — geen LLM-agent nodig om een bestandsextensie en een scope-keuze naar een schrijfpad te vertalen.</p>
+    <p>PDF-ingestie via Gemini vision is door de blueprint zelf al als <strong>niet-deterministisch</strong> gemarkeerd, in tegenstelling tot de Excel/XAF-ingesters. Dit TDD erft die eigenschap ongewijzigd; zie Deel 14 voor de kwaliteitscontrole-implicatie.</p>
+
+    <h3>4.8 Systeembreed actielog (audit &amp; foutregistratie) <span class="tag-blueprint new">net-new</span></h3>
+    <p>NFR-08 vereist dat elke systeemhandeling gelogd wordt met tijdstempel en uitkomst (succes/fout). De bestaande logs in dit TDD — <code>log.md</code> (4.2), <code>gate_events</code>, <code>reviewring_log</code>, <code>override_log</code> (7.2) — zijn stuk voor stuk <strong>business-event-logs</strong>: ze registreren dát een pedagogisch relevante gebeurtenis plaatsvond, en uitsluitend als die succesvol was. Geen van deze registreert een mislukte agent-call, een gefaalde query, of een technische fout. NFR-08 vult dat gat <strong>aanvullend</strong>, niet vervangend: alle bestaande logs blijven ongewijzigd.</p>
+    <p>Nieuwe DuckLake-tabel <code>action_log</code> (zelfde <code>smdl/ducklake.py</code>-patroon als de overige DuckLake-tabellen, Deel 4.3 en 7.2), append-only, met kernvelden <code>ts, actor_type, actor_id, layer, action, target_type, target_id, outcome (success|error), error_code, error_message, correlation_id</code>. <code>layer</code> identificeert welke van de vier archstack-lagen (Deel 2) de handeling deed; <code>correlation_id</code> koppelt gerelateerde regels (bv. alle stappen van één Socratische sessie of één workflow-run) zodat een fout terug te herleiden is naar de handelingsketen eromheen.</p>
+    <p><strong>Privacy (NFR-08 i.c.m. Deel 1.3/9).</strong> <code>actor_id</code> is uitsluitend <code>team_id</code>, <code>system</code> of <code>instructor</code> — nooit een voornaam of andere identifier. Dezelfde randvoorwaarde die door heel dit document loopt (geen persoonsgegevens) geldt onverkort voor het actielog: een technische foutmelding mag geen studentnaam of ander persoonsgegeven in <code>error_message</code> bevatten; dit is een implementatie-eis aan elke schrijver van <code>action_log</code>-regels (Deel 5.6), geen los nagekeken controle achteraf.</p>
+
+    <h3>4.9 Cursusadministratie: team-roster, cursusperiode, assessment-planning (FR-22)</h3>
+    <p>Drie nieuwe, uitsluitend docent-schrijfbare concept-types, analoog aan <code>klas-roster</code> (4.6/7.1) maar voor administratieve in plaats van kennisinhoud:</p>
+    <ul>
+      <li><code>course-period</code> — start-/einddatum en vakantieperiodes van een cohort. Cohortbreed, niet klas-specifiek: leeft in een nieuw, licht <code>lakehouse/&lt;cohort&gt;-admin/</code> naast de al bestaande team-/ring-/klas-lakehouses (4.6), omdat een cursusperiode per definitie boven de klas-indeling staat.</li>
+      <li><code>team-roster</code> — welke voornamen tot welk team behoren, wanneer aangemaakt/gewijzigd. Vult de tot nu toe impliciete teamsamenstelling (afgeleid uit <code>checkpoint-submission.submitted_by</code>, 7.1) aan met een expliciet, docent-beheerd record — nodig zodra teamsamenstelling losstaat van een specifieke inzending (bv. vóór het eerste checkpoint, of na een wissel).</li>
+      <li><code>assessment-schedule</code> — datum, tijdslot, locatie en betrokken student/team voor elk CBI (LRD Deel 9). Leeft in het klas-lakehouse (4.6), naast <code>klas-roster</code>.</li>
+    </ul>
+    <p><strong>Teamwijziging na cohortstart.</strong> Een gewijzigde <code>team-roster</code> raakt mogelijk een al toegewezen <code>reviewring-assignment</code> (7.1) — de Review-Ring Coordinator (5.2) behandelt dit met exact hetzelfde fallback-mechanisme als reguliere teamuitval (FR-07/08), geen apart pad.</p>
+    <p><strong>Locatie en conflictdetectie</strong> — of <code>assessment-schedule</code> een vaste locatielijst gebruikt of vrije tekst, en of dubbele boekingen (docent/locatie/tijdslot) automatisch gedetecteerd worden, zijn nog open vragen (LRD Deel 12, GH issue #2) — dit TDD reserveert de velden (<code>location</code>, <code>docent_id</code>, <code>time_slot</code>) maar specificeert geen validatielogica totdat dat is bepaald.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 5 — Agentic-services-laag <span class="tag-blueprint">adk2-blueprint</span></h2>
+    <p><code>adk2-blueprint</code> (Google ADK 2.0, Python, Gemini-model via <code>shared/models.py</code>) demonstreert acht patronen die dit TDD direct hergebruikt: enkelvoudige <code>Agent</code>s, deterministische <code>Workflow</code>-grafen (sequentieel, parallel+join, human-in-the-loop <code>RequestInput</code>/resume), hiërarchische coördinator-met-subagenten-delegatie, A2A-blootstelling (<code>to_a2a</code>), sessie/state via <code>shared/session.py</code>, en een sterk evaluatieharnas (<code>AgentEvaluator</code> + <code>.evalset.json</code>). Geen van deze patronen kent domeinlogica voor onderwijs of peer-review — die is per definitie <span class="tag-blueprint new">net-new</span>.</p>
+
+    <h3>5.1 Socratische Tutor Agent (Gate A)</h3>
+    <p>Een <code>task</code>-modus <code>Agent</code> (ADK-patroon uit <code>agents/collector/</code>: kan meerdere beurten stellen voordat hij teruggeeft aan de aanroeper), één sessie per team-per-checkpoint via <code>DatabaseSessionService</code> (Deel 5.4). Tools:</p>
+    <ul>
+      <li><code>query_wiki</code> — leest gepubliceerde boekconcepten/bedrijfscases (Deel 3.3), analoog aan <code>lakehouse_agent</code>'s <code>query_lakehouse</code>-tool.</li>
+      <li><code>read_team_history</code> — leest de volledige eerdere-rapportgeschiedenis van het team uit diens <code>okf_bundle</code> (FR-03: "geconditioneerd op de volledige eerdere geschiedenis... nooit een reeds beantwoorde vraag herhalen").</li>
+      <li><code>write_report</code> — schrijft het rapport als <code>checkpoint-submission</code>-vervolgconcept, met <strong>twee gescheiden uitvoerkanalen</strong>: het teamgerichte transcript (uitsluitend Socratische vragen) en het docentgerichte rapport (hetzelfde transcript <strong>plus</strong> de verborgen procesrubriekscore en het binaire gate-A-signaal, FR-03).</li>
+      <li><code>query_shared_docs</code> — leest instructeur-geüploade documenten (Deel 4.7) uit het eigen team-, ring- én klas-lakehouse (Deel 4.6), zodat de tutor kan verwijzen naar extra materiaal dat een instructeur gericht heeft gedeeld, naast de wiki-content uit <code>query_wiki</code>.</li>
+    </ul>
+    <p><strong>Never-scores-garantie (AC-03).</strong> Dit wordt niet alleen als systeeminstructie afgedwongen (die een taalmodel in theorie kan negeren), maar <strong>structureel</strong>: het teamgerichte uitvoerkanaal heeft geen scoreveld in zijn schema — er is domweg geen plek waar een score in terecht kan komen, ongeacht wat het model genereert. Zie Deel 12 voor de evalset die dit automatisch toetst.</p>
+
+    <h3>5.2 Review-Ring Coordinator (Gate B)</h3>
+    <p>Bewust <strong>geen LLM-agent</strong> maar een deterministische <code>Workflow</code>-graaf (ADK-patroon uit <code>agents/approval/</code>), omdat ringtoewijzing, deadlines en escrow-onthulling pure bedrijfslogica zijn — een taalmodel zou hier alleen onvoorspelbaarheid toevoegen. De <code>RequestInput</code>/resume-mechaniek uit <code>approval/agent.py</code> (een workflow pauzeert, wacht op menselijke input, hervat) is een directe analogie voor escrow-onthulling: de workflow "pauzeert" team A's zicht op ontvangen feedback totdat de gebeurtenis "team A's eigen review ingediend" de hervatting triggert (FR-18, Deel 4.5).</p>
+    <ul>
+      <li><strong>Ringtoewijzing &amp; fallback (FR-07/08).</strong> Bij cohortstart wijst de workflow elk team een A→B→C→A-positie toe; docent-getriggerde herconfiguratie na uitval raakt alleen de betrokken ring-posities, blokkeert niet de rest.</li>
+      <li><strong>Vervalvenster (FR-04).</strong> ADK-workflows hebben geen ingebouwde timer-primitief voor "48 uur na deadline X" — dit TDD kiest bewust voor een eenvoudige, KISS-conforme oplossing (LRD 5.1) boven een generieke timer-engine: een <span class="tag-blueprint new">net-new</span> scheduled endpoint (<code>/check-lapses</code>), periodiek aangeroepen (Deel 10.2), dat vervallen vensters detecteert en de workflow met een "lapsed"-event hervat.</li>
+    </ul>
+
+    <h3>5.3 Dashboard Query Agent</h3>
+    <p>Hergebruikt <code>adk_demo/lakehouse_agent</code>'s patroon vrijwel ongewijzigd: een <code>query_dashboard</code>-tool die DuckDB-SQL over de <code>gate_events</code>/<code>rubric_scores</code>-tabellen (Deel 7.2) van alle teams in een cohort aggregeert, en een <code>chart_metrics</code>-tool (idem, artifact-gebaseerd) voor eventuele visuele samenvattingen. Zoals in het blueprint expliciet als ontwerpprincipe staat: <strong>de agent verzint nooit een getal</strong> — hij geeft uitsluitend door wat de deterministische query teruggeeft, inclusief citaties naar de brontabel. Dit is direct wat NFR-03 (binnen 1 minuut beoordeelbaar) en AC-04 vereisen: snelheid én betrouwbaarheid, niet een taalmodel dat plausibel klinkende samenvattingen fabriceert.</p>
+
+    <h3>5.4 Sessie- en state-management</h3>
+    <p><code>shared/session.py</code> biedt een env-geflagde keuze: <code>InMemorySessionService</code> (verliest state bij herstart) of <code>DatabaseSessionService</code> (SQLAlchemy, <code>DATABASE_URL</code>). Dit TDD kiest <code>DatabaseSessionService</code>: een Socratisch gesprek dat een sessie-herstart niet overleeft, zou NFR-04 (reactie binnen minuten, "breekt de flow niet") direct ondermijnen zodra de service herstart (bijvoorbeeld bij een deploy). Zie Deel 10.3 voor de gekozen database.</p>
+
+    <h3>5.5 Eigendom &amp; toegang (FR-10)</h3>
+    <p>Prompts, rubriek en configuratie van de Socratische agent staan in een apart, alleen-door-module-eigenaren-schrijfbaar configuratiepad (los van de per-team OKF-bundels), met schrijftoegang afgedwongen op deployment-niveau (service-account-scopes, Deel 10) — niet alleen via applicatielogica die in theorie te omzeilen zou zijn.</p>
+
+    <h3>5.6 Actielogging vanuit de agentic-laag (NFR-08)</h3>
+    <p>De agentic-services-laag is waar de meeste "handelingen" uit NFR-08 ontstaan: elke tool-aanroep (<code>query_wiki</code>, <code>read_team_history</code>, <code>write_report</code>, <code>query_shared_docs</code>, <code>query_dashboard</code>, <code>chart_metrics</code>) en elke workflow-transitie (ringtoewijzing, vervalvenster-hervatting, escrow-onthulling) schrijft een regel naar <code>action_log</code> (Deel 4.8) — bij een geslaagde call met <code>outcome=success</code>, bij een mislukte LLM-call, een time-out of een query-fout met <code>outcome=error</code> plus foutdetail. Dit is een generieke wrapper rond elke tool/workflow-stap, niet per-agent handmatig herhaalde logica: dezelfde <code>correlation_id</code> per sessie/workflow-run (4.8) maakt een volledige handelingsketen reconstrueerbaar, ook wanneer die faalt halverwege.</p>
+
+    <h3>5.7 Wiki Quality Check Agent (FR-21) <span class="tag-blueprint new">net-new</span></h3>
+    <p>Een <code>task</code>-modus <code>Agent</code>, aangeroepen door de Review-Ring Coordinator (Deel 5.2) vlak vóór de Synthesize-git-commit (Deel 3.6). Combineert, zoals de Dashboard Query Agent (Deel 5.3), een LLM-stap met deterministische validatie — de agent <strong>verzint nooit</strong> of iets een duplicaat is of een geldige bron heeft; hij haalt kandidaten op, deterministische tools beslissen.</p>
+    <ul>
+      <li><code>extract_contribution</code> — LLM-tool die uit de synthesetekst kandidaat-concepten, -entiteiten, -bronnen en -relaties haalt (gestructureerde output, geen vrije tekst).</li>
+      <li><code>check_duplicates</code> — deterministisch: exacte match (titel/kernidentificatie) tegen de bestaande OKF-conceptgraaf van de wiki, plus een embedding-similariteitscheck (aanbevolen: Gemini text-embedding-model, consistent met de bestaande Gemini-oriëntatie van <code>adk2-blueprint</code>) tegen een drempelwaarde — beide leiden tot afwijzing; de exacte drempelwaarde is een kalibratiepunt (Deel 14).</li>
+      <li><code>validate_citations</code> — deterministisch: elke aangehaalde bron moet de verplichte APA-velden bevatten (auteur, jaar, titel, uitgever/URL) als gestructureerde citatie-invoer, geen vrije-tekst-APA-parsing; ontbrekende of onvolledige velden leiden tot afwijzing.</li>
+      <li><code>compute_points</code> — deterministisch: telt geaccepteerde concepten/entiteiten/bronnen/relaties volgens de vaste weging (LRD 6.11); schrijft geen los bijgehouden totaal, punten worden altijd via query over <code>wiki_quality_log</code> berekend (Deel 7.2) — zelfde "nooit cijfers verzinnen"-principe als de Dashboard Query Agent (Deel 4.4).</li>
+    </ul>
+    <p>Elke aanroep schrijft, ongeacht uitkomst, een regel naar <code>wiki_quality_log</code> (domein-uitkomst: geaccepteerd/geweigerd + reden + punten) én naar <code>action_log</code> (Deel 4.8: technische succes/fout-uitkomst van de aanroep zelf, bv. een mislukte embedding-call) — dezelfde tweelaagse logging als 5.6 voor de overige agentic-tools.</p>
+
+    <h3>5.8 Assessment-Prep Agent (FR-23/24)</h3>
+    <p>Geen nieuwe agent, maar een <strong>nieuwe tool op de Dashboard Query Agent</strong> (5.3) — dezelfde reden als bij de Wiki Quality Check Agent: hergebruik boven proliferatie van bijna-identieke agents. De tool combineert twee stappen die allebei al elders in dit TDD bestaan:</p>
+    <ul>
+      <li><code>build_student_timeline</code> — deterministisch: query's over <code>gate_events</code>, <code>wiki_quality_log</code> (5.7) en <code>reviewring_log</code> (7.2), gefilterd op één <code>first_name</code> binnen één <code>team_id</code>, gesorteerd op tijdstempel. Hergebruikt DuckLake's snapshot-tijdreizen (4.3) om "ontwikkeling over tijd" (FR-23) te tonen als een reeks momentopnames, niet slechts de laatste stand.</li>
+      <li><code>generate_prep_summary</code> — LLM-stap die de tijdlijn samenvat tot aandachtspunten en vraagsuggesties, met een <strong>harde outputeis</strong>: elk gegenereerd punt bevat een verplicht <code>source_ref</code>-veld dat verwijst naar het specifieke brondata-record (bv. <code>gate_events#id</code> of <code>wiki_quality_log#id</code>) waarop het gebaseerd is. Een punt zonder <code>source_ref</code> wordt niet doorgegeven aan de frontend — dit is dezelfde structurele afdwinging als bij de never-scores-garantie (5.1): niet alleen een instructie, een schema-eis.</li>
+    </ul>
+    <p><strong>Waarom geen cijfer, oordeel of aanbeveling (LRD 6.13).</strong> De tool heeft, net als de Socratische tutor (5.1) en de Wiki Quality Check Agent (5.7), geen outputveld voor een samenvattend oordeel — structureel dezelfde garantie, nu toegepast op een tool die het summatieve CBI voedt in plaats van een formatieve gate. Dit is de striktste never-invents-garantie in dit TDD, omdat de output — anders dan bij het dashboard (5.3) — een <em>docent</em> beïnvloedt vlak vóór een cijferbeslissing.</p>
+    <p>Instructor-only: dezelfde toegangsscheiding als <code>rubric_scores</code> (7.2) — nooit via een teamgericht kanaal (6.3).</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 6 — Frontend-laag <span class="tag-blueprint new">net-new</span></h2>
+    <p>Geen van de drie blueprints bevat een UI-laag. De zes mockup-varianten in <code>design-documents/frontent-design/</code> (Studio, Casebook, Flightpath, Studio Flightpath, Brutalist Flightpath) convergeerden op <strong>HAN Huisstijl Flightpath</strong> als afgeronde richting — dit TDD neemt die als bindend ontwerp voor de eerste implementatie.</p>
+
+    <h3>6.1 Van mockup-component naar implementatie</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Mockup-component</th><th>Databron</th><th>LRD-referentie</th></tr></thead>
+      <tbody>
+        <tr><td>Faseprogressie-tracker (Direct/Design/Deliver/Develop, team-avatars)</td><td>Dashboard Query Agent — <code>gate_events</code></td><td>6.2, 6.4, FR-13</td></tr>
+        <tr><td>"Socrates"-chatkaart (uilicoon, Socratische vraag, "nooit het antwoord")</td><td>Socratische Tutor Agent, teamgericht kanaal</td><td>6.5, FR-03</td></tr>
+        <tr><td>Gate A/B-statuskaarten (open ✅ / pending ⏳)</td><td>Dashboard Query Agent — <code>gate_events</code></td><td>6.4, FR-05</td></tr>
+        <tr><td>Peer-partner-/"squadmaatje"-kaart (feedback gegeven/ontvangen)</td><td>Review-Ring Coordinator — <code>escrow-state</code></td><td>6.6, FR-04, FR-18</td></tr>
+        <tr><td>Instructor-override-knop + log</td><td>Review-Ring Coordinator / gate-event-schrijfpad</td><td>6.7, FR-06</td></tr>
+        <tr><td>Footer "geen cijfer zichtbaar — alleen open/dicht"</td><td>— (afwezigheid van een scoreveld, zie 6.3)</td><td>FR-05, AC-03</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>6.2 Aanbevolen stack (open beslissing — zie Deel 14)</h3>
+    <p>Twee oppervlakken, één codebase: een <strong>React + Vite SPA</strong> met (a) een team-route die als het in Deel 3.2 beschreven Quartz-widget embed, en (b) een cohort-brede instructor-dashboardroute (los van de wiki, want cohort-overzicht past niet op een enkele teampagina — dit volgt direct uit hoe de Flightpath-mockup zelf al twee gescheiden views toont: een team-gerichte en een docent-gerichte). Beide praten met dezelfde twee backend-API's: de agent-service (Socratische chat, Deel 5.1) en de query-service (dashboard-aggregaten, Deel 5.3). Geen van de drie blueprints schrijft een specifiek frontend-framework voor; deze keuze is een aanbeveling, geen afgeleide van bestaande code, en wordt daarom in Deel 14 als te bevestigen punt gemarkeerd.</p>
+
+    <h3>6.3 De "geen cijfer zichtbaar"-garantie is server-side, niet client-side</h3>
+    <p>Het footer-statement uit de mockup ("no grade shown here — only open/closed") wordt <strong>niet</strong> geïmplementeerd door een scoreveld in de UI te verbergen — client-side verbergen is geen garantie, alleen verduistering. In plaats daarvan retourneert het teamgerichte API-endpoint (Deel 5.1) het scoreveld domweg <em>niet</em> in zijn response-schema; de frontend kan een cijfer niet tonen dat het nooit ontvangt. Dezelfde garantie als in Deel 5.1, nu doorgetrokken tot in het transportcontract.</p>
+
+    <h3>6.4 Instructeur-documentupload</h3>
+    <p>De instructor-dashboardroute (6.2) krijgt een upload-affordance: bestandskiezer (PDF/Excel/CSV) plus een scope-selector (team / review-ring / klas / iedereen, Deel 4.6). Vóór bevestiging toont de UI expliciet <em>welke</em> teams het document zullen kunnen zien — en, bij scope "iedereen", een aparte waarschuwing dat het document publiek wordt gepubliceerd (Deel 3.5), niet alleen cohortbreed binnen het systeem. Het upload-endpoint praat met de ingestiepijplijn (Deel 4.7), nooit rechtstreeks met een lakehouse — dezelfde scheiding tussen frontend en dataschrijfpad als bij de overige agentic-services-aanroepen (Deel 5).</p>
+
+    <h3>6.5 Admin-cursusvoorbereiding (FR-22)</h3>
+    <p>Een derde route naast de team- en instructor-dashboardroutes (6.2): CRUD-schermen voor <code>course-period</code>, <code>team-roster</code> en <code>assessment-schedule</code> (4.9). Puur formulier-gedreven — geen agent-aanroep nodig, dezelfde reden waarom de Review-Ring Coordinator (5.2) deterministisch is: dit is bedrijfslogica zonder redeneercomponent. Wie toegang heeft (alle docenten of alleen coördinatoren) is een open vraag (LRD Deel 12, GH issue #2), vooralsnog gereserveerd als een aparte rol naast de bestaande instructor-rol.</p>
+
+    <h3>6.6 Studentdossier &amp; CBI-voorbereiding (FR-23/24)</h3>
+    <p>Instructor-only route, één student tegelijk: een tijdlijnweergave (<code>build_student_timeline</code>, 5.8) plus het voorbereidingsoverzicht (<code>generate_prep_summary</code>). Elke aandachtspunt/vraagsuggestie toont zijn <code>source_ref</code> zichtbaar in de UI (bv. als een klikbare referentie naar het onderliggende gate-rapport) — de brontraceerbaarheid uit NFR-10 moet <em>zichtbaar</em> zijn voor de docent, niet alleen intern aanwezig in de data.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 7 — Datamodel</h2>
+
+    <h3>7.1 OKF-conceptschema's (per-team <code>okf_bundle</code>)</h3>
+    <pre><code>---
+type: checkpoint-submission
+team_id: team-07
+cohort: 2026-2027-oe
+stage: direct
+chapter: ch02
+submitted_by: [Fenna, Timo, Bram]   # voornamen — geen student-ID
+company_case: "Ryanair"
+title: "Checkpoint 1 — Direct"
+---
+## Kernvraag 1 — Hoe concurreert deze organisatie?
+...
+## Kernvraag 2 — Wat kan operations daaraan bijdragen?
+...
+## Kritische lens (FR-15)
+...</code></pre>
+    <pre><code>---
+type: gate-pass-event
+team_id: team-07
+cohort: 2026-2027-oe
+stage: direct
+gate: A            # A | B
+status: open        # open | pending | override
+actor: system        # system | instructor
+timestamp: 2026-08-18T09:14:00Z
+---</code></pre>
+    <pre><code>---
+type: escrow-state
+team_id: team-07        # ontvangende team
+from_team_id: team-05   # gevende team (ringpositie -1)
+cohort: 2026-2027-oe
+stage: direct
+given_submitted: true
+given_submitted_at: 2026-08-17T16:02:00Z
+revealed: false          # true zodra team-07 zelf zijn review aan team-09 indient
+lapse_deadline: 2026-08-19T16:02:00Z   # +48u
+---</code></pre>
+    <pre><code>---
+type: reviewring-assignment
+cohort: 2026-2027-oe
+klas_id: klas-a
+ring: [team-05, team-07, team-09]   # A -> B -> C -> A
+reconfigured_from: null
+reconfigured_at: null
+---</code></pre>
+    <pre><code>---
+type: klas-roster
+cohort: 2026-2027-oe
+klas_id: klas-a
+team_ids: [team-01, team-02, team-03, team-04, team-05, team-06, team-07, team-08, team-09]
+---</code></pre>
+    <pre><code>---
+type: instructor-document
+scope: ring              # team | ring | klas  (nooit "everyone" — die route is Deel 3.5, geen data-laag-concept)
+scope_id: ring-02
+cohort: 2026-2027-oe
+source_format: pdf        # pdf | xlsx | csv
+source_filename: "jaarverslag-ryanair-2025.pdf"
+ingested_by: instructor
+ingested_at: 2026-09-03T10:00:00Z
+deterministic: false       # true voor xlsx/csv, false voor pdf (Gemini-vision, 4.7)
+---</code></pre>
+    <p class="theme-help">Een team-lakehouse bevat dus voortaan optioneel ook <code>instructor-document</code>-concepten met <code>scope: team</code>; het ring- en klas-lakehouse bevatten uitsluitend <code>instructor-document</code>-concepten (nooit checkpoint-/gate-/escrow-data, Deel 4.6).</p>
+    <pre><code>---
+type: wiki-quality-check
+team_id: team-07
+cohort: 2026-2027-oe
+stage: direct
+submission_ref: team-07-direct-synthesis   # verwijst naar de synthesepagina (3.4)
+outcome: accepted        # accepted | rejected
+reject_reason: null       # duplicate | missing_citation | invalid_citation | null
+points_concepts: 2
+points_entities: 1
+points_sources: 3
+points_relations: 1
+points_total: 6.5
+ts: 2026-08-22T14:03:00Z
+---</code></pre>
+    <p class="theme-help">Eén <code>wiki-quality-check</code>-concept per Synthesize-poging (Deel 3.6, 5.7), in het team-lakehouse. <code>points_total</code> staat hier alleen ter illustratie in de frontmatter — het datamodel bewaart dit veld, maar het dashboard leest het puntentotaal altijd via een <code>SUM</code>-query over <code>wiki_quality_log</code> (7.2), nooit als los bijgehouden waarde die uit de pas kan gaan lopen.</p>
+    <pre><code>---
+type: course-period
+cohort: 2026-2027-oe
+start_date: 2026-08-17
+end_date: 2026-12-04
+holidays:
+  - {from: 2026-10-19, to: 2026-10-23, label: "Herfstvakantie"}
+---</code></pre>
+    <pre><code>---
+type: team-roster
+team_id: team-07
+cohort: 2026-2027-oe
+klas_id: klas-a
+members: [Fenna, Timo, Bram]      # voornamen — geen student-ID
+created_at: 2026-08-10T09:00:00Z
+updated_at: 2026-08-10T09:00:00Z
+---</code></pre>
+    <pre><code>---
+type: assessment-schedule
+cohort: 2026-2027-oe
+klas_id: klas-a
+student_first_name: Fenna
+team_id: team-07
+date: 2026-12-08
+time_slot: "13:00-13:30"
+location: Arnhem            # vaste lijst vs. vrije tekst: open vraag, zie 4.9
+docent_id: instructor
+---</code></pre>
+    <p class="theme-help"><code>course-period</code> leeft in het nieuwe cohort-brede admin-lakehouse (4.9); <code>team-roster</code> en <code>assessment-schedule</code> in het klas-lakehouse (4.6), naast <code>klas-roster</code>.</p>
+
+    <h3>7.2 DuckLake-tabellen (dashboard-aggregatie)</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Tabel</th><th>Kernvelden</th><th>Zichtbaarheid</th></tr></thead>
+      <tbody>
+        <tr><td><code>gate_events</code></td><td><code>team_id, cohort, stage, gate, status, actor, ts</code></td><td>Instructor-dashboard (NFR-03)</td></tr>
+        <tr><td><code>rubric_scores</code></td><td><code>team_id, cohort, stage, score_hidden, criteria_ref</code></td><td><strong>Uitsluitend instructor</strong> (FR-03) — nooit via het teamgerichte API-kanaal (6.3)</td></tr>
+        <tr><td><code>reviewring_log</code></td><td><code>ring_id, team_id, stage, given_on_time, received_on_time, lapsed</code></td><td>Instructor-dashboard; voedt AC-02/AC-08</td></tr>
+        <tr><td><code>override_log</code></td><td><code>team_id, cohort, stage, gate, instructor_note, ts</code></td><td>Instructor-dashboard; voedt AC-01/AC-07</td></tr>
+        <tr><td><code>uploaded_tables</code></td><td><code>scope, scope_id, cohort, source_filename</code> + dynamische kolommen per geüpload Excel/CSV-bestand (Deel 4.7)</td><td>Team/ring/klas naargelang <code>scope</code> — bewust <strong>niet</strong> instructor-only zoals <code>rubric_scores</code>, want deze data is juist bedoeld om door de doelgroep gelezen te worden</td></tr>
+        <tr><td><code>action_log</code></td><td><code>ts, actor_type, actor_id, layer, action, target_type, target_id, outcome, error_code, error_message, correlation_id</code></td><td>Devops/technisch (NFR-08) — niet het pedagogische instructor-dashboard, zie Deel 4.8</td></tr>
+        <tr><td><code>wiki_quality_log</code></td><td><code>team_id, cohort, stage, submission_ref, outcome, reject_reason, points_concepts, points_entities, points_sources, points_relations, points_total, ts</code></td><td>Instructor-dashboard én team-zichtbaar (LRD 6.11) — punten zijn informationeel, geen verborgen rubriek</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>7.3 Identifiers — expliciet geen persoonsgegevens</h3>
+    <p>Het volledige datamodel gebruikt uitsluitend <code>first_name</code> (voornaam, vrije tekst zoals door de student zelf opgegeven), <code>team_id</code>, <code>klas_id</code> en <code>cohort</code> als identificerende velden. Er is <strong>geen</strong> veld voor studentnummer, e-mailadres, achternaam of enige andere HAN-systeemidentifier. Zie Deel 9 voor de implicaties en grenzen hiervan — inclusief het aparte risico dat instructeur-geüploade <em>documentinhoud</em> (7.1, <code>instructor-document</code>) buiten dit schema om persoonsgegevens kan bevatten, omdat die inhoud extern is aangeleverd en niet door dit datamodel wordt gegenereerd.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 8 — FR/NFR/AC-traceerbaarheidsmatrix</h2>
+    <p>Elke eis uit LRD Deel 7 (functioneel/non-functioneel) en Deel 11 (acceptatiecriteria) krijgt hier een concreet technisch thuis. Geen enkele FR/NFR/AC ontbreekt in deze matrix.</p>
+
+    <div class="theme">
+      <p class="theme-help"><strong>Geformaliseerd in het LRD na een eerdere revisie van dit TDD.</strong> De instructeur-documentupload met distributiescope (Deel 3.5, 4.6–4.7, 6.4) had aanvankelijk geen eigen FR. Het LRD is sindsdien bijgewerkt met <strong>FR-20</strong> (6.10), <strong>NFR-09</strong> (toegangsgrens team/groep vs. publiek) en <strong>AC-12</strong> (steekproefcontrole op die grens) — zie de matrix hieronder. Bij dezelfde LRD-revisie is onafhankelijk ook <strong>NFR-08</strong> (operationele audit-logging) toegevoegd; dit TDD dekt die eis via <code>action_log</code> (Deel 2.3, 4.8, 5.6, 10.6).</p>
+    </div>
+
+    <h3>8.1 Functionele &amp; non-functionele requirements</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>TDD-component</th><th>Deel</th></tr></thead>
+      <tbody>
+        <tr><td>FR-01</td><td><code>checkpoint-submission</code>-concept</td><td>7.1</td></tr>
+        <tr><td>FR-02</td><td>Kwaliteitscriteria als docent-eigendom configuratiepad, versiestempel per cohort</td><td>5.5</td></tr>
+        <tr><td>FR-03</td><td>Socratische Tutor Agent — twee gescheiden uitvoerkanalen</td><td>5.1</td></tr>
+        <tr><td>FR-04</td><td>Review-Ring Coordinator — vervalvenster + <code>reviewring_log</code></td><td>5.2, 7.2</td></tr>
+        <tr><td>FR-05</td><td>Binair gate-signaal; scoreveld structureel afwezig in teamkanaal</td><td>6.3</td></tr>
+        <tr><td>FR-06</td><td>Dashboard Query Agent + <code>override_log</code></td><td>5.3, 7.2</td></tr>
+        <tr><td>FR-07</td><td><code>reviewring-assignment</code>-concept + coordinator-toewijzing</td><td>5.2, 7.1</td></tr>
+        <tr><td>FR-08</td><td>Herconfiguratie raakt alleen betrokken ring-posities (workflow-graaf)</td><td>5.2</td></tr>
+        <tr><td>FR-09</td><td>Append-only <code>log.md</code> per team = geschiedenis-export</td><td>4.2</td></tr>
+        <tr><td>FR-10</td><td>Config-pad alleen-schrijfbaar door module-eigenaren, afgedwongen op deploymentniveau</td><td>5.5</td></tr>
+        <tr><td>FR-11</td><td>OKF-frontmatter-contract hergebruikt voor alle nieuwe concept-types</td><td>4.2, 7.1</td></tr>
+        <tr><td>FR-12</td><td>Ongewijzigd — bestaand Ingest-proces van <code>wiki-template</code></td><td>3.1</td></tr>
+        <tr><td>FR-13</td><td>Ongewijzigd — wiki-content-laag (LRD 6.2)</td><td>3.3</td></tr>
+        <tr><td>FR-14</td><td>Ongewijzigd — wiki-content-laag (LRD 6.9)</td><td>3.1</td></tr>
+        <tr><td>FR-15</td><td>Kritische-lens-vraag als vast onderdeel van <code>checkpoint-submission</code></td><td>7.1</td></tr>
+        <tr><td>FR-16</td><td>Ongewijzigd — gedeelde criteria (LRD 6.3), geen apart technisch component</td><td>—</td></tr>
+        <tr><td>FR-17</td><td>Ongewijzigd — capstone-format, geen apart technisch component buiten 3.4</td><td>3.4</td></tr>
+        <tr><td>FR-18</td><td>Escrow-onthulling via gecontroleerde schrijfoperatie tussen geïsoleerde team-lakehouses</td><td>4.5, 7.1</td></tr>
+        <tr><td>FR-19</td><td>Ongewijzigd — reeds geïngeste wiki-contentmap (LRD §8.1)</td><td>3.1</td></tr>
+        <tr><td>FR-20</td><td>Instructeur-documentupload met scope team/ring/klas/iedereen — ingestiepijplijn + <code>instructor-document</code>-concept</td><td>4.6, 4.7, 6.4, 7.1</td></tr>
+        <tr><td>FR-21</td><td>Wiki Quality Check Agent + <code>wiki_quality_log</code> — duplicaat-/bronvermeldingscontrole en puntensysteem vóór Synthesize-commit</td><td>3.6, 5.7, 7.1, 7.2</td></tr>
+        <tr><td>FR-22</td><td>Admin-cursusvoorbereiding: <code>course-period</code>/<code>team-roster</code>/<code>assessment-schedule</code>-concepten + CRUD-route</td><td>4.9, 6.5, 7.1</td></tr>
+        <tr><td>FR-23</td><td>Studentdossier: <code>build_student_timeline</code>-tool over bestaande gebeurtenistabellen</td><td>5.8, 6.6</td></tr>
+        <tr><td>FR-24</td><td>AI-CBI-voorbereidingsoverzicht: <code>generate_prep_summary</code>-tool, verplicht <code>source_ref</code>-veld</td><td>5.8, 6.6</td></tr>
+        <tr><td>NFR-01</td><td>Geen adaptieve logica in enige agent-tool (bewust niet gebouwd)</td><td>5.1–5.3</td></tr>
+        <tr><td>NFR-02</td><td>Wiki-laag ongewijzigd; herinterpretatie voor de nieuwe lagen expliciet gemaakt</td><td>2.2, 10.1</td></tr>
+        <tr><td>NFR-03</td><td>Deterministische DuckDB-query, geen LLM-latency in het kritieke pad</td><td>5.3, 4.4</td></tr>
+        <tr><td>NFR-04</td><td><code>DatabaseSessionService</code> i.p.v. in-memory — overleeft herstarts</td><td>5.4</td></tr>
+        <tr><td>NFR-05</td><td>Per-team lakehouse-isolatie, geen cross-team-catalogus</td><td>4.1, 4.5</td></tr>
+        <tr><td>NFR-06</td><td>Criteria-configuratie versie-gestempeld, niet gemuteerd binnen een cohort</td><td>5.5</td></tr>
+        <tr><td>NFR-07</td><td>OKF-frontmatter-contract afgedwongen voor alle nieuwe concept-types</td><td>4.2, 7.1</td></tr>
+        <tr><td>NFR-08</td><td>Systeembreed <code>action_log</code> (append-only, succes/fout per handeling)</td><td>4.8, 5.6, 7.2</td></tr>
+        <tr><td>NFR-09</td><td>Ring-/klas-lakehouse-isolatie identiek aan team-isolatie (4.1) — geen publieke toegang tot niet-"iedereen"-scope</td><td>4.6</td></tr>
+        <tr><td>NFR-10</td><td>Verplicht <code>source_ref</code>-veld per aandachtspunt/vraagsuggestie; punten zonder referentie worden niet doorgegeven aan de frontend</td><td>5.8, 6.6</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>8.2 Acceptatiecriteria — hoe ze aantoonbaar worden</h3>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Hoe dit TDD het aantoonbaar maakt</th><th>Deel</th></tr></thead>
+      <tbody>
+        <tr><td>AC-01</td><td><code>override_log</code>-export per fase</td><td>7.2</td></tr>
+        <tr><td>AC-02</td><td><code>reviewring_log</code> incl. vervalvenster-registratie</td><td>7.2</td></tr>
+        <tr><td>AC-03</td><td>Structurele afwezigheid scoreveld + evalset-assertie (geen scoretaal in teamtranscript)</td><td>6.3, 12.1</td></tr>
+        <tr><td>AC-04</td><td>Getimede dashboard-doorloop op deterministische query (geen LLM-latency)</td><td>5.3</td></tr>
+        <tr><td>AC-05</td><td>Evalset-steekproef op rapportgeschiedenis (aantoonbare voortbouw)</td><td>12.1</td></tr>
+        <tr><td>AC-06</td><td>Buiten technische scope — CBI-observatie (LRD Deel 9)</td><td>—</td></tr>
+        <tr><td>AC-07</td><td><code>override_log</code>-percentage over cohort</td><td>7.2</td></tr>
+        <tr><td>AC-08</td><td><code>reviewring_log</code> — eerste-ronde-nalevingspercentage</td><td>7.2</td></tr>
+        <tr><td>AC-09</td><td>OKF-conformance-check (hergebruik <code>wiki-template</code>-lintpatroon) over alle nieuwe concept-types</td><td>4.2, 12.2</td></tr>
+        <tr><td>AC-10</td><td>Steekproefcontrole checkpoint-pagina's op kritische-lens-paragraaf</td><td>12.2</td></tr>
+        <tr><td>AC-11</td><td>Geëxporteerde feedbackhistorie via <code>log.md</code> (zelfde pad als FR-09)</td><td>4.2</td></tr>
+        <tr><td>AC-12</td><td>Toegangscontrole-steekproef bevestigt team/groep-gescopeerde <code>instructor-document</code>-concepten blijven binnen hun lakehouse-grens (NFR-09)</td><td>4.6</td></tr>
+        <tr><td>AC-13</td><td>Wiki-kwaliteitslog-steekproef (geen onopgemerkte duplicaten/foutieve bronvermelding)</td><td>5.7, 7.2</td></tr>
+        <tr><td>AC-14</td><td>Steekproef van CBI-voorbereidingsoverzichten bevestigt elk punt heeft een geldig, herleidbaar <code>source_ref</code></td><td>5.8</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 9 — Privacy &amp; data-minimalisatie</h2>
+
+    <h3>9.1 Het ontwerpprincipe</h3>
+    <p>In plaats van een los privacy-hoofdstuk achteraf, is "geen persoonsgegevens" een randvoorwaarde die elk datamodel-veld (Deel 7.3), elke agent-tool (Deel 5) en elke exportfunctie (FR-09) al vanaf het ontwerp beperkt. Identificatie gebeurt uitsluitend via <code>first_name + team_id + cohort</code>. De docent — die de teamsamenstelling al kent — disambigueert naamcollisies (bv. twee studenten met voornaam "Sam" in hetzelfde team) via die bestaande kennis, niet via een systeemveld.</p>
+
+    <h3>9.2 Wat dit wel en niet oplost</h3>
+    <ul>
+      <li><strong>Peer-review (NFR-05) blijft team-niveau.</strong> Voornamen van individuele teamleden zijn nooit onderdeel van wat naar een ander team gaat in de review-ring (Deel 4.5) — alleen het teamartefact.</li>
+      <li><strong>Individuele toetsing (LRD Deel 4, Deel 9) blijft mogelijk op voornaam-niveau.</strong> De tussentijdse studievoortgangstoets (6.4a) en het CBI (FR-09-export) vereisen per-student-zichtbaarheid; <code>first_name</code> binnen een bekend team is voor de docent voldoende, precies zoals de opdrachtgever het geformuleerd heeft.</li>
+      <li><strong>Naamcollisie is een geaccepteerd restrisico</strong>, geen systeemfout — gemitigeerd doordat de docent de teamsamenstelling kent, niet door een technische disambiguatie (die immers weer een unieke identifier zou vereisen). Zie Deel 14.</li>
+    </ul>
+
+    <h3>9.3 Instructeur-geüploade documentinhoud is een andere risicocategorie</h3>
+    <p>Deel 7.3's garantie ("geen persoonsgegevensveld in het schema") geldt voor data die het systeem zelf genereert. <code>instructor-document</code>-concepten (7.1) zijn anders: de <em>inhoud</em> van een geüpload PDF/Excel/CSV-bestand komt van buiten het systeem en kan persoonsgegevens bevatten die de instructeur niet bedoelde te delen (bv. namen in een jaarverslag, of per ongeluk een verkeerd bestand). Dit TDD kan dat niet technisch uitsluiten — net zomin als het LRD dat kan voor echte bedrijfsnamen in teamcases (LRD Deel 12, risico "Kwaliteit/aansprakelijkheid"). De mitigatie is dezelfde soort maatregel: een korte bevestigingsstap in de upload-UI (6.4) die de instructeur wijst op deze verantwoordelijkheid, geen geautomatiseerde PII-scan (die zelf weer een nieuwe, foutgevoelige component zou zijn). Zie Deel 14.</p>
+
+    <h3>9.4 Studentdossier en cursusadministratie blijven binnen dezelfde grens</h3>
+    <p><code>team-roster</code>, <code>assessment-schedule</code> en het studentdossier (5.8) voegen geen nieuw identifierveld toe: <code>student_first_name</code>/<code>members</code> zijn dezelfde vrije-tekst-voornaam als overal elders in dit datamodel (7.3), nooit een studentnummer of ander HAN-systeemveld. Een "studentdossier" klinkt als een uitbreiding van wat over een student wordt vastgelegd, maar is hier uitsluitend een <em>samenvoeging</em> van data die al bestond (gate-geschiedenis, wiki-punten, review-uitkomsten) — geen nieuwe databron, geen nieuw privacyrisico.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 10 — Deployment &amp; hosting</h2>
+
+    <h3>10.1 Wiki: ongewijzigd</h3>
+    <p>Blijft op GitHub Pages, gebouwd via het bestaande <code>wiki-template</code>-GitHub-Actions-workflow. Geen enkele wijziging aan hosting, build of publicatieproces.</p>
+
+    <h3>10.2 Gate-systeem: minimale nieuwe infrastructuur</h3>
+    <p>De agentic-services- en data-laag draaien als een klein containerdienst (aansluitend op <code>adk2-blueprint</code>'s Gemini/Google-oriëntatie), aanbevolen op <strong>Cloud Run, regio <code>europe-west4</code></strong> (Nederland — lage latency, EU-datalocatie). De DuckLake-bestanden (Deel 4.3) vereisen persistente opslag over container-herstarts heen; Cloud Run-instanties zijn zelf stateless, dus dit vraagt een gemount volume of object storage-koppeling — expliciet als open risico gemarkeerd in Deel 14, niet stilzwijgend aangenomen.</p>
+
+    <h3>10.3 Sessies</h3>
+    <p><code>DatabaseSessionService</code> (Deel 5.4) vereist een <code>DATABASE_URL</code>; aanbevolen een kleine managed Postgres-instantie in dezelfde regio (<code>europe-west4</code>), gescheiden van de DuckLake-opslag — sessiestate en domeindata hebben andere duurzaamheids- en backupeisen.</p>
+
+    <h3>10.4 CI/CD</h3>
+    <p>De wiki behoudt haar eigen workflow (10.1). Een tweede, nieuwe GitHub Actions-workflow bouwt en deployt de gate-systeem-container bij wijzigingen in de betreffende codebase — gescheiden van de wiki-pijplijn zodat een gate-systeem-deploy nooit een onnodige wiki-rebuild triggert (en omgekeerd).</p>
+
+    <h3>10.5 NFR-02 in de praktijk</h3>
+    <p>Samenvattend (uitgewerkt in Deel 2.2): NFR-02 wordt gehonoreerd voor de wiki zelf; de nieuwe infrastructuur is bewust minimaal (één containerdienst + één databank) en bestaat uitsluitend voor functionaliteit die in geen van de drie blueprints als statische content kan bestaan.</p>
+
+    <h3>10.6 Applicatie- versus infrastructuurlogging</h3>
+    <p>Het <code>action_log</code> (Deel 4.8) is een <strong>applicatieniveau</strong> audit-log: gestructureerd, queryable via DuckDB, gekoppeld aan domeinbegrippen (<code>team_id</code>, <code>layer</code>, <code>correlation_id</code>). Dat is een ander laag dan wat Cloud Run al gratis meelevert: stdout/stderr van de containerdienst wordt automatisch naar Cloud Logging geschreven (containerlevenscyclus, ongevangen exceptions die nooit een <code>action_log</code>-regel haalden omdat het proces zelf crashte). Beide zijn nodig — het applicatielog voor "wat deed het systeem, voor wie, met welke uitkomst" (NFR-08), Cloud Logging voor "waarom deed de container zelf iets onverwachts" — en dit TDD bouwt geen dubbel mechanisme: Cloud Logging vereist geen extra infrastructuurkeuze, het is inbegrepen in de Deel 10.2-keuze voor Cloud Run.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 11 — Guardrails &amp; beveiliging</h2>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Guardrail</th><th>Mechanisme</th><th>Cf.</th></tr></thead>
+      <tbody>
+        <tr><td>Socratische tutor geeft nooit een verdict</td><td>Structurele kanaalscheiding (geen scoreveld in teamrespons), niet alleen instructie</td><td>5.1, 6.3</td></tr>
+        <tr><td>Escrow-vertrouwelijkheid</td><td>Geen cross-team-leestoegang; onthulling uitsluitend via coordinator-schrijfactie</td><td>4.5</td></tr>
+        <tr><td>Review-ring-anonimiteit binnen NFR-05</td><td>Alleen teamartefact deelbaar, geen individuele identifiers in het gedeelde pad</td><td>4.1, 9.2</td></tr>
+        <tr><td>Agent-eigendom (FR-10)</td><td>Config-schrijftoegang afgedwongen op deploymentniveau (service-account-scopes), niet alleen applicatielogica</td><td>5.5</td></tr>
+        <tr><td>Tenant-isolatie</td><td>Hergebruik van <code>small-medium-data-lake</code>'s "geen cross-client-catalogus"-principe (blueprint §10 threat model) als "geen cross-team"</td><td>4.1</td></tr>
+        <tr><td>Systeembrede auditeerbaarheid</td><td><code>action_log</code> met succes/fout-uitkomst per handeling, append-only</td><td>4.8, NFR-08</td></tr>
+        <tr><td>Wiki-kwaliteitspunten zijn geen pedagogisch cijfer</td><td>Apart datamodel (<code>wiki_quality_log</code> vs <code>rubric_scores</code>), nooit gate-blocking, nooit onderdeel van AC-03's verborgen rubriek</td><td>5.7, 7.2, FR-21</td></tr>
+        <tr><td>AI-CBI-voorbereiding kleurt nooit het docentoordeel</td><td>Verplicht <code>source_ref</code>-veld per aandachtspunt/vraagsuggestie; geen outputveld voor een samenvattend oordeel (structureel, niet instructie)</td><td>5.8, NFR-10</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 12 — Testing- &amp; evaluatiestrategie</h2>
+
+    <h3>12.1 Agent-evaluatie (AC-03, AC-05)</h3>
+    <p>Hergebruik van <code>adk2-blueprint</code>'s <code>AgentEvaluator</code> + <code>.evalset.json</code>-patroon (<code>tests/eval/</code>, gated achter <code>pytest.mark.eval</code>, los van de snelle CI): een evalset voor de Socratische Tutor Agent bevat cases die expliciet toetsen dat geen enkel teamgericht antwoord scoretaal ("goed", "fout", een cijfer) bevat (AC-03), en dat opeenvolgende rapporten binnen een team aantoonbaar voortbouwen op eerdere (AC-05). Deze evalsets zijn <strong>levende acceptatietests</strong>, niet eenmalige handmatige controles — ze draaien bij elke wijziging aan de tutor-prompts. Hetzelfde patroon dekt de Wiki Quality Check Agent (AC-13: geen gemiste duplicaten/bronvermeldingsfouten in een steekproef van testinvoer) en de Assessment-Prep Agent (AC-14: elke gegenereerde aandachtspunt/vraagsuggestie in de evalset moet een geldig <code>source_ref</code> hebben, anders faalt de test) — drie agents, één hergebruikt evaluatiemechanisme.</p>
+
+    <h3>12.2 Overige testlagen</h3>
+    <p>Volgt <code>adk2-blueprint</code>'s bestaande indeling: <code>unit/</code> (losse functies, bv. escrow-vervalvensterlogica), <code>component/</code> (in-memory <code>Runner</code>-tests per agent), <code>integration/</code> (echte servicecalls tegen een testomgeving), <code>eval/</code> (12.1). OKF-conformance (AC-09) hergebruikt het lintpatroon dat <code>wiki-template</code> al heeft (<code>scripts/lint-page.mjs</code>-equivalent) tegen alle nieuwe concept-types uit Deel 7.1.</p>
+
+    <h3>12.3 Menselijke steekproef blijft nodig</h3>
+    <p>Het LRD zelf specificeert al een aanvullende, niet-technische controle: een "steekproefcontrole van transcripten per cohort" voor AC-03, en van checkpoint-pagina's voor AC-10. Dit TDD bouwt geen vervanging daarvoor — de geautomatiseerde evalsets (12.1) verkleinen de kans op regressie tussen steekproeven, maar vervangen de docent-steekproef niet.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 13 — Bouwplan/fasering</h2>
+    <p>Deze technische fasering volgt bewust dezelfde volgorde als de pedagogische uitrol-roadmap in LRD Deel 13, zodat beide op elkaar aansluiten in plaats van los van elkaar te lopen.</p>
+    <ol>
+      <li><strong>Wiki-content-laag operationeel</strong> (↔ LRD 13.1 "basiswiki eerst"). Geen technisch werk buiten wat <code>wiki-template</code> al biedt; bevestigt dat boekconcepten en bedrijfscase-bibliotheek geïngest zijn.</li>
+      <li><strong>Data-laag + OKF-bundelconventie per team.</strong> <code>small-medium-data-lake</code>-patroon toegepast op <code>team_id</code> (Deel 4.1–4.2), vóórdat enige agent live gaat.</li>
+      <li><strong>Socratische Tutor Agent + evalharnas, alleen Gate 1 (Direct-fase)</strong> (↔ LRD 13.2 pilot). Handmatige transcriptcontrole vóórdat de verborgen rubriek vertrouwd wordt — zelfde volgorde als het LRD al voorschrijft.</li>
+      <li><strong>Review-Ring Coordinator + instructor-dashboard</strong> (↔ LRD 13.3), naast de lopende pilot.</li>
+      <li><strong>Volledige 15-weekse cyclus, alle vier gates live</strong> (↔ LRD 13.4), override-logging vanaf dag één (Deel 7.2).</li>
+      <li><strong>Kalibratie</strong> (↔ LRD 13.5) — drempelwaarden in de verborgen rubriek en de vervalvenster-timing bijstellen tegen AC-05/AC-07/AC-08.</li>
+      <li><strong>Deploymenthardening &amp; compounding</strong> (↔ LRD 13.6) — DuckLake-duurzaamheid (Deel 14) oplossen vóór een tweede cohort instroomt.</li>
+    </ol>
+    <p>De Wiki Quality Check Agent (5.7), het admin-onderdeel (4.9, 6.5) en het studentdossier (5.8, 6.6) hebben geen eigen fase — ze zijn <strong>additief</strong> bovenop de kernpijplijn hierboven en kunnen parallel gebouwd worden zodra fase 2 (data-laag) staat, zonder een van de zeven fasen te blokkeren of te herordenen.</p>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Deel 14 — Risico's &amp; open beslissingen</h2>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Open punt</th><th>Aanbeveling in dit TDD</th><th>Vraagt bevestiging van</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Frontend-framework</strong></td><td>React + Vite SPA, twee routes (Deel 6.2)</td><td>Opdrachtgever — geen blueprint dicteert dit</td></tr>
+        <tr><td><strong>Hosting-regio</strong></td><td><code>europe-west4</code> voor Cloud Run + Postgres (Deel 10.2–10.3)</td><td>Opdrachtgever/HAN IT — niet expliciet bevestigd, alleen beargumenteerd aanbevolen</td></tr>
+        <tr><td><strong>DuckLake-duurzaamheid op Cloud Run</strong></td><td>Gemount volume of object-storage-koppeling nodig; niet oplossen door DuckLake-bestanden in de container zelf te laten (verdwijnt bij herstart)</td><td>Technische uitwerking vóór Deel 13, fase 7</td></tr>
+        <tr><td><strong>48u-vervalvenster-implementatie</strong></td><td>Periodiek aangeroepen <code>/check-lapses</code>-endpoint (Deel 5.2) i.p.v. een generieke timer-engine</td><td>Bevestiging dat periodieke polling (i.p.v. exacte timer) voldoende precisie geeft</td></tr>
+        <tr><td><strong>Naamcollisie bij voornaam-only-identificatie</strong></td><td>Geaccepteerd restrisico, gemitigeerd door docentkennis van teamsamenstelling (Deel 9.2)</td><td>Expliciete acceptatie door opdrachtgever, niet alleen impliciet in dit TDD</td></tr>
+        <tr><td><strong>NFR-02-herinterpretatie</strong></td><td>Wiki blijft ongewijzigd; nieuwe infrastructuur uitsluitend voor wat structureel niet statisch kan (Deel 2.2)</td><td>Expliciete bevestiging dat deze lezing van NFR-02 aanvaardbaar is</td></tr>
+        <tr><td><strong>Ring-/klas-lakehouse als uitzondering op team-isolatie</strong></td><td>Begrensde, uitsluitend-voor-<code>instructor-document</code> verruiming van de "geen cross-team"-regel (Deel 4.6); checkpoint-/gate-/escrow-data blijft ongewijzigd team-privé</td><td>Bevestiging dat deze specifieke, begrensde uitzondering aanvaardbaar is binnen NFR-05</td></tr>
+        <tr><td><strong>CSV-ingester en PDF-non-determinisme</strong></td><td><code>ingest_csv.py</code> is net-new, nog niet gebouwd (Deel 4.7); PDF-ingestie via Gemini vision is inherent niet-deterministisch — geen technische blocker, wel een kwaliteitscontrolepunt</td><td>Aanvaarding dat PDF-geïngeste content steekproefsgewijs gecontroleerd wordt, analoog aan de bestaande AC-03/AC-10-steekproeven</td></tr>
+        <tr><td><strong>Persoonsgegevens in geüploade documentinhoud</strong></td><td>Niet technisch af te dwingen (Deel 9.3); mitigatie is een bevestigingsstap in de upload-UI (6.4), geen geautomatiseerde scan</td><td>Opdrachtgever — of een geautomatiseerde PII-scan alsnog gewenst is, ondanks de eigen complexiteit die dat toevoegt</td></tr>
+        <tr><td><strong>Retentie/bewaartermijn <code>action_log</code></strong></td><td>Nog niet vastgelegd in dit TDD (Deel 4.8); een systeembreed actielog groeit sneller dan de domeinspecifieke logs, dus een bewaartermijn/archiveringsbeleid is nodig vóór productie</td><td>Opdrachtgever/HAN IT — bewaartermijn en eventueel archiveringsbeleid voor <code>action_log</code></td></tr>
+        <tr><td><strong>Embedding-model voor duplicaatdetectie (5.7)</strong></td><td>Gemini text-embedding-model, consistent met de bestaande Gemini-oriëntatie (Deel 5); geen van de drie blueprints doet dit vandaag, dus dit is een net-new technische keuze</td><td>Bevestiging van modelkeuze vóór Deel 13-fasering</td></tr>
+        <tr><td><strong>Similariteitsdrempel voor "inhoudelijk duplicaat" (5.7, LRD 6.11)</strong></td><td>Nog niet vastgesteld; te behoudend kalibreren riskeert veel false positives (LRD Deel 12), te los kalibreren mist echte duplicaten</td><td>Kalibratie tegen AC-13 tijdens de pilot (LRD Deel 13)</td></tr>
+        <tr><td><strong>Toegangsrol admin-onderdeel + conflictdetectie (4.9, 6.5)</strong></td><td>Velden gereserveerd (<code>docent_id</code>, <code>location</code>, <code>time_slot</code>), geen validatie-/rollenlogica gespecificeerd</td><td>Opdrachtgever — alle docenten of alleen coördinatoren; of dubbele boekingen automatisch gedetecteerd moeten worden (LRD Deel 12, GH issue #2)</td></tr>
+        <tr><td><strong>Vaste locatielijst vs. vrije tekst voor <code>assessment-schedule.location</code></strong></td><td>Vrije tekst als eenvoudigste startpunt (KISS), met Arnhem/Nijmegen als bekende waarden</td><td>Bevestiging of een beheerde lijst nodig is vóór meerdere locaties in gebruik zijn</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="bds-part">Bijlage A — Blueprint-bronnen</h2>
+    <ul>
+      <li><strong>Functionele traceerbaarheid</strong>: <a href="lrd-operational-excellence.html">LRD — Operational Excellence</a> (<code>design-documents/lrd-operational-excellence.html</code>), met name Deel 6 (wiki &amp; gate-systeem), Deel 7 (FR/NFR) en Deel 11 (acceptatiecriteria).</li>
+      <li><strong>Contentformat</strong>: Open Knowledge Format v0.1 (<code>design-documents/SPEC.md</code>).</li>
+      <li><strong>Wiki/content-laag</strong> (Deel 3): <a target="_blank" rel="noopener" href="https://github.com/witoldtenhove/wiki-template">wiki-template</a> — <code>llm-wiki.md</code> (systeemblauwdruk), <code>CLAUDE.md</code> (operationeel schema), <code>quartz.config.ts</code>, <code>.github/workflows/deploy.yml</code>.</li>
+      <li><strong>Data-laag</strong> (Deel 4, 7): lokaal blueprint-project <code>small-medium-data-lake</code> — <code>okf-agentic-data-lake-blueprint.html</code> (architectuurspecificatie §0–§18), <code>smdl/</code> (kernpakket: <code>storage.py</code>, <code>okf.py</code>, <code>ducklake.py</code>, <code>query.py</code>, <code>ingest_excel.py</code>, <code>ingest_pdf.py</code>, <code>service.py</code>), <code>adk_demo/lakehouse_agent/agent.py</code> (agent-integratiepatroon).</li>
+      <li><strong>Agentic-services-laag</strong> (Deel 5): lokaal blueprint-project <code>adk2-blueprint</code> — <code>integrated-blueprint.html</code> (fasegewijze build-blueprint), <code>agents/{collector,approval,concierge,currency}/agent.py</code> (agent-/workflow-patronen), <code>shared/session.py</code>, <code>tests/eval/</code>.</li>
+      <li><strong>Frontend-referentie</strong> (Deel 6): <code>design-documents/frontent-design/HAN Huisstijl Flightpath.dc.html</code> en <code>OE Learning System Views.dc.html</code> (zes mockup-varianten, geconvergeerd op de HAN-huisstijl-richting).</li>
+      <li><strong>Docentfunctionaliteit — GitHub issues</strong> (Deel 3.6, 4.9, 5.7, 5.8, 6.5, 6.6): <a target="_blank" rel="noopener" href="https://github.com/businessdatasolutions/operational-excellence-course/issues/1">Issue #1</a>, <a target="_blank" rel="noopener" href="https://github.com/businessdatasolutions/operational-excellence-course/issues/2">Issue #2</a>, <a target="_blank" rel="noopener" href="https://github.com/businessdatasolutions/operational-excellence-course/issues/3">Issue #3</a> — dezelfde bronnen als LRD Bijlage A.</li>
+    </ul>
+    <p><em>Dit TDD is een ontwerpdocument ter review, geen vastgesteld bouwplan. De hosting-regio, het frontend-framework en de DuckLake-duurzaamheidsoplossing (Deel 14) zijn beargumenteerde aanbevelingen, geen bevestigde beslissingen.</em></p>
+  </section>
+
+</main>
+
+<footer class="bds-footer">
+  <div class="bds-footer-inner">
+    <a href="#top" class="bds-wordmark">
+      <span class="dot"></span>
+      <span>HAN · Operational Excellence</span>
+    </a>
+    <p>Technical Design Document — Operational Excellence Gate-systeem</p>
+  </div>
+</footer>
+
+</body>
+</html>
