@@ -1,0 +1,349 @@
+# Operational Excellence Gate-systeem — Build Plan
+
+> **Voor uitvoerende agents:** dit document is de **enige bron van waarheid voor voortgang**. Vink een taakvakje (`- [ ]` → `- [x]`) pas af nadat de bijbehorende test gate daadwerkelijk is uitgevoerd en geslaagd — nooit vooruitlopend. Twee hookify-rules in `.claude/` herinneren je hieraan bij elke `git commit`/`git push` en bij elke stop: `hookify.require-tests-before-commit.local.md` en `hookify.check-test-gate-on-stop.local.md`.
+>
+> **Volgorde-regel:** een main task mag pas beginnen nadat de **vorige main task in dezelfde afhankelijkheidsketen** succesvol gecommit én gepusht is (zie "Parallelisatie-overzicht" hieronder voor welke tasks wél gelijktijdig mogen). Binnen één main task: subtasks in volgorde, geen enkele commit vóór de test gate van die main task geslaagd is.
+
+**Doel:** de architectuur uit `tdd-operational-excellence.html` bouwen tot een werkend gate-systeem: Socratische AI-gate, peer-review-gate, review-ring, wiki-kwaliteitspunten, instructor-dashboard, admin-onderdeel en studentdossier — precies zoals gespecificeerd in de LRD (`lrd-operational-excellence.html`, FR-01–FR-24) en het TDD.
+
+**Architectuur (samenvatting, zie TDD Deel 2 voor het volledige plaatje):** vier lagen — wiki/content (ongewijzigd, `wiki-template`), data (`small-medium-data-lake`-patroon, per-team/ring/klas lakehouses), agentic services (Google ADK 2.0, `adk2-blueprint`-patroon), frontend (React + Vite, net-new). Alle nieuwe code voor de laatste drie lagen leeft in een **nieuwe, aparte repository** — voorlopige naam `oe-gate-system` — naast (niet ín) deze documentatierepository. De wiki blijft in haar eigen `wiki-template`-fork, ongewijzigd (NFR-02).
+
+**Tech stack:** Python 3.11+ (data-laag, agents — `google-adk[a2a,db,eval]~=2.0`, DuckDB/DuckLake, pytest), TypeScript/React + Vite (frontend), Quartz v4/Node (wiki, ongewijzigd), Cloud Run + managed Postgres (deployment, `europe-west4`).
+
+## Globale randvoorwaarden (gelden voor élke main task)
+
+Deze eisen zijn projectbreed en worden niet in elke task herhaald — een subtask die ze schendt is per definitie niet af:
+
+- **Privacy (LRD Deel 1.3, TDD Deel 9):** uitsluitend `first_name` + `team_id` + `klas_id` + `cohort` als identifiers. Nooit een studentnummer, e-mailadres, achternaam of ander HAN-systeemveld in enig datamodel, log of API-response.
+- **Never-invents-garanties (TDD Deel 4.4, 5.1, 5.3, 5.7, 5.8):** elke agent-tool die cijfers, duplicaat-oordelen, citatie-geldigheid of aandachtspunten produceert, doet dat op basis van deterministische data — nooit een ongestaafde LLM-claim. Waar het TDD een `source_ref`- of vergelijkbaar traceerbaarheidsveld eist, is dat een schema-eis, geen instructie die genegeerd kan worden.
+- **OKF-conformantie (FR-11, NFR-07):** elk nieuw concept-type heeft verplicht `type` in de frontmatter en volgt `design-documents/SPEC.md` §9.
+- **KISS (LRD Deel 5.1):** geen functionaliteit bouwen die niet direct aan een FR/NFR uit de LRD te koppelen is. Twijfel je? Citeer het FR/NFR-nummer in je subtask; kun je dat niet, bouw het niet.
+- **Elke main task levert een mens-testbaar artefact op** (zie "Test Gate" per task) — niet alleen groene automatische tests. Een developer of de opdrachtgever moet het resultaat kunnen dráaien en met eigen ogen kunnen zien werken, vóórdat de task als afgerond geldt.
+- **Blueprint-herkomst respecteren:** waar het TDD een component labelt als hergebruik van `wiki-template`/`small-medium-data-lake`/`adk2-blueprint`, begin je met dat blueprint kopiëren/forken — schrijf het niet from scratch.
+- **Python: altijd een virtualenv, nooit globaal installeren.** Elk `pip install`-commando in dit plan is `.venv/bin/python -m pip install ...` (na `python3 -m venv .venv` in Task 0.6), nooit kaal `pip install` — dat installeert in de globale Python-omgeving en kan andere projecten op dezelfde machine breken (gebeurde tijdens het bouwen van Task 0 zelf; zie de les hieronder in Task 0.6).
+- **Niet elke FR is een build-task:** FR-02 (kwaliteitscriteria-tekst), FR-12 (jaarlijkse Ingest-ronde), FR-16 (optionele KPI-laag) en FR-17 (DMAIC-capstoneformat), en NFR-06 (criteria wijzigen niet binnen een cohort) zijn content-/procesvereisten die docenten rechtstreeks in de wiki (Task 1) of het configuratiepad (Task 3.6) invullen — geen aparte software-subtask. Ze zijn hier expliciet benoemd zodat ze niet stilzwijgend verdwijnen, niet omdat ze genegeerd mogen worden.
+
+---
+
+## Parallelisatie-overzicht
+
+Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en 10 zijn **additief** (TDD Deel 13) en niet op het kritieke pad.
+
+| Golf | Main tasks | Mag starten zodra | Kan als aparte subagent-opdracht |
+|---|---|---|---|
+| 1 | **Task 0** (scaffolding) | direct | — (eenmalig, blokkeert alles) |
+| 2 | **Task 1** (wiki) + **Task 2** (data-laag) | Task 0 gepusht | Ja — twee onafhankelijke subagents, geen gedeelde bestanden |
+| 3 | **Task 3** (Socratische tutor) + **Task 4** (Review-Ring + dashboard) + **Task 8** (Wiki Quality Check) + **Task 9** (admin) | Task 2 gepusht (Task 3 heeft ook Task 1 nodig) | Ja — vier onafhankelijke subagents; elk raakt een eigen submap (`agents/socratic_tutor/`, `agents/review_ring_coordinator/`, `agents/wiki_quality_check/`, `frontend/src/routes/admin/` + admin-API) |
+| 4 | **Task 5** (volledige cyclus, integratie) | Task 3 én Task 4 gepusht | Nee — integratietaak, raakt bestanden van beide vorige tasks |
+| 4b | **Task 10** (studentdossier) | Task 4 én Task 8 gepusht | Ja — parallel aan Task 5, eigen submap (`agents/dashboard_query/` uitbreiding + `frontend/src/routes/instructor/dossier/`) |
+| 5 | **Task 6** (kalibratie) | Task 5 gepusht | Nee — vereist pilotdata uit Task 5 |
+| 6 | **Task 7** (deployment hardening) | Task 6 gepusht (scaffolding uit 7.1–7.2 mag al eerder starten, parallel aan golf 3–5) | Deels — Dockerfile/CI-CD-scaffolding (7.1, 7.4) kan een aparte subagent zijn zodra Task 0 klaar is; de uiteindelijke smoke-test (7.6) niet |
+
+**Vuistregel voor de orkestrerende agent:** als twee main tasks in dezelfde golf staan én geen gedeelde bestanden aanraken (zie de submap-hints), spawn ze als aparte subagents/teammates. Laat elke subagent zijn eigen main task volledig afsluiten (incl. test gate + commit + push) vóórdat de volgende golf begint.
+
+---
+
+## Main Task 0: Repository- en projectscaffolding
+
+**Waarom eerst:** alle volgende tasks hebben een plek nodig om code neer te zetten. Zonder deze task is er geen "junior developer kan dit uitvoeren" mogelijk — er is nog geen repo.
+
+**Bestanden:**
+- Create (nieuwe repo `oe-gate-system`): `README.md`, `.gitignore`, `data/`, `agents/`, `frontend/`, `infra/` (lege mappen met `.gitkeep`)
+
+- [x] **0.1** Maak een nieuwe, lege GitHub-repository `oe-gate-system` aan. ✅ Aangemaakt onder `businessdatasolutions` (privé), zelfde org als de documentatierepository: https://github.com/businessdatasolutions/oe-gate-system
+- [x] **0.2** Maak de mapstructuur aan: `data/smdl/`, `data/tests/`, `agents/shared/`, `agents/tests/`, `frontend/src/`, `frontend/tests/`, `infra/`.
+- [x] **0.3** Schrijf `README.md` met: doel van de repo, link naar `lrd-operational-excellence.html` en `tdd-operational-excellence.html` in de documentatierepository, en de mapstructuur hierboven met één zin uitleg per map.
+- [x] **0.4** Schrijf `.gitignore` voor Python (`__pycache__/`, `.venv/`, `*.pyc`) én Node (`node_modules/`, `dist/`) — beide lagen leven in dezelfde repo.
+- [x] **0.5** Voeg een minimale `data/smdl/__init__.py` en `agents/shared/__init__.py` toe zodat de package-structuur importeerbaar is.
+- [x] **0.6** Voeg een `pyproject.toml` toe met de kernafhankelijkheden: `duckdb`, `pydantic`, `google-adk[a2a,db,eval]~=2.0`, `pytest`, `pytest-asyncio`. Maak daarna **eerst** een virtualenv (`python3 -m venv .venv`) vóór je iets installeert — `pip install` zonder venv installeert in de globale Python-omgeving en kan andere projecten op dezelfde machine breken. ⚠️ **Dit gebeurde daadwerkelijk tijdens het bouwen van deze task**: een kale `pip install -e .` upgradede/downgradede globale pakketten (`openai`, `fastapi`, `pydantic`, `cryptography`, `opentelemetry-*`, e.a.). Gecorrigeerd door alsnog een `.venv` aan te maken en daarin te herinstalleren; de globale pakketten zijn op verzoek van de opdrachtgever ongewijzigd gelaten (geen bekende afhankelijkheid van de oude versies). Zie de bijgewerkte, venv-verplichte instructie hierboven en in `README.md`.
+- [x] **0.7** Voeg een minimale `frontend/package.json` toe (`npm create vite@latest . -- --template react-ts`) met React + Vite + TypeScript.
+
+### Test Gate — Task 0
+- **Automatisch:** ✅ `python3 -m venv .venv && .venv/bin/python -m pip install -e ".[dev]"` slaagde zonder fouten (pytest 9.1.1 geïnstalleerd, geïsoleerd); `cd frontend && npm install` slaagde zonder fouten (27 packages, 0 vulnerabilities).
+- **Mens-testbaar artefact:** ✅ `npm run dev` gestart, `curl -I http://localhost:5173` gaf `HTTP/1.1 200 OK` — Vite-devserver draaide en serveerde de React-startpagina. Devserver na verificatie weer gestopt.
+
+### Commit & push — Task 0
+- [x] `git add -A && git commit -m "Scaffold oe-gate-system repo structure"` — commit `7947ad8`.
+- [x] `git push origin main` — gepusht naar https://github.com/businessdatasolutions/oe-gate-system
+- [x] **Main Task 0 afgerond** (12 juli 2026).
+
+---
+
+## Main Task 1: Wiki-content-laag operationeel
+
+*(Kan parallel aan Task 2 — golf 2, aparte subagent, raakt geen bestanden uit Task 2.)*
+
+**Bestanden:** een fork van `wiki-template` (aparte repo, blijft altijd apart van `oe-gate-system` — TDD Deel 3.1/10.1) — geen wijzigingen aan `oe-gate-system` in deze task.
+
+- [ ] **1.1** Fork/clone `https://github.com/witoldtenhove/wiki-template` als de cursus-wiki-repo. Draai lokaal `npm install && npm run serve` en bevestig dat de bestaande demo-content rendert op `localhost:8080`.
+- [ ] **1.2** Zet de 19 boekconcept-pagina's (Ch1–Ch19) op in `wiki/concepts/`, elk met OKF-frontmatter: verplicht `type: boek-concept`, plus `stage` (direct|design|deliver|develop) en hoofdstuktag (`ch01`…`ch19`) per de mapping in LRD Deel 8 (ná de 10e-editie-correctie: Ch15=Operations improvement, Ch16=Lean operations, Ch5="The structure and scope of supply").
+- [ ] **1.3** Zet de bedrijfscase-bibliotheek op in `wiki/sources/` — begin met de vijf in LRD Deel 1.1 genoemde voorbeelden (IKEA, Toyota, Ryanair, Michelin, Amazon) als concrete eerste batch, elk `type: bedrijfscase-bron`.
+- [ ] **1.4** Zet de 23 Lean-tool↔Industrie-4.0-referentiepagina's uit Gomaa (2025) Tabel VII op in `wiki/concepts/`, `type: concept`, getagd `[lean-tool, industrie4.0]` — gebruik de gecorrigeerde chapter-tags uit LRD Deel 6.2 (Kaizen→ch15, Kanban→ch16, beide `stage: develop`).
+- [ ] **1.5** Zet de 19 vooraf geselecteerde AI-Wiki-contentmap-pagina's (FR-19) op, per de fase-mapping in LRD §8.1.
+- [ ] **1.6** Bouw of hergebruik de bestaande Quartz-extensiecomponent voor het 4D "je-bent-hier"-diagram (FR-13) op elke week-landingspagina — het huidige thema gemarkeerd, exact zoals het cirkeldiagram in het bronboek.
+- [ ] **1.7** Controleer dat `.github/workflows/deploy.yml` (al aanwezig in `wiki-template`) ongewijzigd werkt: push naar `main` bouwt en publiceert naar GitHub Pages.
+
+### Test Gate — Task 1
+- **Automatisch:** een OKF-lintscript (hergebruik het patroon uit `scripts/lint-page.mjs` van `wiki-template`, AC-09) draait over alle pagina's uit 1.2–1.5 en meldt nul fouten (elke pagina heeft niet-lege `type`).
+- **Mens-testbaar artefact:** `npm run serve` lokaal starten; een mens navigeert naar minimaal drie week-landingspagina's in de browser en ziet het 4D-diagram met het juiste thema gemarkeerd, en naar minimaal vijf boekconcept-pagina's en vijf bedrijfscase-pagina's die correct renderen met titel, tags en inhoud.
+
+### Commit & push — Task 1
+- [ ] Commit met boodschap die refereert aan FR-11/FR-13/FR-14/FR-19.
+- [ ] Push naar de wiki-repo's `main`.
+- [ ] Vink af: **Main Task 1 afgerond**.
+
+---
+
+## Main Task 2: Data-laag + OKF-bundelconventie per team
+
+*(Kan parallel aan Task 1 — golf 2, aparte subagent.)*
+
+**Bestanden (in `oe-gate-system`):**
+- Modify: `data/smdl/storage.py`, `data/smdl/okf.py`, `data/smdl/ducklake.py`
+- Create: `data/smdl/ingest_csv.py`, `data/tests/test_okf_concepts.py`, `data/tests/test_ducklake_tables.py`
+
+- [ ] **2.1** Kopieer `storage.py`, `okf.py`, `ducklake.py`, `query.py`, `ingest_excel.py`, `ingest_pdf.py`, `service.py` uit `small-medium-data-lake` naar `data/smdl/`.
+- [ ] **2.2** Pas `Lakehouse` in `storage.py` aan: vervang `client_id` door `team_id` + `cohort` (team-niveau), en voeg twee extra constructor-varianten toe voor ring-niveau (`ring_id` + `cohort`) en klas-niveau (`klas_id` + `cohort`) — drie soorten lakehouse-paden per TDD Deel 4.1/4.6: `lakehouse/<cohort>-team-<team_id>/`, `lakehouse/<cohort>-ring-<ring_id>/`, `lakehouse/<cohort>-klas-<klas_id>/`.
+- [ ] **2.3** Implementeer in `okf.py` de acht concept-schema's uit TDD Deel 7.1, elk als een `Concept`-subklasse of Pydantic-model met exact de velden uit het TDD: `checkpoint-submission`, `gate-pass-event`, `escrow-state`, `reviewring-assignment`, `klas-roster`, `instructor-document`, `wiki-quality-check`, `course-period`, `team-roster`, `assessment-schedule`. Kopieer de veldnamen letterlijk uit de YAML-voorbeelden in het TDD — geen eigen veldnamen verzinnen. Het `checkpoint-submission`-schema bevat verplicht een kritische-lens-sectie (FR-15) als onderdeel van hetzelfde antwoord, geen apart veld of aparte indiening.
+- [ ] **2.4** Implementeer in `ducklake.py` schrijfhelpers voor de zeven tabellen uit TDD Deel 7.2: `gate_events`, `rubric_scores`, `reviewring_log`, `override_log`, `uploaded_tables`, `action_log`, `wiki_quality_log` — kolomnamen exact zoals in het TDD.
+- [ ] **2.5** Schrijf `data/smdl/ingest_csv.py`: een deterministische ingester naar het patroon van `ingest_excel.py` (TDD Deel 4.7) — CSV inlezen, output als DuckLake-tabel + `instructor-document`-concept.
+- [ ] **2.6** Voeg `.csv` toe aan de routeringstabel in `service.py` (naast de bestaande `EXCEL_EXTS`/`PDF_EXTS`).
+- [ ] **2.7** Schrijf `data/tests/test_okf_concepts.py`: voor elk van de acht concept-types uit 2.3 een test die een instance aanmaakt, naar een tijdelijke lakehouse schrijft, terugleest, en velden vergelijkt.
+- [ ] **2.8** Schrijf `data/tests/test_ducklake_tables.py`: voor elk van de zeven tabellen uit 2.4 een test die een rij schrijft en via een `SELECT`-query terugleest.
+- [ ] **2.9** Schrijf een smoke-test-CLI-script `data/smdl/cli.py` met een `inspect <team_id>`-commando dat een team-lakehouse's OKF-bundle-inhoud en DuckLake-tabelrijen naar de terminal print (mens-leesbaar, geen JSON-dump).
+- [ ] **2.10** Schrijf `agents/shared/action_log.py`: een herbruikbare decorator `@log_action(layer=...)` (NFR-08, TDD Deel 5.6) die elke functie waarop hij wordt toegepast omhult — bij succes een `action_log`-regel met `outcome=success`, bij een exception `outcome=error` + foutdetail, altijd met een `correlation_id` uit de aanroepende sessie/workflow-context. Elke volgende agent-task (3, 4, 8, 10) past deze decorator toe op zijn eigen tools — bouw hem hier één keer, generiek genoeg voor hergebruik.
+- [ ] **2.11** Implementeer in `service.py` de distributiescope-routering uit TDD Deel 4.6/4.7 (FR-20): een functie `route_instructor_document(scope: Literal["team","ring","klas"], scope_id, cohort, file) -> Lakehouse` die het juiste lakehouse-pad kiest op basis van `scope` (scope `"everyone"` wordt hier expliciet **niet** afgehandeld — dat pad gaat via Task 1's wiki-terugschrijfmechaniek, niet via de data-laag).
+
+### Test Gate — Task 2
+- **Automatisch:** `pytest data/tests/ -v` — alle tests uit 2.7/2.8 slagen.
+- **Mens-testbaar artefact:** draai `python -m smdl.cli inspect team-07` na handmatig één `checkpoint-submission` en één `gate-pass-event` te hebben aangemaakt via een klein setup-scriptje (`data/smdl/demo_seed.py`, ook door deze task toe te voegen) — een mens ziet leesbare output met de teamnaam, het concept en de gate-status.
+
+### Commit & push — Task 2
+- [ ] Commit met boodschap die refereert aan FR-01/FR-07/FR-09/FR-11/FR-20/FR-21/FR-22.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 2 afgerond**.
+
+---
+
+## Main Task 3: Socratische Tutor Agent + evalharnas (alleen Gate 1)
+
+*(Golf 3, parallel aan Task 4/8/9 — vereist Task 1 én Task 2 gepusht.)*
+
+**Bestanden:**
+- Create: `agents/socratic_tutor/agent.py`, `agents/shared/session.py`, `agents/socratic_tutor/socratic_tutor.evalset.json`, `agents/tests/test_socratic_tutor_component.py`
+
+- [ ] **3.1** Kopieer `shared/models.py` en `shared/session.py` uit `adk2-blueprint` naar `agents/shared/`.
+- [ ] **3.2** Scaffold `agents/socratic_tutor/agent.py` als `task`-modus `Agent` (patroon uit `adk2-blueprint/agents/collector/`).
+- [ ] **3.3** Implementeer de tool `query_wiki(query: str) -> list[dict]` die de gepubliceerde wiki (Task 1) doorzoekt (hergebruik het `qmd`-hybride-zoekpatroon uit `wiki-template`, TDD Deel 5.1).
+- [ ] **3.4** Implementeer de tool `read_team_history(team_id: str, stage: str) -> list[dict]` die alle eerdere `checkpoint-submission`-vervolgconcepten van dat team uit de data-laag (Task 2) leest.
+- [ ] **3.5** Implementeer de tool `write_report(team_id, stage, team_transcript, instructor_report, rubric_score, gate_a_status)` die **twee gescheiden schrijfacties** doet: een teamgericht antwoord-schema zónder scoreveld, en een docentgericht schema mét `rubric_score` — exact de structurele scheiding uit TDD Deel 5.1/6.3. Schrijf een test die aantoont dat het teamgerichte schema geen `score`-attribuut heeft (structurele controle, niet alleen een lint-regel).
+- [ ] **3.6** Schrijf de Socratische systeeminstructie (nooit een verdict, altijd voortbouwen op eerdere geschiedenis, FR-03) in een apart, module-eigenaar-only-schrijfbaar configuratiebestand `agents/socratic_tutor/prompts/system_instruction.md`.
+- [ ] **3.7** Koppel `DatabaseSessionService` (uit `shared/session.py`) met één sessie per team-per-checkpoint.
+- [ ] **3.8** Schrijf `agents/socratic_tutor/socratic_tutor.evalset.json` met minimaal vijf cases die controleren dat geen enkel teamgericht antwoord scoretaal bevat ("goed", "fout", een cijfer) — AC-03.
+- [ ] **3.9** Schrijf `agents/tests/test_socratic_tutor_component.py`: een in-memory-`Runner`-test die een mock-checkpoint-inzending door de agent stuurt en controleert dat er precies één rapport per kanaal wordt geschreven.
+- [ ] **3.10** Pas de `@log_action`-decorator uit Task 2.10 toe op `query_wiki`, `read_team_history` en `write_report` (NFR-08).
+
+### Test Gate — Task 3
+- **Automatisch:** `pytest agents/tests/test_socratic_tutor_component.py -v` slaagt; `pytest agents/socratic_tutor/ -m eval` (AgentEvaluator tegen het evalset) slaagt 100% op de never-scores-check (AC-03).
+- **Mens-testbaar artefact:** start `adk web` lokaal, open de dev-UI in de browser, voer een mock-Direct-fase-checkpoint in, en bevestig met eigen ogen dat de tutor uitsluitend Socratische vragen terugstuurt — nooit "dat is goed" of een cijfer.
+
+### Commit & push — Task 3
+- [ ] Commit met boodschap die refereert aan FR-03/FR-10.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 3 afgerond**.
+
+---
+
+## Main Task 4: Review-Ring Coordinator + Instructor Dashboard
+
+*(Golf 3, parallel aan Task 3/8/9 — vereist Task 2 gepusht.)*
+
+**Bestanden:**
+- Create: `agents/review_ring_coordinator/workflow.py`, `agents/dashboard_query/agent.py`, `frontend/src/routes/instructor/Dashboard.tsx`, `agents/tests/test_review_ring.py`
+
+- [ ] **4.1** Scaffold `agents/review_ring_coordinator/workflow.py` als deterministische ADK `Workflow` (patroon uit `adk2-blueprint/agents/approval/`) — **geen LLM-call**.
+- [ ] **4.2** Implementeer ringtoewijzing bij cohortstart: elk team krijgt een A→B→C→A-positie (FR-07), geschreven als `reviewring-assignment`-concept (Task 2).
+- [ ] **4.3** Implementeer fallback-herconfiguratie (FR-08): een functie `reconfigure_ring(ring_id, departed_team_id)` die alleen de betrokken posities aanpast.
+- [ ] **4.4** Implementeer de escrow-onthulling met het `RequestInput`/resume-patroon (FR-18): team A's zicht op ontvangen feedback blijft gepauzeerd tot het event "eigen review ingediend" binnenkomt.
+- [ ] **4.5** Implementeer het `/check-lapses`-endpoint (FR-04): een los aan te roepen functie die `escrow-state`-concepten met een verstreken `lapse_deadline` (Task 2, 48u) detecteert en de "ontvangen"-voorwaarde laat vervallen.
+- [ ] **4.6** Scaffold `agents/dashboard_query/agent.py`: de tool `query_dashboard(cohort)` die `gate_events`/`rubric_scores` aggregeert via DuckDB-SQL (nooit een LLM-samenvatting van getallen, TDD Deel 4.4).
+- [ ] **4.7** Bouw `frontend/src/routes/instructor/Dashboard.tsx`: per-team statuskaart (fase, gate A/B-status), override-knop die naar een `POST /override`-endpoint schrijft dat een `gate-pass-event` met `actor: instructor` aanmaakt (FR-06) en in `override_log` landt.
+- [ ] **4.8** Schrijf `agents/tests/test_review_ring.py`: tests voor ringtoewijzing, fallback-herconfiguratie, en dat escrow-onthulling pas plaatsvindt ná de eigen-review-submit-event.
+- [ ] **4.9** Pas de `@log_action`-decorator uit Task 2.10 toe op de workflow-transities in `review_ring_coordinator/workflow.py` en op `query_dashboard` (NFR-08).
+
+### Test Gate — Task 4
+- **Automatisch:** `pytest agents/tests/test_review_ring.py -v` slaagt; een test bevestigt expliciet dat vroegtijdig lezen van andermans feedback vóór eigen inzending onmogelijk is (FR-18).
+- **Mens-testbaar artefact:** `npm run dev` in `frontend/`, dashboard-route openen, en met gemockte data (uit Task 2's `demo_seed.py`, uit te breiden met 3 mock-teams) met de klok meelopen of een mens binnen 1 minuut de status van elk team kan beoordelen (NFR-03/AC-04) — noteer de gemeten tijd in de commit-boodschap.
+
+### Commit & push — Task 4
+- [ ] Commit met boodschap die refereert aan FR-04/FR-06/FR-07/FR-08/FR-18/NFR-03.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 4 afgerond**.
+
+---
+
+## Main Task 5: Volledige cyclus — alle vier gates live + teamfrontend
+
+*(Golf 4 — integratietaak, niet parallelliseerbaar; vereist Task 3 én Task 4 gepusht.)*
+
+**Bestanden:**
+- Modify: `agents/socratic_tutor/agent.py` (verwijder Gate-1-only-restrictie), `agents/review_ring_coordinator/workflow.py`
+- Create: `frontend/src/routes/team/CheckpointView.tsx`, `agents/tests/test_full_cycle_integration.py`
+
+- [ ] **5.1** Verwijder elke Gate-1-only-restrictie uit Task 3; bevestig dat de agent voor alle vier D-fasen werkt met dezelfde tools.
+- [ ] **5.2** Bouw `frontend/src/routes/team/CheckpointView.tsx`: het team-facing scherm — Socrates-chatkaart, Gate A/B-statuskaarten, peer-partnerkaart, footer zonder scoreveld (mapping uit TDD Deel 6.1).
+- [ ] **5.3** Implementeer het server-side "geen cijfer zichtbaar"-contract (TDD Deel 6.3): het teamgerichte API-response-schema bevat structureel geen scoreveld — voeg een contract-test toe die faalt als iemand per ongeluk een scoreveld toevoegt aan dat schema.
+- [ ] **5.4** Implementeer het binaire gate-signaal (FR-05): een functie `combine_gate_signal(gate_a_status, gate_b_status) -> Literal["open","dicht"]`, voor het team alleen zichtbaar als open/dicht.
+- [ ] **5.5** Breid het evalset uit Task 3 uit met AC-05-cases (voortbouw-op-vorig-rapport-check voor gate 2–4).
+- [ ] **5.6** Schrijf `agents/tests/test_full_cycle_integration.py`: één test die één mock-team door alle vier checkpoints stuurt (submit → Gate A → Gate B → volgende fase) en op elk punt de juiste status controleert.
+
+### Test Gate — Task 5
+- **Automatisch:** `pytest agents/tests/test_full_cycle_integration.py -v` slaagt; uitgebreide evalset (AC-05) slaagt.
+- **Mens-testbaar artefact:** volledige handmatige doorloop door een mens: als team door één D-fase heen (checkpoint indienen → Socratische chat → peer-review simuleren → beide gates open zien gaan) in de draaiende frontend — geen enkele stap overgeslagen, geen cijfer zichtbaar op enig moment.
+
+### Commit & push — Task 5
+- [ ] Commit met boodschap die refereert aan FR-05/AC-03/AC-05.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 5 afgerond**.
+
+---
+
+## Main Task 6: Kalibratie
+
+*(Golf 5 — vereist Task 5 gepusht en pilotdata.)*
+
+**Bestanden:** Create: `data/calibration/report.md`, `data/calibration/threshold_analysis.py`
+
+- [ ] **6.1** Schrijf `data/calibration/threshold_analysis.py`: leest pilot-cohort-data uit `rubric_scores`/`override_log`/`reviewring_log`, berekent AC-05/AC-07/AC-08-percentages.
+- [ ] **6.2** Kalibreer de verborgen-rubriekdrempel op basis van de uitkomst; documenteer de gekozen waarde en de reden in `data/calibration/report.md`.
+- [ ] **6.3** Kalibreer de embedding-similariteitsdrempel voor duplicaatdetectie (Task 8) op dezelfde manier, tegen AC-13.
+- [ ] **6.4** Werk TDD Deel 14 en LRD Deel 12 bij (in de documentatierepository) met de definitieve, gekalibreerde waarden — dit vervangt de "nog te kalibreren"-vermeldingen.
+
+### Test Gate — Task 6
+- **Automatisch:** `threshold_analysis.py` draait zonder fouten en produceert reproduceerbare cijfers uit de pilotdata.
+- **Mens-testbaar artefact:** `data/calibration/report.md` is leesbaar voor de module-eigenaar en bevat expliciete voor/na-drempelwaarden met onderbouwing — de docent kan het rapport lezen en de keuze beoordelen zonder de code te hoeven lezen.
+
+### Commit & push — Task 6
+- [ ] Commit (in beide repo's: `oe-gate-system` voor de code, documentatierepository voor de LRD/TDD-updates).
+- [ ] Push beide.
+- [ ] Vink af: **Main Task 6 afgerond**.
+
+---
+
+## Main Task 7: Deploymenthardening
+
+*(7.1/7.4 mogen als scaffolding al vanaf golf 2 parallel starten; 7.6 pas ná Task 6.)*
+
+**Bestanden:** Create: `infra/Dockerfile`, `infra/cloudrun.yaml`, `.github/workflows/deploy-gate-system.yml`
+
+- [ ] **7.1** Schrijf `infra/Dockerfile`: multi-stage build voor de Python-agentic-/data-laag (mag parallel starten zodra Task 0 klaar is).
+- [ ] **7.2** Configureer Cloud Run (regio `europe-west4`) met een gemount volume of GCS-object-storage-koppeling voor de DuckLake-bestanden (TDD Deel 10.2 — expliciet niet in de container zelf laten).
+- [ ] **7.3** Configureer een managed Postgres-instantie (zelfde regio) voor `DatabaseSessionService`.
+- [ ] **7.4** Schrijf `.github/workflows/deploy-gate-system.yml`: aparte workflow van de wiki-pijplijn, bouwt en deployt bij wijzigingen in `oe-gate-system` (mag parallel starten zodra Task 0 klaar is).
+- [ ] **7.5** Bevestig dat Cloud Logging automatisch stdout/stderr van de container opvangt naast het eigen `action_log` (TDD Deel 10.6) — geen extra configuratie nodig, wel te verifiëren.
+- [ ] **7.6** Draai een smoke-test tegen de gedeployde omgeving: health-check-endpoint + één volledige gate-cyclus (hergebruik het scenario uit Task 5's integratietest, nu tegen de live URL).
+
+### Test Gate — Task 7
+- **Automatisch:** CI/CD-pipeline is groen op een test-PR; smoke-test-script tegen de live URL slaagt.
+- **Mens-testbaar artefact:** een mens bezoekt de gedeployde frontend-URL in een browser en doorloopt handmatig één checkpoint-indiening tegen de echte, gedeployde omgeving (niet lokaal).
+
+### Commit & push — Task 7
+- [ ] Commit met boodschap die refereert aan NFR-02/NFR-04/Deel 10.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 7 afgerond**.
+
+---
+
+## Main Task 8: Wiki Quality Check Agent (additief, parallelliseerbaar)
+
+*(Golf 3, parallel aan Task 3/4/9 — vereist Task 2 gepusht.)*
+
+**Bestanden:** Create: `agents/wiki_quality_check/agent.py`, `agents/wiki_quality_check/wiki_quality_check.evalset.json`, `agents/tests/test_wiki_quality_check.py`
+
+- [ ] **8.1** Implementeer de tool `extract_contribution(synthesis_text) -> ContributionCandidate` (LLM-stap, gestructureerde output: concepten/entiteiten/bronnen/relaties).
+- [ ] **8.2** Implementeer de tool `check_duplicates(candidate) -> DuplicateResult` — deterministisch: exacte titelmatch + embedding-similariteit (Gemini text-embedding-model) tegen een instelbare drempel (placeholder-waarde, kalibratie volgt in Task 6).
+- [ ] **8.3** Implementeer de tool `validate_citations(candidate) -> CitationResult` — deterministisch: elke bron moet auteur/jaar/titel/uitgever-of-URL bevatten (gestructureerde invoer, geen vrije-tekst-parsing).
+- [ ] **8.4** Implementeer de tool `compute_points(candidate, duplicate_result, citation_result) -> PointsBreakdown` — 1 punt/concept, 1 punt/entiteit, 1 punt/bron, 0,5 punt/relatie (LRD 6.11); schrijft naar `wiki_quality_log` (Task 2), nooit een los bijgehouden totaal.
+- [ ] **8.5** Koppel de agent-aanroep in de Synthesize-pijplijn: vlak vóór de git-commit die een teamcase publiceert (TDD Deel 3.6), ná gate A/B — geen invloed op gate-status.
+- [ ] **8.6** Schrijf `agents/wiki_quality_check/wiki_quality_check.evalset.json` met cases voor: exact duplicaat (afwijzen), inhoudelijk duplicaat (afwijzen), ontbrekende bronvermelding (afwijzen), volledig geldige bijdrage (accepteren + correcte puntentelling).
+- [ ] **8.7** Pas de `@log_action`-decorator uit Task 2.10 toe op alle vier tools uit 8.1–8.4 (NFR-08).
+
+### Test Gate — Task 8
+- **Automatisch:** `pytest agents/tests/test_wiki_quality_check.py -v` slaagt; evalset slaagt 100% (AC-13).
+- **Mens-testbaar artefact:** een mens dient drie testbijdragen in via een klein CLI-scriptje (`agents/wiki_quality_check/demo_submit.py`) — één met een exact duplicaat, één zonder bronvermelding, één correct — en ziet de juiste afwijzingsreden respectievelijk het juiste puntentotaal op het scherm.
+
+### Commit & push — Task 8
+- [ ] Commit met boodschap die refereert aan FR-21/AC-13.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 8 afgerond**.
+
+---
+
+## Main Task 9: Admin-onderdeel voor cursusvoorbereiding (additief, parallelliseerbaar)
+
+*(Golf 3, parallel aan Task 3/4/8 — vereist Task 2 gepusht.)*
+
+**Bestanden:** Create: `agents/admin_api/routes.py`, `frontend/src/routes/admin/CoursePeriod.tsx`, `frontend/src/routes/admin/Teams.tsx`, `frontend/src/routes/admin/Assessments.tsx`, `frontend/src/routes/admin/DocumentUpload.tsx`, `agents/tests/test_admin_crud.py`
+
+- [ ] **9.1** Implementeer CRUD-endpoints voor `course-period` (TDD Deel 4.9/7.1): create/read/update in het cohort-brede admin-lakehouse.
+- [ ] **9.2** Implementeer CRUD-endpoints voor `team-roster`: teams aanmaken/wijzigen/verwijderen, studenten (voornamen) koppelen/ontkoppelen.
+- [ ] **9.3** Implementeer CRUD-endpoints voor `assessment-schedule`: datum/tijdslot/locatie/docent per CBI.
+- [ ] **9.4** Koppel `team-roster`-wijzigingen aan het bestaande fallback-mechanisme uit Task 4.3 (een teamwissel ná cohortstart wordt behandeld als ring-uitval, geen apart pad).
+- [ ] **9.5** Bouw de drie admin-frontendschermen (`CoursePeriod.tsx`, `Teams.tsx`, `Assessments.tsx`) — pure formulieren, geen agent-aanroep.
+- [ ] **9.6** Schrijf `agents/tests/test_admin_crud.py`: create/read/update/delete-tests voor alle drie de concept-types.
+- [ ] **9.7** Implementeer het upload-endpoint voor instructeur-documenten (FR-20, TDD Deel 6.4): accepteert PDF/Excel/CSV + een scope-keuze (team/ring/klas/iedereen), roept bij team/ring/klas de routering uit Task 2.11 aan; bij scope "iedereen" commit het endpoint het geconverteerde bestand naar de wiki-repo (Task 1) via een git-commit, niet via de data-laag.
+- [ ] **9.8** Bouw `frontend/src/routes/admin/DocumentUpload.tsx`: bestandskiezer + scope-selector; toont vóór bevestiging expliciet welke teams het zullen zien, met een aparte, zwaardere bevestigingsstap bij scope "iedereen" (LRD 6.10, onomkeerbaar publiek).
+- [ ] **9.9** Pas de `@log_action`-decorator uit Task 2.10 toe op de admin-CRUD-endpoints en het upload-endpoint (NFR-08).
+
+### Test Gate — Task 9
+- **Automatisch:** `pytest agents/tests/test_admin_crud.py -v` slaagt.
+- **Mens-testbaar artefact:** een mens doorloopt handmatig in de draaiende admin-UI: een cohortperiode instellen, een team aanmaken met twee voornamen, één assessment plannen met datum/tijdslot/locatie, én één testdocument uploaden met scope "team" — en ziet alle vier correct terug ná een refresh (dus daadwerkelijk persistent weggeschreven, niet alleen in front-end state); bij een tweede upload met scope "iedereen" verschijnt de aparte, zwaardere bevestigingsstap (9.8) daadwerkelijk in de UI.
+
+### Commit & push — Task 9
+- [ ] Commit met boodschap die refereert aan FR-20/FR-22/NFR-08.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 9 afgerond**.
+
+---
+
+## Main Task 10: Studentdossier + AI-CBI-voorbereiding (additief, parallelliseerbaar)
+
+*(Golf 4b, parallel aan Task 5 — vereist Task 4 én Task 8 gepusht.)*
+
+**Bestanden:** Create: `agents/dashboard_query/prep_agent.py` (uitbreiding van Task 4.6's agent), `frontend/src/routes/instructor/StudentDossier.tsx`, `agents/tests/test_assessment_prep.py`
+
+- [ ] **10.1** Implementeer de tool `build_student_timeline(first_name, team_id) -> list[TimelineEvent]` — deterministisch: query's over `gate_events`, `wiki_quality_log`, `reviewring_log`, gesorteerd op tijdstempel, met gebruik van DuckLake's snapshot-tijdreizen (TDD Deel 4.3).
+- [ ] **10.2** Implementeer de tool `generate_prep_summary(timeline) -> list[PrepPoint]` — LLM-stap; elk `PrepPoint` heeft een **verplicht** `source_ref`-veld (bv. `gate_events#<id>`). Een `PrepPoint` zonder geldig `source_ref` wordt binnen de tool zelf weggefilterd vóórdat het wordt teruggegeven — schema-afdwinging, geen instructie.
+- [ ] **10.3** Bouw `frontend/src/routes/instructor/StudentDossier.tsx`: tijdlijnweergave + voorbereidingsoverzicht, elk `PrepPoint` toont zijn `source_ref` als klikbare/zichtbare referentie (NFR-10 moet zichtbaar zijn, niet alleen intern aanwezig).
+- [ ] **10.4** Bevestig instructor-only-toegang: dezelfde toegangsscheiding als `rubric_scores` — geen teamgericht kanaal geeft ooit toegang tot dit dossier.
+- [ ] **10.5** Schrijf `agents/dashboard_query/prep_agent.evalset.json`: elke gegenereerde `PrepPoint` in de evalset-cases moet een geldig `source_ref` hebben, anders faalt de test (AC-14).
+- [ ] **10.6** Schrijf `agents/tests/test_assessment_prep.py`: test dat een `PrepPoint` zonder `source_ref` nooit de tool-output bereikt.
+- [ ] **10.7** Implementeer `export_student_history(first_name, team_id) -> bytes` (FR-09): rendert de volledige tijdlijn uit 10.1 (gate-geschiedenis, iteraties, feedback) naar PDF of doc, ten behoeve van het criterion-based interview (LRD Deel 9) — hergebruikt de append-only `log.md`/tijdlijndata, geen apart bijgehouden exportformaat.
+- [ ] **10.8** Pas de `@log_action`-decorator uit Task 2.10 toe op `build_student_timeline`, `generate_prep_summary` en `export_student_history` (NFR-08).
+
+### Test Gate — Task 10
+- **Automatisch:** `pytest agents/tests/test_assessment_prep.py -v` slaagt; evalset slaagt 100% op source_ref-aanwezigheid (AC-14).
+- **Mens-testbaar artefact:** een docent (of een mens die de docentrol test) opent het dossier voor één mock-student met een gevulde gate-geschiedenis, leest het gegenereerde voorbereidingsoverzicht, en controleert handmatig dat elke aandachtspunt/vraagsuggestie daadwerkelijk klopt met het brondatapunt waarnaar `source_ref` verwijst.
+
+### Commit & push — Task 10
+- [ ] Commit met boodschap die refereert aan FR-09/FR-23/FR-24/NFR-08/NFR-10/AC-14.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 10 afgerond**.
+
+---
+
+## Voortgangsoverzicht (samenvatting — werk bovenstaande secties bij, dit is alleen een snelle scan)
+
+- [x] Main Task 0 — Repository- en projectscaffolding ✅ https://github.com/businessdatasolutions/oe-gate-system
+- [ ] Main Task 1 — Wiki-content-laag operationeel
+- [ ] Main Task 2 — Data-laag + OKF-bundelconventie
+- [ ] Main Task 3 — Socratische Tutor Agent (Gate 1)
+- [ ] Main Task 4 — Review-Ring Coordinator + Instructor Dashboard
+- [ ] Main Task 5 — Volledige cyclus, alle vier gates
+- [ ] Main Task 6 — Kalibratie
+- [ ] Main Task 7 — Deploymenthardening
+- [ ] Main Task 8 — Wiki Quality Check Agent
+- [ ] Main Task 9 — Admin-onderdeel
+- [ ] Main Task 10 — Studentdossier + AI-CBI-voorbereiding
+
+**Traceerbaarheid:** elke main task citeert de FR/NFR/AC-nummers die hij dekt (zie de commit-boodschap-eisen per task). Voor de volledige matrix, zie TDD Deel 8.
