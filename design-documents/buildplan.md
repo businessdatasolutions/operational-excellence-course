@@ -260,22 +260,22 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 **Bestanden:** Create: `agents/wiki_quality_check/agent.py`, `agents/wiki_quality_check/wiki_quality_check.evalset.json`, `agents/tests/test_wiki_quality_check.py`
 
-- [ ] **8.1** Implementeer de tool `extract_contribution(synthesis_text) -> ContributionCandidate` (LLM-stap, gestructureerde output: concepten/entiteiten/bronnen/relaties).
-- [ ] **8.2** Implementeer de tool `check_duplicates(candidate) -> DuplicateResult` — deterministisch: exacte titelmatch + embedding-similariteit (Gemini text-embedding-model) tegen een instelbare drempel (placeholder-waarde, kalibratie volgt in Task 6).
-- [ ] **8.3** Implementeer de tool `validate_citations(candidate) -> CitationResult` — deterministisch: elke bron moet auteur/jaar/titel/uitgever-of-URL bevatten (gestructureerde invoer, geen vrije-tekst-parsing).
-- [ ] **8.4** Implementeer de tool `compute_points(candidate, duplicate_result, citation_result) -> PointsBreakdown` — 1 punt/concept, 1 punt/entiteit, 1 punt/bron, 0,5 punt/relatie (LRD 6.11); schrijft naar `wiki_quality_log` (Task 2), nooit een los bijgehouden totaal.
-- [ ] **8.5** Koppel de agent-aanroep in de Synthesize-pijplijn: vlak vóór de git-commit die een teamcase publiceert (TDD Deel 3.6), ná gate A/B — geen invloed op gate-status.
-- [ ] **8.6** Schrijf `agents/wiki_quality_check/wiki_quality_check.evalset.json` met cases voor: exact duplicaat (afwijzen), inhoudelijk duplicaat (afwijzen), ontbrekende bronvermelding (afwijzen), volledig geldige bijdrage (accepteren + correcte puntentelling).
-- [ ] **8.7** Pas de `@log_action`-decorator uit Task 2.10 toe op alle vier tools uit 8.1–8.4 (NFR-08).
+- [x] **8.1** Implementeer de tool `extract_contribution(synthesis_text) -> ContributionCandidate` (LLM-stap, gestructureerde output: concepten/entiteiten/bronnen/relaties). ✅ Gemini-structured-output (`gemini-2.5-flash-lite`, `response_schema=ContributionCandidate`) wanneer `GEMINI_API_KEY`/`GOOGLE_API_KEY` beschikbaar is, anders een deterministische heuristische markdown-parser (zelfde graceful-degradation-vorm als `data/smdl/ingest_pdf.py`) — deze omgeving had geen API-key, dus de heuristische fallback is wat daadwerkelijk is uitgevoerd/getest.
+- [x] **8.2** Implementeer de tool `check_duplicates(candidate) -> DuplicateResult` — deterministisch: exacte titelmatch + embedding-similariteit (Gemini text-embedding-model) tegen een instelbare drempel (placeholder-waarde, kalibratie volgt in Task 6). ✅ Exacte titelmatch (via `smdl.storage.slugify`) tegen de échte `oe-wiki/wiki/`-inhoud (66 pagina's gescand: 19 boekconcepten + 5 bedrijfscases + 23 Lean-tool-referenties + 19 AI-Wiki-pagina's). Similariteitscheck: Gemini `text-embedding-004` wanneer een API-key beschikbaar is (wél gebouwd, hier ongebruikt), anders een dependency-vrije TF-IDF/cosinus-fallback — **expliciet een placeholder, niet de definitieve aanpak** (TDD Deel 14): zowel de drempelwaarde (0,55) als de embeddingmodelkeuze wachten op kalibratie in Task 6/AC-13.
+- [x] **8.3** Implementeer de tool `validate_citations(candidate) -> CitationResult` — deterministisch: elke bron moet auteur/jaar/titel/uitgever-of-URL bevatten (gestructureerde invoer, geen vrije-tekst-parsing). ✅ Werkt uitsluitend op de al-gestructureerde `SourceCandidate`-velden; ontbrekende bron → `missing_citation`, onvolledige bron → `invalid_citation`.
+- [x] **8.4** Implementeer de tool `compute_points(candidate, duplicate_result, citation_result) -> PointsBreakdown` — 1 punt/concept, 1 punt/entiteit, 1 punt/bron, 0,5 punt/relatie (LRD 6.11); schrijft naar `wiki_quality_log` (Task 2), nooit een los bijgehouden totaal. ✅ `points_total` is een `@computed_field` (pydantic), afgeleid van de vier ruwe tellingen — structureel niet instelbaar/overschrijfbaar, exact consistent met TDD Deel 7.1's eigen uitgewerkte voorbeeld (tellingen 2+1+3+1 → totaal 6.5 klopt alleen als de 0,5-wegingsfactor bij het lezen wordt toegepast, niet in de opgeslagen telling zelf). Bonus-helper `query_team_points_total` herberekent het team-totaal altijd via een live SQL-`SUM`-query, nooit een gecachete teller.
+- [x] **8.5** Koppel de agent-aanroep in de Synthesize-pijplijn: vlak vóór de git-commit die een teamcase publiceert (TDD Deel 3.6), ná gate A/B — geen invloed op gate-status. ✅ `run_quality_check()` in `agent.py` ketent de vier tools in de vaste volgorde als één aanroepbare eenheid, met een docstring die exact documenteert waar de (nog niet gebouwde) Review-Ring Coordinator dit zou aanroepen — vlak vóór de `wiki/syntheses/`-git-commit, ná gate A/B, zonder invloed op gate-status.
+- [x] **8.6** Schrijf `agents/wiki_quality_check/wiki_quality_check.evalset.json` met cases voor: exact duplicaat (afwijzen), inhoudelijk duplicaat (afwijzen), ontbrekende bronvermelding (afwijzen), volledig geldige bijdrage (accepteren + correcte puntentelling). ✅ Alle vier cases aanwezig (inhoudelijk-duplicaat-case is een zwaar geparafraseerde, deels verbatim-overlappende versie van de echte Toyota-pagina, scoort 0,61 tegen de 0,55-drempel). Primair geverifieerd via een deterministisch testharnas (geen live modelaanroep nodig — consistent met de never-invents-eis); een aparte `@pytest.mark.eval`-test speelt hetzelfde bestand af via de echte `AgentEvaluator` en skipt netjes zonder API-key.
+- [x] **8.7** Pas de `@log_action`-decorator uit Task 2.10 toe op alle vier tools uit 8.1–8.4 (NFR-08). ✅ Toegepast en functioneel geverifieerd (niet alleen `__wrapped__`-aanwezigheid): elke tool-aanroep schrijft een `action_log`-regel, en één volledige pijplijn-run deelt één `correlation_id` over alle vier de stappen (TDD 4.8/5.6).
 
 ### Test Gate — Task 8
-- **Automatisch:** `pytest agents/tests/test_wiki_quality_check.py -v` slaagt; evalset slaagt 100% (AC-13).
-- **Mens-testbaar artefact:** een mens dient drie testbijdragen in via een klein CLI-scriptje (`agents/wiki_quality_check/demo_submit.py`) — één met een exact duplicaat, één zonder bronvermelding, één correct — en ziet de juiste afwijzingsreden respectievelijk het juiste puntentotaal op het scherm.
+- **Automatisch:** ✅ `.venv/bin/python -m pytest agents/tests/test_wiki_quality_check.py -v` — **33/33 geslaagd, 1 geskipt** (de live-`AgentEvaluator`-test, correct geskipt zonder `GEMINI_API_KEY`/`GOOGLE_API_KEY`). Volledige repo-testsuite: 126 geslaagd, 1 geskipt.
+- **Mens-testbaar artefact:** ✅ `agents/wiki_quality_check/demo_submit.py` daadwerkelijk drie keer gedraaid met drie verschillende testbijdragen: `--scenario exact-duplicate` (hergebruikt de titel "Toyota", exact zoals in `wiki/sources/toyota.md`) → **REJECTED / reject_reason=duplicate / 0 punten**; `--scenario missing-citation` → **REJECTED / reject_reason=missing_citation / 0 punten**; `--scenario valid` → **ACCEPTED / 5,5 punten** (2 concepten + 1 entiteit + 2 bronnen + 1 relatie×0,5) — alle drie de afwijzingsredenen/puntentotalen kloppend in de daadwerkelijke terminal-output gecontroleerd.
 
 ### Commit & push — Task 8
-- [ ] Commit met boodschap die refereert aan FR-21/AC-13.
-- [ ] Push naar `oe-gate-system` `main`.
-- [ ] Vink af: **Main Task 8 afgerond**.
+- [x] Commit met boodschap die refereert aan FR-21/AC-13. Commit `e9ba394`.
+- [x] Push naar `oe-gate-system` `main`. ✅ Gepusht naar https://github.com/businessdatasolutions/oe-gate-system (`c46301f..e9ba394`).
+- [x] Vink af: **Main Task 8 afgerond** (12 juli 2026).
 
 ---
 
@@ -342,7 +342,7 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 - [ ] Main Task 5 — Volledige cyclus, alle vier gates
 - [ ] Main Task 6 — Kalibratie
 - [ ] Main Task 7 — Deploymenthardening
-- [ ] Main Task 8 — Wiki Quality Check Agent
+- [x] Main Task 8 — Wiki Quality Check Agent ✅ vier deterministische tools (extract/check_duplicates/validate_citations/compute_points) + evalset (4 cases, deterministisch geverifieerd) + `demo_submit.py` (3 scenario's handmatig gedraaid) — similariteitscheck gebruikt een TF-IDF-placeholder (embedding-pad wél gebouwd, ongebruikt zonder API-key), kalibratie volgt in Task 6/AC-13, commit `e9ba394`
 - [ ] Main Task 9 — Admin-onderdeel
 - [ ] Main Task 10 — Studentdossier + AI-CBI-voorbereiding
 
