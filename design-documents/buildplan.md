@@ -634,14 +634,14 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 - [ ] **21.9** Smoke-test dat de zesstappenflow van begin tot eind doorloopt en `onboarding_completed` nog steeds correct wegschrijft (hergebruik van Task 16's bestaande tests, geen nieuw datamodel dus geen nieuwe backendtests nodig).
 
 ### Test Gate — Task 21
-- **Automatisch:** `tsc --noEmit` schoon; volledige testsuite (baseline 232/1) blijft ongewijzigd groen.
-- **Mens-testbaar artefact:** zelf (niet alleen via subagent-claim) een browser-doorloop van alle zes stappen; docent-sanity-check op de nieuwe copy vóór commit (21.3).
+- **Automatisch:** ✅ `tsc --noEmit`/lint/build schoon; volledige testsuite 237 geslaagd, 1 geskipt (was 232/1 — de +5 komen van de losstaande PDF-exportbugfix die in dezelfde sessie is meegenomen, zie de correctienotitie onderaan dit document, geen regressie).
+- **Mens-testbaar artefact:** ✅ zelf een browser-doorloop van alle zes stappen (Playwright), docent-sanity-check op de nieuwe copy ontvangen vóór commit (21.3).
 
 ### Commit & push: Task 21
-- [ ] Commit in `operational-excellence-course` (LRD/TDD-tekst) — apart van de code-commit.
-- [ ] Commit in `oe-gate-system` (code), boodschap verwijst naar FR-25.
-- [ ] Push beide.
-- [ ] Vink af: **Main Task 21 afgerond**.
+- [x] Commit in `operational-excellence-course` (LRD/TDD-tekst) — apart van de code-commit. ✅ Al gecommit door een parallelle sessie (`8265722`/`643b633`) — geverifieerd dat de Golden-Circle-tekst in de huidige `HEAD` staat, geen aparte commit hier nodig.
+- [x] Commit in `oe-gate-system` (code), boodschap verwijst naar FR-25.
+- [x] Push beide.
+- [x] Vink af: **Main Task 21 afgerond** (13 juli 2026).
 
 ---
 
@@ -659,7 +659,7 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 - [x] **22.1** LRD Deel 6.17 (navigatiestructuur & rolgescoped views) + Deel 6.18 (Onderwijsprogramma, zie Task 23) geschreven, FR-32–36 toegevoegd aan Deel 7.1, FR-26 herzien, NFR-13/14 toegevoegd aan Deel 7.2. ✅ Geschreven direct in `lrd-operational-excellence.html`, samen met Task 23's LRD-tekst (één samenhangende sessie, zelfde patroon als Task 12/13's "samen met de opdrachtgever direct in de HTML geschreven").
 - [x] **22.2** TDD Deel 6.12 (routetabel, AppShell/NavLink/zone-afleiding, admin-consolidatie, onboarding-terugfix, nav-config-als-single-source) + Deel 6.13 (Task 23, zie aldaar) geschreven, Deel 6.10 aangepast met een expliciete verwijzing naar 6.13, Deel 8.1-matrix uitgebreid met FR-32–36/NFR-13/14, Deel 14-rij "Toegangsrol admin-onderdeel" aangepast met de expliciete "lost dit niet op"-zin, Deel 6.8 aangepast voor de FR-26-herziening. ✅ Geschreven direct in `tdd-operational-excellence.html`.
-- [ ] **22.3** Docent-sanity-check op de nieuwe LRD/TDD-tekst vóór commit — met name de "dit is geen toegangscontrole"-framing (zelfde soort check als Task 21.3).
+- [x] **22.3** Docent-sanity-check op de nieuwe LRD/TDD-tekst vóór commit — met name de "dit is geen toegangscontrole"-framing (zelfde soort check als Task 21.3). ✅ Akkoord ontvangen (13 juli 2026).
 - [ ] **22.4** `frontend/src/nav-config.ts`: array van navigatie-items (`zone`/`path`/`label`) + `zoneOf(pathname)` + `useNavContext()`-hook.
 - [ ] **22.5** `frontend/src/components/AppShell.tsx`(+`.css`): layout-route met persistente nav (`NavLink`, actieve status via `aria-current`), zone-filter + expliciete zone-wisselschakelaar, wrapt `<Outlet/>`; herwijst `App.tsx`'s bestaande inline `<nav className="app-nav">` (regels 73-83) hierheen, geen visuele wijziging (hergebruikt `App.css`).
 - [ ] **22.6** `App.tsx`: routes genest onder `AppShell` via React Router v7's layout-route-patroon; vijf nieuwe `/admin/*`-routes toegevoegd, gemapt op `AdminApp.tsx`'s bestaande vijf schermen.
@@ -695,7 +695,7 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 - [x] **23.1** LRD Deel 6.18 (Onderwijsprogramma) geschreven, samen met Task 22.1: FR-36 toegevoegd aan Deel 7.1, NFR-14 toegevoegd aan Deel 7.2, FR-26 herzien (verplicht → optioneel), Deel 6.15 en de Deel 8-inleiding bijgewerkt met de optionaliteits-toelichting. ✅
 - [x] **23.2** TDD Deel 6.13 (Onderwijsprogramma: consolidatie, databronnen-hergebruik, de begrensde cross-team-uitzondering) geschreven, samen met Task 22.2: Deel 6.10 aangepast om naar 6.13 te verwijzen, Deel 6.8 bijgewerkt voor de FR-26-herziening + naamswijziging, Deel 8.1-matrix uitgebreid met FR-36/NFR-14. ✅
-- [ ] **23.3** Docent-sanity-check op de nieuwe LRD/TDD-tekst vóór commit — met name de cross-team-privacygrens (NFR-14) en de FR-26-herziening (optioneel i.p.v. verplicht).
+- [x] **23.3** Docent-sanity-check op de nieuwe LRD/TDD-tekst vóór commit — met name de cross-team-privacygrens (NFR-14) en de FR-26-herziening (optioneel i.p.v. verplicht). ✅ Akkoord ontvangen (13 juli 2026).
 - [ ] **23.4** Backend: nieuwe, gereduceerde team-scoped query op de Dashboard Query Agent (5.3) — hergebruikt de bestaande cohortbrede aggregatie (`query_dashboard`), maar projecteert voor het student-endpoint uitsluitend `team_id`+huidige `stage`, nooit scores/namen (NFR-14). Test: een student-request kan nooit meer dan teamnaam+fase van andere teams terugkrijgen.
 - [ ] **23.5** Consolideer `Schedule.tsx` en de nooit-gebouwde `Journey.tsx`-scope tot één component: eigen positie + gate-geschiedenis (hergebruik bestaande team-scoped dashboard-tool), weekthema+hoofdstuk uit de LRD Deel 8-tabel (statisch, meegeleverd als data), boeklink naar de bijbehorende wiki-conceptpagina, activiteiten uit de (nu optionele) sessiedata, eigen CBI-datum uit `assessment-schedule`, en de nieuwe cohortbrede teamposities uit 23.4.
 - [ ] **23.6** Nav-label + koptekst "Rooster" → "Onderwijsprogramma" in `nav-config.ts` (Task 22) en op het scherm zelf.
