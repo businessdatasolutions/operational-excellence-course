@@ -47,6 +47,8 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 | 10 | **Task 15** (aanwezigheid & in-sessie tools) + **Task 17** (student journey-view) | Task 14 gepusht | Ja: twee onafhankelijke subagents; 17 is vrijwel puur frontend, 15 raakt vooral team_api + nieuwe check-in/poll-routes |
 | 11 | **Task 18** (survey/QMS-laag) | Task 15 gepusht (survey wordt getriggerd door de check-in-flow uit Task 15) | Nee: bouwt direct op Task 15's endpoints |
 | 12 | **Task 20** (Course Quality Advisor Agent) | Task 18 én Task 19 gepusht | Nee: heeft zowel survey- als engagement-data nodig om iets zinnigs te kunnen rapporteren |
+| 13 | **Task 22** (Navigatiestructuur & rolgescoped views) | Task 21 gepusht | Nee: raakt dezelfde onboarding-bestanden als Task 21 |
+| 14 | **Task 23** (Onderwijsprogramma) | Task 22 gepusht | Nee: bouwt direct voort op Task 22's `nav-config.ts`/`AppShell` |
 
 **Vuistregel voor de orkestrerende agent:** als twee main tasks in dezelfde golf staan én geen gedeelde bestanden aanraken (zie de submap-hints), spawn ze als aparte subagents/teammates. Laat elke subagent zijn eigen main task volledig afsluiten (incl. test gate + commit + push) vóórdat de volgende golf begint.
 
@@ -610,6 +612,108 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 ---
 
+## Main Task 21: Onboarding-verrijking (WHY/HOW/WHAT, praktische startinfo, geruststelling)
+
+*(Golf: geen afhankelijkheid van Task 15/17/18/20 — vereist alleen Task 16 gepusht. Geen coding-subagent voor de LRD/TDD-tekst zelf, wel voor de code; zie plan `can-we-start-building-compiled-narwhal.md` voor de volledige aanleiding.)*
+
+**Waarom een aparte task in plaats van Task 16 stilzwijgend herschrijven:** Task 16 leverde correct wat LRD §6.14 op dat moment vroeg. Een persona-oefening ("leef je in in een tweedejaars HBO Bedrijfskunde-student") plus een gerichte Explore-agent bevestigden acht concrete gaten in wat een student nodig heeft om goed te starten — geen van alle geraakt door de toenmalige onboarding. De opdrachtgever voegde daar zelf een negende, grotere eis aan toe: een Golden-Circle WHY/HOW/WHAT van de hele module, niet alleen de gate-mechaniek.
+
+**Bestanden:**
+- Modify: `design-documents/lrd-operational-excellence.html` (Deel 6.14 — al gedaan, zie hieronder), `design-documents/tdd-operational-excellence.html` (Deel 6.7 — al gedaan)
+- Create (`oe-gate-system`): `frontend/src/routes/onboarding/WhyHowWhat.tsx`, `frontend/src/routes/onboarding/Praktisch.tsx`
+- Modify (`oe-gate-system`): `frontend/src/routes/onboarding/OnboardingSteps.tsx`, `frontend/src/routes/onboarding/TeamReveal.tsx`, `frontend/src/routes/onboarding/ToolingWalkthrough.tsx`, `frontend/src/routes/onboarding/useOnboardingParams.ts`, `frontend/src/App.tsx`
+
+- [x] **21.1** LRD Deel 6.14 herschrijven: nieuwe bullet "Waarom dit vak (Golden Circle)" (WHY §1.2/3.1, HOW Deel 2/6/8, WHAT §3.2 teruggekoppeld naar WHY), team-koppeling-reveal uitgebreid met de vangnet-zin (6.6), nieuwe bullet "Praktische startinformatie" (boektitel/editie generiek, link naar sessierooster 6.15, case-selectierichtlijnen: vrije keuze + criteria), tooling-walkthrough uitgebreid met het *waarom* (UnBlooms, formatief/summatief) en de vier contactvormen (6.15), plus een geruststellende afsluitzin over het ongebruikelijke beoordelingsmodel. ✅ Geschreven, HTML-parse geverifieerd.
+- [x] **21.2** TDD Deel 6.7 bijgewerkt: onboarding-flow van vier naar zes schermen, expliciet genoteerd dat de twee nieuwe schermen puur statische content zijn, geen nieuw datamodel/endpoint. ✅ Geschreven, HTML-parse geverifieerd.
+- [ ] **21.3** Docent-sanity-check op de nieuwe LRD/TDD-tekst vóór commit — inclusief de expliciete vraag of "kort dagdeel" nog een passende tijdsaanduiding is nu de sessie inhoudelijk zwaarder is geworden (zie LRD 6.14's eigen openingszin, die "kort dagdeel" bewust heeft losgelaten in afwachting van dit antwoord).
+- [ ] **21.4** `frontend/src/routes/onboarding/WhyHowWhat.tsx`: nieuw scherm, drie kaarten (WHY/HOW/WHAT), WHAT-kaart bevat een expliciete terugkoppeling naar de WHY-kaart. Route direct na Welcome, vóór Team-reveal.
+- [ ] **21.5** `frontend/src/routes/onboarding/Praktisch.tsx`: nieuw scherm, boek-referentie + link naar `/team/:teamId/schedule` + case-selectierichtlijnen. Route tussen Team-reveal en Zelfassessment.
+- [ ] **21.6** `OnboardingSteps.tsx` + `useOnboardingParams.ts` + `App.tsx`: stappenreeks van vier naar zes ("Welkom, Waarom dit vak, Je team, Praktisch, Zelfassessment, Tooling"), nieuwe steppaden `waarom`/`praktisch` toegevoegd.
+- [ ] **21.7** `TeamReveal.tsx`: één alinea toegevoegd met de vangnet-geruststelling (LRD 6.6).
+- [ ] **21.8** `ToolingWalkthrough.tsx`: bestaande Socrates-/gate-kaarten uitgebreid met het *waarom* (micro-niveau, te onderscheiden van WhyHowWhat.tsx's macro-niveau); nieuwe vierde kaart over de vier contactvormen.
+- [ ] **21.9** Smoke-test dat de zesstappenflow van begin tot eind doorloopt en `onboarding_completed` nog steeds correct wegschrijft (hergebruik van Task 16's bestaande tests, geen nieuw datamodel dus geen nieuwe backendtests nodig).
+
+### Test Gate — Task 21
+- **Automatisch:** `tsc --noEmit` schoon; volledige testsuite (baseline 232/1) blijft ongewijzigd groen.
+- **Mens-testbaar artefact:** zelf (niet alleen via subagent-claim) een browser-doorloop van alle zes stappen; docent-sanity-check op de nieuwe copy vóór commit (21.3).
+
+### Commit & push: Task 21
+- [ ] Commit in `operational-excellence-course` (LRD/TDD-tekst) — apart van de code-commit.
+- [ ] Commit in `oe-gate-system` (code), boodschap verwijst naar FR-25.
+- [ ] Push beide.
+- [ ] Vink af: **Main Task 21 afgerond**.
+
+---
+
+## Main Task 22: Navigatiestructuur & rolgescoped views (AppShell, admin-consolidatie, onboarding-terugnavigatie)
+
+*(Golf: geen afhankelijkheid van Task 15/17/18/20 — vereist Task 21 gepusht: beide raken dezelfde zes onboarding-bestanden (`Welcome.tsx`/`WhyHowWhat.tsx`/`TeamReveal.tsx`/`Praktisch.tsx`/`SelfAssessment.tsx`/`ToolingWalkthrough.tsx`) plus `OnboardingSteps.tsx`/`useOnboardingParams.ts`/`App.tsx`, dus sequentieel, niet parallel met Task 21.)*
+
+**Waarom een aparte task:** een live browserwalkthrough + broncode-inspectie op de al gebouwde schermen legde drie losstaande navigatie-UX-problemen bloot die geen bestaande task dekte: het admin-onderdeel (Task 9) verliest de hoofdnavigatie volledig omdat het een apart Vite-bundle is, bereikbaar alleen als hard `<a href="/admin.html">`; de onboarding-sequentie (Task 16/21) heeft geen terugknop en een expliciet non-interactieve stapindicator; en de gedeelde navigatiebalk (Task 5) toont ongeacht wie kijkt altijd alle zes links, zonder enige rolscoping. Zie LRD 6.17/TDD 6.12.
+
+**Bestanden:**
+- Modify: `design-documents/lrd-operational-excellence.html` (Deel 6.17, FR-32–35, NFR-13), `design-documents/tdd-operational-excellence.html` (Deel 6.12, Deel 8.1-matrix, Deel 14-tabel)
+- Create (`oe-gate-system`): `frontend/src/nav-config.ts`, `frontend/src/components/AppShell.tsx`, `frontend/src/components/AppShell.css`
+- Modify (`oe-gate-system`): `frontend/src/App.tsx`, `frontend/src/routes/admin/AdminApp.tsx`, `frontend/src/routes/admin/CoursePeriod.tsx`/`Teams.tsx`/`Assessments.tsx`/`Sessions.tsx`/`DocumentUpload.tsx`, `frontend/src/routes/onboarding/Welcome.tsx`/`WhyHowWhat.tsx`/`TeamReveal.tsx`/`Praktisch.tsx`/`SelfAssessment.tsx`/`ToolingWalkthrough.tsx`, `frontend/src/routes/onboarding/OnboardingSteps.tsx`, `frontend/src/routes/onboarding/useOnboardingParams.ts`, plus elk bestaand scherm's `HanHeader`-aanroep (`CheckpointView.tsx`, `Schedule.tsx`, `Dashboard.tsx`, `StudentDossier.tsx`)
+- Delete (`oe-gate-system`): `frontend/admin.html`, `frontend/src/routes/admin/main.tsx`
+
+- [x] **22.1** LRD Deel 6.17 (navigatiestructuur & rolgescoped views) + Deel 6.18 (Onderwijsprogramma, zie Task 23) geschreven, FR-32–36 toegevoegd aan Deel 7.1, FR-26 herzien, NFR-13/14 toegevoegd aan Deel 7.2. ✅ Geschreven direct in `lrd-operational-excellence.html`, samen met Task 23's LRD-tekst (één samenhangende sessie, zelfde patroon als Task 12/13's "samen met de opdrachtgever direct in de HTML geschreven").
+- [x] **22.2** TDD Deel 6.12 (routetabel, AppShell/NavLink/zone-afleiding, admin-consolidatie, onboarding-terugfix, nav-config-als-single-source) + Deel 6.13 (Task 23, zie aldaar) geschreven, Deel 6.10 aangepast met een expliciete verwijzing naar 6.13, Deel 8.1-matrix uitgebreid met FR-32–36/NFR-13/14, Deel 14-rij "Toegangsrol admin-onderdeel" aangepast met de expliciete "lost dit niet op"-zin, Deel 6.8 aangepast voor de FR-26-herziening. ✅ Geschreven direct in `tdd-operational-excellence.html`.
+- [ ] **22.3** Docent-sanity-check op de nieuwe LRD/TDD-tekst vóór commit — met name de "dit is geen toegangscontrole"-framing (zelfde soort check als Task 21.3).
+- [ ] **22.4** `frontend/src/nav-config.ts`: array van navigatie-items (`zone`/`path`/`label`) + `zoneOf(pathname)` + `useNavContext()`-hook.
+- [ ] **22.5** `frontend/src/components/AppShell.tsx`(+`.css`): layout-route met persistente nav (`NavLink`, actieve status via `aria-current`), zone-filter + expliciete zone-wisselschakelaar, wrapt `<Outlet/>`; herwijst `App.tsx`'s bestaande inline `<nav className="app-nav">` (regels 73-83) hierheen, geen visuele wijziging (hergebruikt `App.css`).
+- [ ] **22.6** `App.tsx`: routes genest onder `AppShell` via React Router v7's layout-route-patroon; vijf nieuwe `/admin/*`-routes toegevoegd, gemapt op `AdminApp.tsx`'s bestaande vijf schermen.
+- [ ] **22.7** `admin.html` + `routes/admin/main.tsx` verwijderd; `AdminApp.tsx`'s lokale `useState<Tab>`-tabwissel vervangen door de vijf routes uit 22.6, elk tabblad zelfstandig deelbaar/terug-navigeerbaar.
+- [ ] **22.8** Terugknop in alle zes onboarding-stapschermen: lege `<span/>` in `.onboarding-view__actions` vervangen door `<Link to={onboardingStepPath(previousStep, onboarding)} className="btn">`, behalve `Welcome.tsx`'s `entry`-variant (eerste stap, geen vorige). Nieuwe `previousOnboardingStep()`-helper in `useOnboardingParams.ts`.
+- [ ] **22.9** `OnboardingSteps.tsx` interactief: `done`/`current`-stappen worden `<Link>` (zelfde patroon als `PhaseTracker.tsx` `scope="team"`), `upcoming`-stappen blijven `<span>` (geen vooruitspringen).
+- [ ] **22.10** Elk bestaand scherm z'n eigen `HanHeader`-aanroep laten pullen via `useNavContext()` in plaats van een hardcoded `contextName`-string.
+- [ ] **22.11** Smoke-test: docent navigeert van `/instructor/dashboard` naar elk `/admin/*`-tabblad en terug zonder de browser-terugknop nodig te hebben; student doorloopt de zesstappen-onboarding heen én terug; beide zones tonen alleen hun eigen navigatie-items plus de zone-wisselaar.
+
+### Test Gate — Task 22
+- **Automatisch:** `tsc --noEmit` schoon; `npm run build`/`npm run lint` schoon; volledige backend-testsuite ongewijzigd groen (dit raakt geen Python).
+- **Mens-testbaar artefact:** zelf een browserwalkthrough (Playwright, zelfde patroon als Task 11): (a) elk admin-tabblad via een echte URL bereiken, hoofdnavigatie blijft zichtbaar; (b) de zes onboarding-stappen heen én terug doorlopen via zowel de nieuwe terugknoppen als de klikbare stapindicator; (c) bevestigen dat de studentzone geen "Docent"/"Admin"-links toont en vice versa, met de zone-wisselaar zichtbaar op beide.
+
+### Commit & push: Task 22
+- [ ] Commit in `operational-excellence-course` (LRD/TDD-tekst) — apart van de code-commit.
+- [ ] Commit in `oe-gate-system` (code), boodschap verwijst naar FR-32–35.
+- [ ] Push beide.
+- [ ] Vink af: **Main Task 22 afgerond**.
+
+---
+
+## Main Task 23: Onderwijsprogramma — cursusbreed programma-overzicht (samenvoeging Rooster + Journey-view)
+
+*(Golf: vereist Task 22 gepusht (heeft `nav-config.ts`/`AppShell` nodig voor de nav-labelwijziging en de zone-indeling) én Task 14 gepusht (hergebruikt sessiedata) — beide al hetzij gepland hetzij gedaan. Niet parallelliseerbaar met Task 22: bouwt er direct op voort.)*
+
+**Waarom een aparte task i.p.v. Task 17 stilzwijgend herschrijven:** Task 17 ("Student journey-view") staat al gepland maar is nooit gebouwd (17.1–17.4 nog `- [ ]`) en had zelf al geen LRD/FR-basis (TDD oud-6.10 citeerde, in tegenstelling tot elke andere §6.x-subsectie, geen enkel FR-nummer). De opdrachtgever breidde de eis tijdens de navigatie-herziening uit tot een samenvoeging met de al gebouwde "Rooster"-view (Task 14) plus concrete nieuwe content (cohortbrede teamposities, weekthema+boeklink, eigen CBI-datum). Dat is meer dan Task 17's oorspronkelijke tekst dekte, dus een eigen task i.p.v. Task 17 stilzwijgend herschrijven — zelfde aanpak als Task 21 t.o.v. Task 16.
+
+**Bestanden:**
+- Modify: `design-documents/lrd-operational-excellence.html` (Deel 6.18, FR-36, NFR-14, FR-26-herziening, Deel 6.15/Deel 8-inleiding), `design-documents/tdd-operational-excellence.html` (Deel 6.13, Deel 6.10-verwijzing, Deel 6.8, Deel 8.1-matrix)
+- Create (`oe-gate-system`): `frontend/src/routes/team/Programma.tsx` (of hernoemde `Schedule.tsx` — implementatiekeuze, zie TDD 6.13)
+- Modify (`oe-gate-system`): `agents/dashboard_query/agent.py` (nieuwe, gereduceerde cohortbrede team_id+stage-only projectie voor het student-endpoint), `frontend/src/routes/team/Schedule.tsx` (samenvoeging), `frontend/src/nav-config.ts` (label "Rooster"→"Onderwijsprogramma")
+- Delete (`oe-gate-system`, indien `Schedule.tsx` hernoemd wordt): oude bestandsnaam
+
+- [x] **23.1** LRD Deel 6.18 (Onderwijsprogramma) geschreven, samen met Task 22.1: FR-36 toegevoegd aan Deel 7.1, NFR-14 toegevoegd aan Deel 7.2, FR-26 herzien (verplicht → optioneel), Deel 6.15 en de Deel 8-inleiding bijgewerkt met de optionaliteits-toelichting. ✅
+- [x] **23.2** TDD Deel 6.13 (Onderwijsprogramma: consolidatie, databronnen-hergebruik, de begrensde cross-team-uitzondering) geschreven, samen met Task 22.2: Deel 6.10 aangepast om naar 6.13 te verwijzen, Deel 6.8 bijgewerkt voor de FR-26-herziening + naamswijziging, Deel 8.1-matrix uitgebreid met FR-36/NFR-14. ✅
+- [ ] **23.3** Docent-sanity-check op de nieuwe LRD/TDD-tekst vóór commit — met name de cross-team-privacygrens (NFR-14) en de FR-26-herziening (optioneel i.p.v. verplicht).
+- [ ] **23.4** Backend: nieuwe, gereduceerde team-scoped query op de Dashboard Query Agent (5.3) — hergebruikt de bestaande cohortbrede aggregatie (`query_dashboard`), maar projecteert voor het student-endpoint uitsluitend `team_id`+huidige `stage`, nooit scores/namen (NFR-14). Test: een student-request kan nooit meer dan teamnaam+fase van andere teams terugkrijgen.
+- [ ] **23.5** Consolideer `Schedule.tsx` en de nooit-gebouwde `Journey.tsx`-scope tot één component: eigen positie + gate-geschiedenis (hergebruik bestaande team-scoped dashboard-tool), weekthema+hoofdstuk uit de LRD Deel 8-tabel (statisch, meegeleverd als data), boeklink naar de bijbehorende wiki-conceptpagina, activiteiten uit de (nu optionele) sessiedata, eigen CBI-datum uit `assessment-schedule`, en de nieuwe cohortbrede teamposities uit 23.4.
+- [ ] **23.6** Nav-label + koptekst "Rooster" → "Onderwijsprogramma" in `nav-config.ts` (Task 22) en op het scherm zelf.
+- [ ] **23.7** Verifieer of `Sessions.tsx`/de sessieplanning-validatie (Task 14) vandaag "precies één moment per week" hard afdwingt; indien ja, maak dat optioneel conform de herziene FR-26 — te verifiëren in `oe-gate-system`, niet aangenomen.
+- [ ] **23.8** Schrijf/breid tests uit: cross-team-projectie bevat nooit scores/namen (adversarial test, zelfde patroon als Task 10's hallucinatietest); Onderwijsprogramma-component-render met en zonder ingevulde sessiedata.
+
+### Test Gate — Task 23
+- **Automatisch:** nieuwe tests slagen, inclusief de expliciete cross-team-privacytest (NFR-14); `tsc --noEmit`/`npm run build`/`npm run lint` schoon; bestaande suite ongewijzigd groen.
+- **Mens-testbaar artefact:** een student opent Onderwijsprogramma en ziet het volledige 18-weekse programma met eigen positie, andere teams uitsluitend op teamniveau, de eigen CBI-datum, en per week het boekthema+link+activiteiten; hetzelfde scherm zonder ingevulde sessiedata voor een week toont die week gewoon zonder activiteit, geen fout.
+
+### Commit & push: Task 23
+- [ ] Commit in `operational-excellence-course` (LRD/TDD-tekst) — apart van de code-commit.
+- [ ] Commit in `oe-gate-system` (code), boodschap verwijst naar FR-26/FR-36/NFR-14.
+- [ ] Push beide.
+- [ ] Vink af: **Main Task 23 afgerond**.
+
+---
+
 ## Voortgangsoverzicht (samenvatting: werk bovenstaande secties bij, dit is alleen een snelle scan)
 
 - [x] Main Task 0: Repository- en projectscaffolding ✅ https://github.com/businessdatasolutions/oe-gate-system
@@ -628,12 +732,21 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 **Scope-uitbreiding: volledige hybride course website (zie plan `can-we-start-building-compiled-narwhal.md`):**
 - [x] Main Task 12: LRD-uitbreiding ✅ Deel 6.14–6.16 (onboarding week 0, hybride 18-weekse periode-indeling met vorm-kolom, kwaliteitsmanagement-survey + AI-adviseur), FR-25–31/NFR-11–12/AC-15–16, docent-akkoord ontvangen
 - [x] Main Task 13: TDD-uitbreiding ✅ Deel 5.9 (Course Quality Advisor Agent), Deel 6.7–6.11 (nieuwe frontend-oppervlakken), Deel 3.7/4.10 (wiki-analytics + rollup), FR-25–31/NFR-11–12/AC-15–16 volledig kruisverwezen, opdrachtgever-akkoord ontvangen
-- [ ] Main Task 14: Sessie- & planningslaag
+- [x] Main Task 14: Sessie- & planningslaag ✅ `Session`-OKF-concept (klas-lakehouse, singleton) + `attendance_log`-DuckLake-tabel, admin-CRUD, `Sessions.tsx` (docent) + `Schedule.tsx` (student, `/team/:teamId/schedule`), 17 nieuwe tests, commits `898ccde` (oe-gate-system) / `6fc4c9d` (buildplan)
 - [ ] Main Task 15: Aanwezigheid & in-sessie tools
-- [ ] Main Task 16: Onboarding-flow
-- [ ] Main Task 17: Student journey-view
+- [x] Main Task 16: Onboarding-flow ✅ `onboarding_completed`-vlag op bestaande `TeamRoster`, `TeamRosterView`-schema (`extra="forbid"`), vier schermen (Welcome/TeamReveal/SelfAssessment/ToolingWalkthrough), zelfassessment client-only (geen server-schema, nooit verzonden), 9 nieuwe tests, commits `598d33f` + `773279e` (axis-correctie) (oe-gate-system) / `68df223` (buildplan) — zie Main Task 21 voor een latere, bredere inhoudelijke verrijking van deze flow
+- [ ] Main Task 17: Student journey-view — vervangen door Main Task 23 (samengevoegd met Rooster/Onderwijsprogramma, zie navigatie-herziening)
 - [ ] Main Task 18: Survey/QMS-laag
 - [x] Main Task 19: Wiki-gebruiksanalyse ✅ GoatCounter-config-wiring in `oe-wiki` (privacy-only, geen verzonnen site code), `data/smdl/engagement_rollup.py` + `wiki_engagement`-DuckLake-tabel + `Dashboard.tsx`-badge in `oe-gate-system`, 9/9 nieuwe tests, commits `65c453b` (oe-wiki) / `a03704e` (oe-gate-system)
 - [ ] Main Task 20: Course Quality Advisor Agent
+- [ ] Main Task 21: Onboarding-verrijking (WHY/HOW/WHAT, praktische startinfo, geruststelling)
+
+**Scope-uitbreiding: navigatie-herziening (studenten/docenten meldden verdwijnende navigatie, geen onboarding-terugknop, geen programma-overzicht):**
+- [ ] Main Task 22: Navigatiestructuur & rolgescoped views — LRD 6.17/TDD 6.12 geschreven (deze sessie); AppShell/admin-consolidatie/onboarding-terugnavigatie in `oe-gate-system` nog te bouwen
+- [ ] Main Task 23: Onderwijsprogramma (samenvoeging Rooster + Journey-view) — LRD 6.18/TDD 6.13 geschreven (deze sessie); het geconsolideerde scherm + de cohortbrede team-projectie in `oe-gate-system` nog te bouwen
 
 **Traceerbaarheid:** elke main task citeert de FR/NFR/AC-nummers die ze dekt (zie de commit-boodschap-eisen per task). Voor de volledige matrix, zie TDD Deel 8.
+
+**Correctie (13 juli 2026): design-documentverwijzingen verwijderd uit gebruikersgerichte UI-tekst.** De opdrachtgever wees erop dat citaten als "(LRD 6.12)"/"(FR-07)"/"(TDD 4.4)" in zichtbare schermtekst niet thuishoren: het systeem is de uitkomst van de designdocumenten, gebruikers (studenten én docenten) hoeven niet te weten hoe het is ontworpen. Een volledige sweep van `frontend/src` vond dit patroon terug in negen bestanden, verspreid over Tasks 4/5/9/10/14/16/21 (niet alleen de net-gebouwde onboarding): `TeamReveal.tsx`, `AdminApp.tsx`, `Sessions.tsx`, `Assessments.tsx`, `Teams.tsx`, `CoursePeriod.tsx`, `DocumentUpload.tsx`, `Schedule.tsx`, `CheckpointView.tsx`, `Dashboard.tsx`, `StudentDossier.tsx`. Alle citaten uit zichtbare tekst (`<p>`, `<dd>`, `<summary>`, `title=`-tooltips) verwijderd, ontwikkelaarsgerichte code-comments en `console.warn`-logs bewust ongemoeid gelaten (die zijn juist wél voor developers). `tsc`/lint/build/pytest (232/1) ongewijzigd groen ná de correctie.
+
+**Bugfix (13 juli 2026): FR-09 PDF-export downloadde een onopenbaar bestand.** Opdrachtgever-gemeld tijdens het testen. Root cause: `StudentDossier.tsx`'s exportknop deed een relatieve `fetch('/api/export-student-history')` naar een route die op geen enkele backend-server geregistreerd stond; zonder Vite-proxy viel dit terug op Vite's eigen SPA-fallback `index.html` (HTTP 200) — en waar de twee andere dossier-fetches dit met een `res.json()`-parsefout netjes opvangen (val terug op mockdata), accepteert `res.blob()` elke response zonder klagen, dus werd de HTML-pagina als `.pdf` gedownload. De onderliggende `export_student_history()`-functie zelf bleek prima een geldige PDF te produceren (geverifieerd met `pypdf`) — het ontbrekende stuk was uitsluitend de HTTP-laag. Opgelost: een echte `GET /api/export-student-history`-route toegevoegd aan `admin_api/server.py` (`h_export_student_history`, via een nieuwe `BINARY_ROUTES`-tabel naast de bestaande JSON-only `ROUTES`-dispatch), frontend omgezet naar het absolute-URL-patroon dat de rest van de admin-laag al gebruikt plus een expliciete `content-type`-check (faalt nu hard i.p.v. stil een verkeerd bestand te downloaden, mocht dit ooit opnieuw breken). Terzelfdertijd dezelfde designdocument-citaten (`(FR-09)`, `(LRD Deel 9)`) ook uit de PDF-inhoud zelf verwijderd (`prep_agent.py::_pdf_bytes`) — zelfde categorie fout, nu in gegenereerde PDF-tekst i.p.v. schermtekst. Vijf nieuwe regressietests (`agents/tests/test_admin_server.py`), volledige suite 237/1 (was 232/1), zelf een echte download via Playwright gereproduceerd vóór en ná de fix en de PDF-inhoud met `pypdf` geverifieerd (11 gebeurtenissen, team-07/Fenna, geen citaten meer).
