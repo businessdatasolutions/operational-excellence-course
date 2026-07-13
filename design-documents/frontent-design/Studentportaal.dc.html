@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>
+:root{--pink:#e50056;--ink:#0a0a0a;--paper:#ffffff;--paper2:#f4f3f0;--line:#e2e0db;--muted:#68655f;--muted2:#95928b}
+html,body{margin:0;background:#fff;font-family:'Public Sans',system-ui,sans-serif;color:var(--ink)}
+a{color:var(--pink);text-decoration:none}
+a:hover{text-decoration:underline}
+.ho-head{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:76px;background:var(--paper);border-bottom:1px solid var(--line)}
+.ho-brand{display:flex;align-items:center;gap:16px}
+.ho-logo{height:38px;width:auto;display:block}
+.ho-div{width:1px;height:28px;background:var(--line)}
+.ho-crumb{display:flex;flex-direction:column;gap:2px}
+.ho-course{font:700 15px/1.1 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.02em}
+.ho-sub{font:12px/1.1 'Public Sans',sans-serif;color:var(--muted2)}
+.ho-user{display:flex;align-items:center;gap:12px}
+.ho-team{font:600 13px 'Public Sans',sans-serif;color:var(--muted)}
+.ho-avatar{width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px 'Archivo',sans-serif}
+.pill{display:inline-flex;align-items:center;gap:6px;font:700 10.5px 'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:.03em;padding:4px 9px;border-radius:99px}
+.pill.done{background:#e9e6e0;color:var(--muted)}
+.pill.current{background:var(--pink);color:#fff}
+.pill.upcoming{background:transparent;color:var(--muted2);border:1px solid var(--line)}
+.pill.wait{background:var(--pink);color:#fff}
+.pill.locked{background:transparent;color:var(--muted2);border:1px solid var(--line)}
+.w2-shell{display:flex;min-height:calc(100vh - 76px);min-width:1180px}
+.w2-side{width:220px;background:#fff;border-right:1px solid var(--line);padding:20px 0;flex:none}
+.w2-navitem{display:flex;align-items:center;gap:12px;padding:13px 24px;font:600 13.5px 'Public Sans',sans-serif;color:var(--muted);cursor:pointer;border-left:3px solid transparent}
+.w2-navitem:hover{background:rgba(0,0,0,.03)}
+.w2-navitem.active{color:var(--ink);border-left-color:var(--pink)}
+.w2-navdot{width:8px;height:8px;border-radius:2px;background:var(--muted2);flex:none}
+.w2-navitem.active .w2-navdot{background:var(--pink)}
+.w2-main{flex:1;min-width:0;background:#fff}
+.w2-toolclick{cursor:pointer;transition:border-color .15s}
+.w2-toolclick:hover{border-color:var(--pink)}
+.w2-progresshead{padding:28px 40px 20px;border-bottom:1px solid var(--line)}
+.db-progressbar{display:flex;gap:4px;margin-bottom:14px}
+.db-seg{flex:1;height:10px;border-radius:3px;background:#e9e6e0}
+.db-seg.done{background:var(--ink)}
+.db-seg.current{background:var(--pink)}
+.db-progrow{display:flex;justify-content:space-between}
+.db-phase{display:flex;flex-direction:column;gap:6px;flex:1}
+.db-phasename{font:700 13px 'Archivo',sans-serif}
+.db-phaseweeks{font:12px 'Public Sans',sans-serif;color:var(--muted2)}
+.tl-body{display:grid;grid-template-columns:440px minmax(0,1fr);gap:0}
+.tl-list{border-right:1px solid var(--line);padding:8px 0;max-height:calc(100vh - 260px);overflow:auto}
+.tl-phaseband{padding:14px 32px 8px;font:700 11px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted2);display:flex;align-items:center;gap:10px}
+.tl-row{display:flex;align-items:center;gap:16px;padding:12px 32px;cursor:pointer;border-left:3px solid transparent}
+.tl-row:hover{background:rgba(0,0,0,.03)}
+.tl-row.sel{background:#fff;border-left-color:var(--pink)}
+.tl-node{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font:700 12px 'Archivo',sans-serif;background:#e9e6e0;color:var(--muted)}
+.tl-row.done .tl-node{background:var(--ink);color:#fff}
+.tl-row.iscurrent .tl-node{background:var(--pink);color:#fff}
+.tl-rowtext{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tl-rowtitle{font:600 13.5px 'Public Sans',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-rowform{font:12px 'Public Sans',sans-serif;color:var(--muted2)}
+.tl-detail{padding:44px 48px;background:#fff;min-width:0}
+.tl-dweek{font:700 12px 'Archivo',sans-serif;text-transform:uppercase;color:var(--muted2);letter-spacing:.06em;margin-bottom:10px}
+.tl-dtitle{font:700 28px/1.2 'Archivo',sans-serif;margin:0 0 18px}
+.tl-dgate{padding:16px 20px;border-radius:8px;background:var(--paper2);border-left:3px solid var(--pink);font:600 14px/1.5 'Public Sans',sans-serif;margin-bottom:28px}
+.tl-secttl{font:700 11px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted2);margin:28px 0 12px}
+.tl-toolgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tl-tool{padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--paper2);min-width:0;overflow-wrap:break-word}
+.tl-tool b{display:block;font:700 13.5px 'Public Sans',sans-serif;margin-bottom:4px}
+.tl-tool span{font:12px/1.4 'Public Sans',sans-serif;color:var(--muted)}
+.tl-doclist{display:flex;flex-direction:column;gap:8px}
+.tl-doc{display:flex;align-items:center;gap:10px;font:600 13.5px 'Public Sans',sans-serif;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--paper2)}
+.tl-docdot{width:8px;height:8px;border-radius:2px;background:var(--pink);flex:none}
+.w2-wiki{display:grid;grid-template-columns:300px minmax(0,1fr)}
+.w2-wlist{border-right:1px solid var(--line);padding:20px 0;max-height:calc(100vh - 176px);overflow:auto}
+.w2-wsearch{display:block;width:calc(100% - 40px);margin:0 20px 14px;padding:10px 14px;border:1px solid var(--line);border-radius:8px;font:13px 'Public Sans',sans-serif;color:var(--muted2);background:var(--paper2)}
+.w4a-typehead{padding:12px 20px 6px;font:700 11px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted2)}
+.w2-witem{display:flex;flex-direction:column;gap:3px;padding:11px 20px;cursor:pointer;border-left:3px solid transparent}
+.w2-witem:hover{background:rgba(0,0,0,.03)}
+.w2-witem.sel{background:#faf5f7;border-left-color:var(--pink)}
+.w2-wtype{font:700 10px 'Archivo',sans-serif;text-transform:uppercase;color:var(--muted2);letter-spacing:.05em}
+.w2-wtitle{font:600 13.5px 'Public Sans',sans-serif}
+.w2-wread{padding:44px 48px;min-width:0}
+.w2-wtags{display:flex;gap:8px;margin:14px 0 22px}
+.w2-wtag{font:700 10.5px 'Public Sans',sans-serif;padding:4px 9px;border-radius:99px;background:var(--paper2);color:var(--muted)}
+.w2-wbody{font:15px/1.7 'Public Sans',sans-serif;color:var(--muted);max-width:640px;margin:0}
+.w2-tutor{display:grid;grid-template-columns:280px minmax(0,1fr)}
+.w2-tlist{border-right:1px solid var(--line);padding:20px 0}
+.w2-titem{display:flex;flex-direction:column;gap:4px;padding:14px 20px;cursor:pointer;border-left:3px solid transparent}
+.w2-titem:hover{background:rgba(0,0,0,.03)}
+.w2-titem.sel{background:#faf5f7;border-left-color:var(--pink)}
+.w2-tgate{font:700 13.5px 'Archivo',sans-serif}
+.w2-tmeta{font:12px 'Public Sans',sans-serif;color:var(--muted2)}
+.w2-tread{padding:44px 48px;max-width:680px;min-width:0}
+.w2-tnote{font:600 12.5px 'Public Sans',sans-serif;color:var(--muted2);margin-bottom:20px;padding:10px 14px;background:var(--paper2);border-radius:8px}
+.w2-bubble{background:var(--paper2);border-radius:12px;border-top-left-radius:2px;padding:16px 18px;font:14px/1.6 'Public Sans',sans-serif;margin-bottom:14px;max-width:520px}
+.w2-tlocked{font:14px/1.6 'Public Sans',sans-serif;color:var(--muted2);padding:40px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+.rg1-wrap{padding:44px 48px;max-width:760px}
+.rg1-ringmini{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:36px}
+.db-ringnode{width:64px;height:64px;border-radius:50%;background:var(--paper2);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font:700 14px 'Archivo',sans-serif;flex:none}
+.db-ringnode.me{background:var(--ink);color:#fff;border-color:var(--ink)}
+.db-ringarrow{width:56px;height:2px;background:var(--line);position:relative;flex:none}
+.db-ringarrow:after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:var(--line)}
+.rg1-step{border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.rg1-stephead{display:flex;align-items:center;gap:14px;padding:18px 20px;background:#fff;cursor:pointer}
+.rg1-stepnum{width:30px;height:30px;border-radius:50%;background:var(--paper2);color:var(--muted);display:flex;align-items:center;justify-content:center;font:700 13px 'Archivo',sans-serif;flex:none}
+.rg1-step.done .rg1-stepnum{background:var(--ink);color:#fff}
+.rg1-step.current .rg1-stepnum{background:var(--pink);color:#fff}
+.rg1-steplabel{font:700 15px 'Archivo',sans-serif;flex:1}
+.rg1-stepbody{padding:0 20px 20px 64px;display:flex;flex-direction:column;gap:10px}
+.rg1-stepbody.hidden{display:none}
+.rg1-row{display:flex;align-items:center;gap:10px;font:13.5px 'Public Sans',sans-serif;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--paper2)}
+.rg1-note{font:13.5px/1.6 'Public Sans',sans-serif;color:var(--muted);margin:0}
+</style></helmet><div class="ho-head"><div class="ho-brand"><img src="assets/han-logo.png" class="ho-logo"/><div class="ho-div"></div><div class="ho-crumb"><span class="ho-course">Operational Excellence</span><span class="ho-sub">Studentportaal · Team 7</span></div></div><div class="ho-user"><span class="ho-team">FlinkFiets Bezorgdienst</span><span class="ho-avatar">T7</span></div></div>
+<div class="w2-shell">
+<nav class="w2-side"><sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4"><div class="{{ n.itemClass }}" onClick="{{ n.go }}"><div class="w2-navdot"></div>{{ n.label }}</div></sc-for></nav>
+<main class="w2-main">
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}"><div>
+<div class="w2-progresshead">
+<div class="db-progressbar"><sc-for list="{{ phases }}" as="p" hint-placeholder-count="4"><div class="{{ p.segClass }}"></div></sc-for></div>
+<div class="db-progrow"><sc-for list="{{ phases }}" as="p" hint-placeholder-count="4"><div class="db-phase"><span class="db-phasename">{{ p.label }}</span><span class="db-phaseweeks">{{ p.weeks }}</span><span class="pill {{ p.status }}">{{ p.statusLabel }}</span></div></sc-for></div>
+</div>
+<div class="tl-body">
+<div class="tl-list">
+<sc-for list="{{ weeks }}" as="w" hint-placeholder-count="18">
+<sc-if value="{{ w.isFirstOfPhase }}" hint-placeholder-val="{{ true }}"><div class="tl-phaseband">{{ w.phaseLabel }}<span class="pill {{ w.phaseStatus }}">{{ w.phaseStatusLabel }}</span></div></sc-if>
+<div class="{{ w.rowClass }}" onClick="{{ w.select }}"><div class="tl-node">{{ w.n }}</div><div class="tl-rowtext"><span class="tl-rowtitle">{{ w.title }}</span><span class="tl-rowform">{{ w.form }}</span></div></div>
+</sc-for>
+</div>
+<div class="tl-detail">
+<div class="tl-dweek">Week {{ selWeek.n }} · {{ selWeek.phaseLabel }} · {{ selWeek.form }}</div>
+<h1 class="tl-dtitle">{{ selWeek.title }}</h1>
+<sc-if value="{{ selWeek.gateNote }}" hint-placeholder-val="{{ true }}"><div class="tl-dgate">{{ selWeek.gateNote }}</div></sc-if>
+<div class="tl-secttl">Snelle links</div>
+<div class="tl-toolgrid"><sc-for list="{{ tools }}" as="t" hint-placeholder-count="4"><div class="tl-tool w2-toolclick" onClick="{{ t.select }}"><b>{{ t.label }}</b><span>{{ t.desc }}</span></div></sc-for></div>
+<div class="tl-secttl">Documenten voor deze fase</div>
+<div class="tl-doclist"><sc-for list="{{ docs }}" as="d" hint-placeholder-count="5"><div class="tl-doc"><div class="tl-docdot"></div>{{ d.label }}</div></sc-for></div>
+</div>
+</div></div></sc-if>
+
+<sc-if value="{{ isWiki }}" hint-placeholder-val="{{ false }}"><div class="w2-wiki">
+<div class="w2-wlist"><input class="w2-wsearch" placeholder="Zoek in de wiki..." disabled/>
+<sc-for list="{{ wikiList }}" as="p" hint-placeholder-count="6">
+<sc-if value="{{ p.isFirstOfType }}" hint-placeholder-val="{{ true }}"><div class="w4a-typehead">{{ p.type }}</div></sc-if>
+<div class="{{ p.itemClass }}" onClick="{{ p.select }}"><span class="w2-wtitle">{{ p.title }}</span></div>
+</sc-for>
+</div>
+<div class="w2-wread"><div class="w2-wtype">{{ wikiSel.type }}</div><h1 class="tl-dtitle">{{ wikiSel.title }}</h1><div class="w2-wtags"><sc-for list="{{ wikiSel.tags }}" as="tag" hint-placeholder-count="2"><span class="w2-wtag">{{ tag }}</span></sc-for></div><p class="w2-wbody">{{ wikiSel.body }}</p></div>
+</div></sc-if>
+
+<sc-if value="{{ isTutor }}" hint-placeholder-val="{{ false }}"><div class="w2-tutor">
+<div class="w2-tlist"><sc-for list="{{ reports }}" as="r" hint-placeholder-count="4"><div class="{{ r.itemClass }}" onClick="{{ r.select }}"><span class="w2-tgate">{{ r.gate }}</span><span class="w2-tmeta">{{ r.phase }} · {{ r.date }}</span></div></sc-for></div>
+<div class="w2-tread"><div class="w2-tnote">Alleen Socratische vragen — nooit een score of verdict zichtbaar voor het team.</div>
+<sc-if value="{{ reportSel.hasQuestions }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ reportSel.questions }}" as="q" hint-placeholder-count="2"><div class="w2-bubble">{{ q }}</div></sc-for></sc-if>
+<sc-if value="{{ reportSel.isLocked }}" hint-placeholder-val="{{ false }}"><div class="w2-tlocked">Vergrendeld tot de vorige gate is afgerond.</div></sc-if>
+<sc-if value="{{ reportSel.isOpen }}" hint-placeholder-val="{{ false }}"><div class="w2-tlocked">Nog niet ingediend — dien het checkpoint in om een rapport te ontvangen.</div></sc-if>
+</div>
+</div></sc-if>
+
+<sc-if value="{{ isRing }}" hint-placeholder-val="{{ false }}"><div class="rg1-wrap">
+<div class="rg1-ringmini"><div class="db-ringnode">6</div><div class="db-ringarrow"></div><div class="db-ringnode me">7</div><div class="db-ringarrow"></div><div class="db-ringnode">8</div></div>
+<sc-for list="{{ ringSteps }}" as="s" hint-placeholder-count="3"><div class="{{ s.stepClass }}">
+<div class="rg1-stephead" onClick="{{ s.toggle }}"><div class="rg1-stepnum">{{ s.n }}</div><div class="rg1-steplabel">{{ s.label }}</div><span class="pill {{ s.status }}">{{ s.statusLabel }}</span></div>
+<div class="{{ s.bodyClass }}">
+<sc-if value="{{ s.doneNote }}" hint-placeholder-val="{{ false }}"><p class="rg1-note">{{ s.doneNote }}</p></sc-if>
+<sc-if value="{{ s.isVerwerken }}" hint-placeholder-val="{{ false }}">
+<p class="rg1-note"><strong>Escrow-onthulling:</strong> feedback van Team 6 wordt pas zichtbaar zodra jullie zelf feedback aan Team 8 hebben ingediend — wachten op andermans review levert dus niets op.</p>
+<div class="rg1-row"><span class="pill done">Gegeven</span>Feedback ingediend aan {{ ringGiven.to }}: {{ ringGiven.note }}</div>
+<div class="rg1-row"><span class="pill current">Wacht</span>Nog geen feedback ontvangen van {{ ringReceived.from }}: {{ ringReceived.note }}</div>
+</sc-if>
+</div>
+</div></sc-for>
+</div></sc-if>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const PHASES=[
+{key:'direct',label:'Direct',weeks:'Week 1–4',status:'done',statusLabel:'Afgerond',gateNote:'Gate 1 — gehaald in week 4',body:'Strategie & positionering: waar concurreert de case op, en wat moet operations daaraan bijdragen?'},
+{key:'design',label:'Design',weeks:'Week 5–8',status:'done',statusLabel:'Afgerond',gateNote:'Gate 2 — gehaald in week 8',body:'Procesontwerp: netwerk, lay-out en procestechnologie passend bij de volume-variëteitspositie.'},
+{key:'deliver',label:'Deliver',weeks:'Week 10–13',status:'current',statusLabel:'Bezig',gateNote:'Gate 3 — checkpoint over 2 weken (week 13)',body:'Planning & control: capaciteit, voorraad en supply chain op elkaar afstemmen.'},
+{key:'develop',label:'Develop',weeks:'Week 14–17',status:'upcoming',statusLabel:'Vergrendeld',gateNote:'Gate 4 — vergrendeld tot Deliver is afgerond',body:'Verbeteraanpak kiezen en onderbouwen, met Lean 4.0 / Industry 5.0 als kritische lens.'}
+];
+const WEEKS=[
+{n:1,phase:'direct',title:'Ch1 — Operations als functie',form:'Hoorcollege'},
+{n:2,phase:'direct',title:'Ch2 — Operations strategie',form:'Werkcollege'},
+{n:3,phase:'direct',title:'Ch3 — Product- & dienstinnovatie',form:'Hoorcollege'},
+{n:4,phase:'direct',title:'Ch4 — Netwerkontwerp',form:'Werkcollege',gateNote:'Gate 1 — checkpoint deze week'},
+{n:5,phase:'design',title:'Ch5 — Locatie & lay-out',form:'Hoorcollege'},
+{n:6,phase:'design',title:'Ch6 — Procestechnologie & Mass Customisation',form:'Werkcollege'},
+{n:7,phase:'design',title:'Ch7 — Mensen in operations & I5.0-technologieën',form:'Hoorcollege'},
+{n:8,phase:'design',title:'Ch8 — Capaciteitsmanagement',form:'Werkcollege',gateNote:'Gate 2 — checkpoint deze week'},
+{n:9,phase:'tentamen',title:'Tussentijdse studievoortgangstoets',form:'Tentamenweek'},
+{n:10,phase:'deliver',title:'Ch9 — Supply chain & Human-CPS',form:'Hoorcollege'},
+{n:11,phase:'deliver',title:'Ch10 — Voorraadbeheer',form:'Werkcollege'},
+{n:12,phase:'deliver',title:'Ch11 — Planning & control als netwerk',form:'Hoorcollege'},
+{n:13,phase:'deliver',title:'Ch12 — Lean basis',form:'Werkcollege',gateNote:'Gate 3 — checkpoint deze week'},
+{n:14,phase:'develop',title:'Ch15 — Operations improvement',form:'Hoorcollege'},
+{n:15,phase:'develop',title:'Ch16 — Lean operations',form:'Werkcollege'},
+{n:16,phase:'develop',title:'Ch17 — Quality management & resilience',form:'Hoorcollege'},
+{n:17,phase:'develop',title:'Ch18/19 — Risk & projectmanagement',form:'Werkcollege',gateNote:'Gate 4 — checkpoint deze week'},
+{n:18,phase:'tentamen',title:'CBI & afronding',form:'Tentamenweek'}
+];
+const PHASE_LABEL={direct:'Direct',design:'Design',deliver:'Deliver',develop:'Develop',tentamen:'Tentamenweek'};
+const CURRENT_WEEK=11;
+const TOOLS=[
+{key:'wiki',label:'OE-Wiki',desc:'Boekconcepten, bedrijfscases & jullie teampagina'},
+{key:'tutor',label:'Socratische AI-tutor',desc:'Eén rapport per checkpoint, geeft nooit het antwoord'},
+{key:'ring',label:'Review-ring',desc:'Geven aan Team 8, ontvangen van Team 6'}
+];
+const DOCS=[
+{label:'Rubriek Deliver-checkpoint.pdf'},
+{label:'Ch9–11 samenvatting.pdf'},
+{label:'Teamcase-pagina — FlinkFiets (wiki)'},
+{label:'Lean 4.0-koppelingen — Tabel VII.pdf'},
+{label:'Gate 2-rapport & terugkoppeling.pdf'}
+];
+const WIKI_PAGES=[
+{id:'ch10',type:'Boekconcept',title:'Ch10 — Voorraadbeheer',tags:['deliver','ch10'],body:'Behandelt onafhankelijke vraag, voorraadkosten en bestelbeleid (EOQ, (R,Q)- en periodieke systemen). Voor FlinkFiets vertaalt dit zich naar de voorraad aan fietsonderdelen en verpakkingsmateriaal per vestiging.'},
+{id:'ch9',type:'Boekconcept',title:'Ch9 — Supply chain design',tags:['deliver','ch9'],body:'Introduceert de supply chain als netwerk van locaties, capaciteiten en informatiestromen, en de afweging tussen efficiëntie en responsiviteit.'},
+{id:'ikea',type:'Bedrijfscase',title:'IKEA — Supply chain als netwerk',tags:['deliver'],body:'Illustreert hoe voorraadpositie en netwerkontwerp samen de levertijd en kosten bepalen, met flat-pack-logistiek als centraal voorbeeld.'},
+{id:'toyota',type:'Bedrijfscase',title:'Toyota — Lean & JIT-voorraad',tags:['deliver','ch10'],body:'Klassiek voorbeeld van just-in-time-voorraadbeheer en de rol van leveranciersrelaties daarin.'},
+{id:'team',type:'Team-case',title:'FlinkFiets Bezorgdienst — teampagina',tags:['team-case','deliver'],body:'Jullie eigen casuspagina: analyse, aannames en het antwoord op de twee kernvragen én de Lean 4.0-kritische-lensvraag voor de Deliver-fase.'},
+{id:'lean40',type:'Concept',title:'Lean 4.0-koppelingen (Tabel VII)',tags:['lean-tool','industrie4.0'],body:'De 23 koppelingen tussen klassieke Lean-tools en Industrie 4.0-technologie uit Gomaa (2025), als referentie bij de kritische-lensvraag.'}
+];
+const REPORTS=[
+{gate:'Gate 1',phase:'Direct',status:'done',date:'Ingediend week 4',questions:['Welke van de vijf performance-objectives weegt voor FlinkFiets het zwaarst, en waarom niet de andere vier?','Jullie noemen snelheid als kernprioriteit — wat zou een klant zeggen die net een beschadigd pakket ontving?']},
+{gate:'Gate 2',phase:'Design',status:'done',date:'Ingediend week 8',questions:['Jullie lay-out-voorstel gaat uit van vaste routeclusters — wat gebeurt daarmee op een dag met drie keer de normale vraag?','Welke aanname over de rijders zelf zit verstopt in dit ontwerp?']},
+{gate:'Gate 3',phase:'Deliver',status:'open',date:'Deadline week 13',questions:[]},
+{gate:'Gate 4',phase:'Develop',status:'locked',date:'Vergrendeld',questions:[]}
+];
+const RING_STEPS=[
+{key:'inleveren',label:'Inleveren',status:'done',doneNote:'Beide teams hebben op tijd ingeleverd.'},
+{key:'reviewen',label:'Reviewen',status:'done',doneNote:'Reviews zijn wederzijds ingediend en vrijgegeven (escrow).'},
+{key:'verwerken',label:'Verwerken',status:'current',doneNote:''}
+];
+const RING_GIVEN={to:'Team 8',note:'Feedback op hun Deliver-checkpoint ingediend: het voorraadmodel mist een piekscenario, de supply-chain-tekening klopt.'};
+const RING_RECEIVED={from:'Team 6',note:'Nog niet binnen. Vervalvenster sluit over 18 uur — daarna vervalt deze voorwaarde automatisch.'};
+class Component extends DCLogic{
+  state={dv2View:'home',week:CURRENT_WEEK,wikiSel:WIKI_PAGES[0].id,tutorSel:'Gate 2',ringOpen:'verwerken'};
+  buildWeeks(sel,onSelect){
+    let lastPhase=null;
+    return WEEKS.map(w=>{
+      const isFirst=w.phase!==lastPhase; lastPhase=w.phase;
+      const phaseInfo=PHASES.find(p=>p.key===w.phase);
+      const isDone=w.n<CURRENT_WEEK, isCur=w.n===CURRENT_WEEK, isSel=w.n===sel;
+      return {...w,isFirstOfPhase:isFirst,phaseLabel:PHASE_LABEL[w.phase],
+        phaseStatus:phaseInfo?phaseInfo.status:'done',phaseStatusLabel:phaseInfo?phaseInfo.statusLabel:'Afgerond',
+        rowClass:'tl-row'+(isDone?' done':'')+(isCur?' iscurrent':'')+(isSel?' sel':''),
+        select:()=>onSelect(w.n)};
+    });
+  }
+  renderVals(){
+    const weeks=this.buildWeeks(this.state.week,(n)=>this.setState({week:n}));
+    const selWeek=weeks.find(w=>w.n===this.state.week);
+    const phases=PHASES.map(p=>({...p,segClass:'db-seg '+(p.status==='done'?'done':p.status==='current'?'current':'')}));
+    const goHome=()=>this.setState({dv2View:'home'});
+    const goWiki=()=>this.setState({dv2View:'wiki'});
+    const goTutor=()=>this.setState({dv2View:'tutor'});
+    const goRing=()=>this.setState({dv2View:'ring'});
+    const viewGo={wiki:goWiki,tutor:goTutor,ring:goRing};
+    const tools=TOOLS.map(t=>({...t,select:viewGo[t.key]||goHome}));
+    const navItems=[{key:'home',label:'Programma',go:goHome},{key:'wiki',label:'OE-Wiki',go:goWiki},{key:'tutor',label:'Socratische AI-tutor',go:goTutor},{key:'ring',label:'Review-ring',go:goRing}]
+      .map(n=>({...n,itemClass:'w2-navitem'+(this.state.dv2View===n.key?' active':'')}));
+    let lastType=null;
+    const wikiList=WIKI_PAGES.map(p=>{const isFirst=p.type!==lastType;lastType=p.type;return{...p,isFirstOfType:isFirst,itemClass:'w2-witem'+(this.state.wikiSel===p.id?' sel':''),select:()=>this.setState({wikiSel:p.id})};});
+    const wikiSel=WIKI_PAGES.find(p=>p.id===this.state.wikiSel);
+    const reports=REPORTS.map(r=>({...r,itemClass:'w2-titem'+(this.state.tutorSel===r.gate?' sel':''),select:()=>this.setState({tutorSel:r.gate})}));
+    const reportSelRaw=REPORTS.find(r=>r.gate===this.state.tutorSel);
+    const reportSel={...reportSelRaw,hasQuestions:reportSelRaw.status==='done',isLocked:reportSelRaw.status==='locked',isOpen:reportSelRaw.status==='open'};
+    const ringSteps=RING_STEPS.map((s,i)=>({...s,n:i+1,isVerwerken:s.key==='verwerken',stepClass:'rg1-step'+(s.status==='done'?' done':s.status==='current'?' current':'')+(this.state.ringOpen===s.key?' open':''),bodyClass:'rg1-stepbody'+(this.state.ringOpen===s.key?'':' hidden'),statusLabel:s.status==='done'?'Afgerond':'Nu bezig',toggle:()=>this.setState(st=>({ringOpen:st.ringOpen===s.key?null:s.key}))}));
+    return{
+      weeks,selWeek,phases,tools,docs:DOCS,navItems,
+      isHome:this.state.dv2View==='home',isWiki:this.state.dv2View==='wiki',isTutor:this.state.dv2View==='tutor',isRing:this.state.dv2View==='ring',
+      wikiList,wikiSel,reports,reportSel,
+      ringSteps,ringGiven:RING_GIVEN,ringReceived:RING_RECEIVED
+    };
+  }
+}
+</script>
+</body>
+</html>
