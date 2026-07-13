@@ -386,21 +386,25 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 **Bestanden:** Modify: `design-documents/lrd-operational-excellence.html`
 
-- [ ] **12.1** Nieuw Deel "Onboarding-fase (week 0)": pedagogisch ontwerp van een pre-week-1-sequentie — verwachtingen, zelfassessment (reflectief, geen scoring/verdict), tooling-walkthrough (wiki/AI-tutor/gates), team-koppeling-reveal. Formuleer als nieuwe FR's, doorlopend genummerd na FR-24.
-- [ ] **12.2** Nieuw Deel "Hybride leerarrangement": voeg een "vorm"-kolom toe aan de bestaande Deel-8-weektabel (hoorcollege / werkcollege / tutoring / zelfstudie-AI per week) — planning + lichte in-sessie tools (aanwezigheid-check-in, live polls, wekelijkse vraag-thread), geen volledige sessiefacilitatie. Nieuwe FR's voor sessieplanning, aanwezigheid, in-sessie polls.
-- [ ] **12.3** Nieuw Deel "Kwaliteitsmanagement & continue verbetering": pedagogiek van de survey (dimensies — bepaal hier definitief, bv. naar het model Informatie/Interactie/Inspiratie van `hanbedrijfskunde/retrospective` of cursus-eigen dimensies), waarom naam-gekoppeld (`first_name`+`team_id`, per gelogde fysieke sessie getriggerd) toch privacy-conform blijft, en de rol/grenzen van de AI-adviseur (instructor-only rapport, nooit een zichtbaar oordeel, mens houdt eindregie — analoog aan Socrates' never-scores-garantie). Nieuwe FR's.
-- [ ] **12.4** Kleine toevoeging aan bestaande Deel 6.7 (dashboard): één zin over het team-niveau wiki-betrokkenheidssignaal (geaggregeerd, geen individuele tracking — expliciet consistent met NFR-05), met FR-verwijzing.
-- [ ] **12.5** Ken de nieuwe FR/NFR/AC-nummers definitief toe en werk de bestaande FR/NFR/AC-tabellen (Deel 7/11) bij met elk nieuw nummer.
-- [ ] **12.6** Docent-sanity-check met de opdrachtgever op de hybride weekindeling vóór afronding — dit is een inhoudelijke, geen technische, beoordeling.
+- [x] **12.1** Nieuw Deel "Onboarding-fase (week 0)": pedagogisch ontwerp van een pre-week-1-sequentie — verwachtingen, zelfassessment (reflectief, geen scoring/verdict), tooling-walkthrough (wiki/AI-tutor/gates), team-koppeling-reveal. Formuleer als nieuwe FR's, doorlopend genummerd na FR-24. ✅ Geschreven als Deel 6.14 (subsectie, geen top-level Deel — zie afwijking hieronder). FR-25.
+- [x] **12.2** Nieuw Deel "Hybride leerarrangement": voeg een "vorm"-kolom toe aan de bestaande Deel-8-weektabel (hoorcollege / werkcollege / tutoring / zelfstudie-AI per week) — planning + lichte in-sessie tools (aanwezigheid-check-in, live polls, wekelijkse vraag-thread), geen volledige sessiefacilitatie. Nieuwe FR's voor sessieplanning, aanwezigheid, in-sessie polls. ✅ Deel 6.15 + Deel 8 volledig herschreven naar 18 weken (2 periodes × 7 lesweken + 2 tentamenweken, bevestigd door de opdrachtgever) met een 5e kolom "Vorm". Bonusresultaat: Ch6+7 en Ch15+16 nu gepaird i.p.v. het oude Ch15-17-drietal in één week — lost het al langer bekende Develop-capaciteitsprobleem op. FR-26/27/28.
+- [x] **12.3** Nieuw Deel "Kwaliteitsmanagement & continue verbetering": pedagogiek van de survey (dimensies — bepaal hier definitief, bv. naar het model Informatie/Interactie/Inspiratie van `hanbedrijfskunde/retrospective` of cursus-eigen dimensies), waarom naam-gekoppeld (`first_name`+`team_id`, per gelogde fysieke sessie getriggerd) toch privacy-conform blijft, en de rol/grenzen van de AI-adviseur (instructor-only rapport, nooit een zichtbaar oordeel, mens houdt eindregie — analoog aan Socrates' never-scores-garantie). Nieuwe FR's. ✅ Deel 6.16. Dimensies vastgesteld: Informatie/Interactie/Toepasbaarheid (aangepast aan collegecontext i.p.v. 1-op-1 het workshopvoorbeeld). FR-29/30/31.
+- [x] **12.4** Kleine toevoeging aan bestaande Deel 6.7 (dashboard): één zin over het team-niveau wiki-betrokkenheidssignaal (geaggregeerd, geen individuele tracking — expliciet consistent met NFR-05), met FR-verwijzing. ✅ Toegevoegd, verwijst naar 6.16/NFR-05.
+- [x] **12.5** Ken de nieuwe FR/NFR/AC-nummers definitief toe en werk de bestaande FR/NFR/AC-tabellen (Deel 7/11) bij met elk nieuw nummer. ✅ FR-25–31, NFR-11–12, AC-15–16 toegevoegd aan Deel 7.1/7.2/11 — grep-geverifieerd: 31/12/16 totaal, nul dubbele ID's.
+- [x] **12.6** Docent-sanity-check met de opdrachtgever op de hybride weekindeling vóór afronding — dit is een inhoudelijke, geen technische, beoordeling. ✅ Voorgelegd (periode-indeling, weektabel, onboarding-scope, survey-dimensies) — akkoord zonder wijzigingen.
+
+**Afwijking van de letterlijke taakomschrijving, bewust en gemeld:** 12.1/12.2/12.3 zijn geschreven als subsecties **Deel 6.14–6.16** in plaats van drie nieuwe top-level Delen. Nieuwe top-level Delen tussen het bestaande Deel 6 en Deel 7 hadden Delen 7–13 en tientallen kruisverwijzingen (`Deel 8`, `Deel 11`, `Deel 13`, `§7.2`, …) door het hele document moeten hernummeren — te veel stilzwijgend-breekrisico voor een puur cosmetisch verschil. Deel 6 is al "de kern van dit document" (zie de "Hoe te lezen"-paragraaf), dus dit past inhoudelijk.
+
+**Bijvangst tijdens het herschrijven:** naast de drie nieuwe Delen bleken ook Deel 2.1 (Bloom-leerlijn), Deel 6.2 (4D-navigatiediagram), Deel 6.4a, Deel 6.9, Deel 8.1 (wiki-ankertabel), Deel 9, Deel 10, Deel 13 en Bijlage A allemaal specifieke, nu-verouderde weeknummers te bevatten — stuk voor stuk gevonden via een grep-sweep ná de eerste edit-ronde (niet alles was in één keer compleet) en gecorrigeerd. Zie de test gate hieronder voor de verificatiemethode.
 
 ### Test Gate — Task 12
-- **Automatisch:** grep-check dat geen twee FR/NFR/AC-nummers dubbel voorkomen in het bijgewerkte bestand; het bestand blijft geldige, foutloos renderende HTML (lokale statische server + browser-check, zelfde patroon als eerdere LRD-edits).
-- **Mens-testbaar artefact:** een leesbare diff van het LRD-bestand; de opdrachtgever beoordeelt de nieuwe Delen en de hybride-weekindeling inhoudelijk vóór dit wordt afgevinkt.
+- **Automatisch:** ✅ grep-check bevestigt nul dubbele FR/NFR/AC-ID's en de verwachte totalen (31 FR / 12 NFR / 16 AC); een meerronde grep-sweep op "week N"/"wk N" vond en corrigeerde 6 aanvankelijk gemiste stale weekverwijzingen buiten Deel 8 zelf; `python3 html.parser` bevestigt geldige HTML; Deel 8's tabel telt exact 18 rijen (geverifieerd via script, niet handmatig geteld); lokale statische server + curl bevestigt HTTP 200 en de aanwezigheid van alle nieuwe Delen/FR's/NFR's in de geserveerde HTML.
+- **Mens-testbaar artefact:** ✅ Voorgelegd aan de opdrachtgever in leesbare vorm (weektabel + drie nieuwe Delen) — expliciet akkoord ontvangen, geen wijzigingen gevraagd.
 
 ### Commit & push — Task 12
-- [ ] Commit in de documentatierepository (`operational-excellence-course`), boodschap verwijst naar de nieuwe FR-reeks en naar het brainstorm-plan.
-- [ ] Push naar `main`.
-- [ ] Vink af: **Main Task 12 afgerond**.
+- [x] Commit in de documentatierepository (`operational-excellence-course`), boodschap verwijst naar de nieuwe FR-reeks en naar het brainstorm-plan.
+- [x] Push naar `main`.
+- [x] Vink af: **Main Task 12 afgerond**.
 
 ---
 
@@ -622,7 +626,7 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 - [x] Main Task 11 — HAN Huisstijl-ontwerpsysteem toepassen ✅ `han-huisstijl-tokens.css` (enige plek met letterlijke hexwaarden, incl. gelabelde extrapolaties voor niet-in-de-mockup-statussen), alle bestaande stylesheets herwezen (index.css/Dashboard.css/CheckpointView.css/StudentDossier.css/admin.css — één echte grijs-op-grijs-inputbug gevonden en gerepareerd tijdens de screenshot-verificatie), drie nieuwe gedeelde componenten (`HanHeader` — eigen instantie per scherm, want admin.html is een apart Vite-bundle; `PhaseTracker` — één component met een `scope`-prop, behoudt CheckpointView's bestaande fase-navigatie; `NoGradeFooter` — mockup's exacte tekst als default, echte servervelden als props), CheckpointView.tsx het diepst geherstructureerd (mockup's eigen twee-rijen-kaartlayout, aparte Gate A/B-kaarten), `pytest` ongewijzigd 198/1-geskipt, `npm run build`/`npm run lint` schoon, Playwright-screenshots van alle vier routes + 2 extra CheckpointView-states + 2 admin-tabs naast de daadwerkelijke mockup-HTML (zelfde browser, eerlijke vergelijking), commit `e792608`
 
 **Scope-uitbreiding — volledige hybride course website (zie plan `can-we-start-building-compiled-narwhal.md`):**
-- [ ] Main Task 12 — LRD-uitbreiding (onboarding, hybride leerarrangement, kwaliteitsmanagement)
+- [x] Main Task 12 — LRD-uitbreiding ✅ Deel 6.14–6.16 (onboarding week 0, hybride 18-weekse periode-indeling met vorm-kolom, kwaliteitsmanagement-survey + AI-adviseur), FR-25–31/NFR-11–12/AC-15–16, docent-akkoord ontvangen
 - [ ] Main Task 13 — TDD-uitbreiding (architectuur voor bovenstaande)
 - [ ] Main Task 14 — Sessie- & planningslaag
 - [ ] Main Task 15 — Aanwezigheid & in-sessie tools
