@@ -355,6 +355,11 @@ pre code { background: none; border: none; padding: 0; }
     <h3>3.6 Kwaliteitscontrole vóór publicatie in de wiki (FR-21) <span class="tag-blueprint new">net-new</span></h3>
     <p>De Synthesize-stap (3.4) schrijft een teamcase als synthesepagina naar <code>wiki/syntheses/</code> zodra beide gates van een checkpoint sluiten. FR-21 voegt daar één stap vóór toe: vóórdat de Review-Ring Coordinator (Deel 5.2) die git-commit daadwerkelijk uitvoert, roept hij de Wiki Quality Check Agent (Deel 5.7) aan. Accepteert die de bijdrage, dan verloopt 3.4 ongewijzigd; wijst die de bijdrage af (duplicaat of ontbrekende/onjuiste bronvermelding), dan wordt de git-commit niet uitgevoerd, ontvangt het team een melding met de reden, en schrijft de coordinator een regel naar <code>wiki_quality_log</code> (Deel 7.2) én <code>action_log</code> (Deel 4.8, NFR-08). Dit is bewust <strong>geen wijziging van gate A/B zelf</strong> (FR-05 blijft binair en ongewijzigd) — het is een kwaliteitspoort op het wiki-<em>schrijfpad</em>, ná de gates, niet ervoor.</p>
     <p>Omdat deze controle vóór de git-commit plaatsvindt, blijft NFR-02 (geen nieuwe hosting voor de wiki zelf) onaangetast: Quartz/GitHub Pages publiceren nog steeds precies wat er in <code>wiki/</code> staat, ongewijzigd bouwproces. De nieuwe logica zit volledig in de agentic-services-laag (Deel 5.7), niet in de wiki-laag zelf.</p>
+
+    <h3>3.7 Wiki-gebruiksanalyse (FR-30) <span class="tag-blueprint new">net-new</span></h3>
+    <p>Quartz heeft analytics standaard uitgeschakeld (<code>analytics: null</code> in <code>quartz.config.ts</code>), ondersteunt via het framework zelf echter al meerdere pluggable providers (o.a. GoatCounter, Plausible, Umami — <code>quartz/cfg.ts</code>). Aanbevolen: <strong>GoatCounter</strong> — zelf-hostbaar, privacy-georiënteerd (geen individuele cookies/fingerprinting), en al ondersteund zonder nieuwe code, alleen een configuratiewijziging. Dit blijft, net als 3.2, een wiki-laag-config-verandering, geen herbouw: de gepubliceerde site meet paginabezoeken op het bestaande, statische publicatiepad (10.1).</p>
+    <p><strong>Grens: geaggregeerd, nooit individueel (NFR-12).</strong> De provider registreert paginabezoeken zonder identificerende gebruikersinfo; herleiding tot een team gebeurt uitsluitend via het bestaande URL-pad-patroon (elke teampagina heeft al een <code>team_id</code> in haar pad, 3.2) — nooit via een cookie, sessie-ID of vergelijkbare per-bezoeker-identifier. Dit is bewust de wiki-laag-tegenhanger van hoe de rest van dit systeem al identificeert (Deel 9): team-niveau, nooit individueel.</p>
+    <p>De ruwe providerdata wordt niet rechtstreeks door de instructor-dashboardfrontend gelezen — een rollup-job in de data-laag (4.10) haalt periodiek de aggregaatcijfers op en schrijft ze naar het domeinmodel, zodat de dashboardquery (5.3) dezelfde "nooit een getal verzinnen"-discipline (4.4) kan volgen als bij elke andere metriek.</p>
   </section>
 
   <section>
@@ -411,6 +416,10 @@ pre code { background: none; border: none; padding: 0; }
     </ul>
     <p><strong>Teamwijziging na cohortstart.</strong> Een gewijzigde <code>team-roster</code> raakt mogelijk een al toegewezen <code>reviewring-assignment</code> (7.1) — de Review-Ring Coordinator (5.2) behandelt dit met exact hetzelfde fallback-mechanisme als reguliere teamuitval (FR-07/08), geen apart pad.</p>
     <p><strong>Locatie en conflictdetectie</strong> — of <code>assessment-schedule</code> een vaste locatielijst gebruikt of vrije tekst, en of dubbele boekingen (docent/locatie/tijdslot) automatisch gedetecteerd worden, zijn nog open vragen (LRD Deel 12, GH issue #2) — dit TDD reserveert de velden (<code>location</code>, <code>docent_id</code>, <code>time_slot</code>) maar specificeert geen validatielogica totdat dat is bepaald.</p>
+
+    <h3>4.10 Sessieplanning (FR-26) &amp; wiki-betrokkenheidsrollup (FR-30) <span class="tag-blueprint new">net-new</span></h3>
+    <p><code>session</code> is een vierde admin-concept-type, naast de drie uit 4.9: kind (<code>hoorcollege|werkcollege|tutoring</code>), week, onderwerp, locatie, materiaal-links en tijdstip — docent-beheerd, zelfde klas-lakehouse als <code>assessment-schedule</code>. Aanwezigheid (FR-27), in-sessie-polls (FR-28) en de post-sessie-survey (FR-29, 5.9) zijn daarentegen hoogfrequente, per-student-per-sessie gebeurtenissen — dezelfde reden waarom <code>action_log</code>/<code>override_log</code> (4.8, 7.2) DuckLake-tabellen zijn in plaats van individuele OKF-bestanden: honderden losse markdown-bestanden per check-in zou het bundelmodel onnodig belasten. <code>attendance_log</code>, <code>poll_responses</code> en <code>survey_responses</code> (7.2) volgen daarom het logtabel-patroon, niet het bundel-concept-patroon.</p>
+    <p>Een periodiek (bv. dagelijks) scriptje haalt GoatCounter's aggregaatcijfers op (3.7) en schrijft ze weg als rijen in <code>wiki_engagement</code> (7.2) — team-niveau, per week. Dit is bewust <strong>geen</strong> agent-tool: net als bij het vervalvenster (5.2) is dit pure, deterministische bedrijfslogica zonder redeneercomponent, dus geen LLM nodig. Hetzelfde "nooit een getal verzinnen"-principe (4.4) geldt: de rollup kopieert een aggregaatcijfer, hij interpreteert het niet.</p>
   </section>
 
   <section>
@@ -464,6 +473,16 @@ pre code { background: none; border: none; padding: 0; }
     </ul>
     <p><strong>Waarom geen cijfer, oordeel of aanbeveling (LRD 6.13).</strong> De tool heeft, net als de Socratische tutor (5.1) en de Wiki Quality Check Agent (5.7), geen outputveld voor een samenvattend oordeel — structureel dezelfde garantie, nu toegepast op een tool die het summatieve CBI voedt in plaats van een formatieve gate. Dit is de striktste never-invents-garantie in dit TDD, omdat de output — anders dan bij het dashboard (5.3) — een <em>docent</em> beïnvloedt vlak vóór een cijferbeslissing.</p>
     <p>Instructor-only: dezelfde toegangsscheiding als <code>rubric_scores</code> (7.2) — nooit via een teamgericht kanaal (6.3).</p>
+
+    <h3>5.9 Course Quality Advisor Agent (FR-31) <span class="tag-blueprint new">net-new</span></h3>
+    <p>Een <code>task</code>-modus <code>Agent</code>, zelfde tweelaagse coördinator/task-worker-opzet als de Socratische Tutor (5.1) en de Wiki Quality Check Agent (5.7). Draait aan het einde van elke periode (LRD 6.15) — niet per sessie — omdat een enkele post-sessie-survey te weinig signaal geeft voor een zinvol patroon.</p>
+    <ul>
+      <li><code>query_survey_responses(cohort, period)</code> — deterministisch: DuckDB-aggregatie over <code>survey_responses</code> (7.2), gemiddelden per sessie/week/dimensie.</li>
+      <li><code>query_engagement(cohort, period)</code> — deterministisch: idem over <code>wiki_engagement</code> (7.2, 4.10).</li>
+      <li><code>generate_quality_report(cohort, period)</code> — LLM-stap die sterke/zwakke sessies/weken en het patroon erachter samenvat, met dezelfde <strong>harde outputeis</strong> als de Assessment-Prep Agent (5.8): elke bewering bevat een verplicht <code>source_ref</code> naar het brondatapunt (bv. <code>survey_responses#id</code> of <code>wiki_engagement#id</code>) waarop ze gebaseerd is. Een bewering zonder <code>source_ref</code> wordt niet doorgegeven aan de frontend — zelfde structurele afdwinging, nu toegepast op periodieke kwaliteitsanalyse in plaats van individuele CBI-voorbereiding.</li>
+    </ul>
+    <p><strong>Instructor-only, geen wiki-publicatie (LRD 6.16).</strong> Net als de Assessment-Prep Agent heeft deze agent geen outputveld voor een samenvattend eindoordeel over de cursus — alleen herleidbare waarnemingen. Het rapport wordt weggeschreven naar een instructor-only route (6.11), nooit via de Synthesize-terugschrijfmechaniek (3.4/3.5) naar de publieke wiki: dat zou het "nooit een zichtbaar oordeel"-ethos van de Socratische gate (5.1) doortrekken naar een plek waar het niet hoort — een publiek zichtbaar kwaliteitsoordeel over sessies/docenten is iets anders dan een teamgericht, nooit-scorend Socratisch transcript.</p>
+    <p>Elke aanroep schrijft, zoals de overige agentic-tools (5.6), een regel naar <code>action_log</code> (4.8).</p>
   </section>
 
   <section>
@@ -499,6 +518,21 @@ pre code { background: none; border: none; padding: 0; }
 
     <h3>6.6 Studentdossier &amp; CBI-voorbereiding (FR-23/24)</h3>
     <p>Instructor-only route, één student tegelijk: een tijdlijnweergave (<code>build_student_timeline</code>, 5.8) plus het voorbereidingsoverzicht (<code>generate_prep_summary</code>). Elke aandachtspunt/vraagsuggestie toont zijn <code>source_ref</code> zichtbaar in de UI (bv. als een klikbare referentie naar het onderliggende gate-rapport) — de brontraceerbaarheid uit NFR-10 moet <em>zichtbaar</em> zijn voor de docent, niet alleen intern aanwezig in de data.</p>
+
+    <h3>6.7 Onboarding-flow (FR-25) <span class="tag-blueprint new">net-new</span></h3>
+    <p>Vier schermen, doorlopen vóór week 1 (LRD 6.14): team-koppeling-reveal (leest <code>team-roster</code>, 4.9), zelfassessment (drie korte reflectieve vragenlijsten, uitsluitend lokaal/team-zichtbaar — geen instructor-gerichte opslag, want dit is geen beoordelingsdata), tooling-walkthrough (statische uitleg, geen backend-call), en een afsluiting die doorlinkt naar de team-route (6.1). Geen eigen gate, geen eigen agent — puur frontend-flow met één schrijfactie (<code>onboarding_completed</code>-vlag op <code>team-roster</code>, 4.9).</p>
+
+    <h3>6.8 Sessie-/roosterview, aanwezigheid &amp; in-sessie polls (FR-26/27/28) <span class="tag-blueprint new">net-new</span></h3>
+    <p>Een student-facing roosterroute toont de <code>session</code>-planning (4.10) per week, met materiaal-links en een check-in-knop die naar <code>attendance_log</code> (7.2) schrijft. Tijdens een werkcollege kan de docent (via een lichte uitbreiding van de admin-route, 6.5) een korte multiple-choice-poll starten; studenten beantwoorden op hun eigen scherm, de docent ziet resultaten via een korte polling-interval (geen WebSocket-infrastructuur — KISS, LRD 5.1: dit is geen live-facilitatietool, alleen een lichte peiling). Docent-sessie-CRUD (aanmaken/wijzigen van sessies) leeft als vijfde tabblad naast de vier uit 6.5.</p>
+
+    <h3>6.9 Post-sessie-survey-widget (FR-29) <span class="tag-blueprint new">net-new</span></h3>
+    <p>Verschijnt client-side direct na een check-in (6.8): drie sterren-dimensies (Informatie/Interactie/Toepasbaarheid, LRD 6.16) plus een optioneel vrij-tekstveld, geschreven naar <code>survey_responses</code> (7.2). Voornaam en <code>team_id</code> komen mee uit de al-bestaande check-in-context — geen los formulierveld. Geen bevestigingsscherm met resultaten (dat zou de survey een publiek-vergelijkend karakter geven dat NFR-11 uitsluit) — alleen een korte "bedankt"-melding.</p>
+
+    <h3>6.10 Student journey-view (net-new)</h3>
+    <p>Een cursusbrede, team-scoped route (niet instructor-only, in tegenstelling tot 6.6): een tijdlijn van alle 18 weken (LRD Deel 8) met de huidige positie gemarkeerd, de geplande sessies per week (6.8) en de eigen gate-geschiedenis waar relevant. Backend: een nieuwe, team-scoped tool op de Dashboard Query Agent (5.3) — structureel begrensd tot het eigen <code>team_id</code>, dezelfde isolatie-garantie als de rest van dit systeem (4.1, 9.2), nooit instructor-breed zoals <code>query_dashboard</code>. Dit is de eerste student-facing route die verder kijkt dan de huidige fase (6.1 toont alleen de actuele checkpointkaart).</p>
+
+    <h3>6.11 Course Quality Advisor-rapportview (FR-31) <span class="tag-blueprint new">net-new</span></h3>
+    <p>Instructor-only kaart op de dashboardroute (6.2), toont het periodieke rapport van 5.9 met elke bewering gekoppeld aan een klikbare <code>source_ref</code> — zelfde UI-patroon als 6.6's voorbereidingsoverzicht. Geen studentzichtbare variant (LRD 6.16: instructor-only, geen publieke wiki-pagina).</p>
   </section>
 
   <section>
@@ -613,6 +647,20 @@ location: Arnhem            # vaste lijst vs. vrije tekst: open vraag, zie 4.9
 docent_id: instructor
 ---</code></pre>
     <p class="theme-help"><code>course-period</code> leeft in het nieuwe cohort-brede admin-lakehouse (4.9); <code>team-roster</code> en <code>assessment-schedule</code> in het klas-lakehouse (4.6), naast <code>klas-roster</code>.</p>
+    <pre><code>---
+type: session
+session_id: wc-wk06
+cohort: 2026-2027-oe
+klas_id: klas-a
+kind: werkcollege        # hoorcollege | werkcollege | tutoring
+week: 6
+topic: "Ch6 Process design + Ch7 Layout"
+location: Arnhem
+materials: ["han-huisstijl-slides-wk6.pdf"]
+start_time: 2026-09-21T13:00:00Z
+end_time: 2026-09-21T14:30:00Z
+---</code></pre>
+    <p class="theme-help"><code>session</code> (4.10, FR-26) leeft in het klas-lakehouse, naast <code>assessment-schedule</code> — zelfde docent-beheerde, laagfrequente aard. In een tentamenweek (LRD 6.15) bestaat er voor die week bewust geen <code>session</code> van kind <code>hoorcollege</code>/<code>werkcollege</code>, alleen eventueel tutoring.</p>
 
     <h3>7.2 DuckLake-tabellen (dashboard-aggregatie)</h3>
     <div class="tbl-wrap">
@@ -626,6 +674,10 @@ docent_id: instructor
         <tr><td><code>uploaded_tables</code></td><td><code>scope, scope_id, cohort, source_filename</code> + dynamische kolommen per geüpload Excel/CSV-bestand (Deel 4.7)</td><td>Team/ring/klas naargelang <code>scope</code> — bewust <strong>niet</strong> instructor-only zoals <code>rubric_scores</code>, want deze data is juist bedoeld om door de doelgroep gelezen te worden</td></tr>
         <tr><td><code>action_log</code></td><td><code>ts, actor_type, actor_id, layer, action, target_type, target_id, outcome, error_code, error_message, correlation_id</code></td><td>Devops/technisch (NFR-08) — niet het pedagogische instructor-dashboard, zie Deel 4.8</td></tr>
         <tr><td><code>wiki_quality_log</code></td><td><code>team_id, cohort, stage, submission_ref, outcome, reject_reason, points_concepts, points_entities, points_sources, points_relations, points_total, ts</code></td><td>Instructor-dashboard én team-zichtbaar (LRD 6.11) — punten zijn informationeel, geen verborgen rubriek</td></tr>
+        <tr><td><code>attendance_log</code></td><td><code>session_id, team_id, first_name, checked_in_at</code></td><td>Instructor-dashboard én team-eigen (eigen check-ins zichtbaar) — voedt AC-15</td></tr>
+        <tr><td><code>poll_responses</code></td><td><code>session_id, poll_id, team_id, first_name, choice, ts</code></td><td>Docent (live resultaten tijdens het werkcollege, 6.8)</td></tr>
+        <tr><td><code>survey_responses</code></td><td><code>session_id, team_id, first_name, informatie, interactie, toepasbaarheid, comment, ts</code></td><td><strong>Uitsluitend instructor</strong> (NFR-11) — nooit individueel zichtbaar buiten de docent-gerichte aggregatie (5.9)</td></tr>
+        <tr><td><code>wiki_engagement</code></td><td><code>team_id, cohort, week, page_visits, ts</code></td><td>Instructor-dashboard én team-eigen activiteitsindicator — team-niveau, nooit individueel (NFR-12)</td></tr>
       </tbody>
     </table>
     </div>
@@ -681,6 +733,15 @@ docent_id: instructor
         <tr><td>NFR-08</td><td>Systeembreed <code>action_log</code> (append-only, succes/fout per handeling)</td><td>4.8, 5.6, 7.2</td></tr>
         <tr><td>NFR-09</td><td>Ring-/klas-lakehouse-isolatie identiek aan team-isolatie (4.1) — geen publieke toegang tot niet-"iedereen"-scope</td><td>4.6</td></tr>
         <tr><td>NFR-10</td><td>Verplicht <code>source_ref</code>-veld per aandachtspunt/vraagsuggestie; punten zonder referentie worden niet doorgegeven aan de frontend</td><td>5.8, 6.6</td></tr>
+        <tr><td>FR-25</td><td>Onboarding-flow: team-reveal, zelfassessment, tooling-walkthrough</td><td>6.7</td></tr>
+        <tr><td>FR-26</td><td><code>session</code>-concept + docent-CRUD + student-roosterview</td><td>4.10, 6.8, 7.1</td></tr>
+        <tr><td>FR-27</td><td>Check-in-knop + <code>attendance_log</code></td><td>6.8, 7.2</td></tr>
+        <tr><td>FR-28</td><td>Poll-widget + <code>poll_responses</code></td><td>6.8, 7.2</td></tr>
+        <tr><td>FR-29</td><td>Post-sessie-survey-widget + <code>survey_responses</code></td><td>6.9, 7.2</td></tr>
+        <tr><td>FR-30</td><td>GoatCounter-config + rollup-job + <code>wiki_engagement</code> + dashboard-indicator</td><td>3.7, 4.10, 7.2</td></tr>
+        <tr><td>FR-31</td><td>Course Quality Advisor Agent — instructor-only rapport, verplicht <code>source_ref</code></td><td>5.9, 6.11</td></tr>
+        <tr><td>NFR-11</td><td><code>survey_responses</code> uitsluitend instructor-zichtbaar, nooit gate-/cijferinvloed</td><td>7.2</td></tr>
+        <tr><td>NFR-12</td><td><code>wiki_engagement</code> team-niveau geaggregeerd, geen individuele paginabezoek-records</td><td>3.7, 7.2</td></tr>
       </tbody>
     </table>
     </div>
@@ -704,6 +765,8 @@ docent_id: instructor
         <tr><td>AC-12</td><td>Toegangscontrole-steekproef bevestigt team/groep-gescopeerde <code>instructor-document</code>-concepten blijven binnen hun lakehouse-grens (NFR-09)</td><td>4.6</td></tr>
         <tr><td>AC-13</td><td>Wiki-kwaliteitslog-steekproef (geen onopgemerkte duplicaten/foutieve bronvermelding)</td><td>5.7, 7.2</td></tr>
         <tr><td>AC-14</td><td>Steekproef van CBI-voorbereidingsoverzichten bevestigt elk punt heeft een geldig, herleidbaar <code>source_ref</code></td><td>5.8</td></tr>
+        <tr><td>AC-15</td><td>Steekproefcontrole van het sessierooster bevestigt elke sessie heeft een werkende check-in + survey-trigger</td><td>6.8, 6.9</td></tr>
+        <tr><td>AC-16</td><td>Evalset-/steekproefcontrole van het kwaliteitsrapport bevestigt elke bewering heeft een geldig <code>source_ref</code> — zelfde patroon als AC-14</td><td>5.9, 12.1</td></tr>
       </tbody>
     </table>
     </div>
@@ -765,6 +828,8 @@ docent_id: instructor
         <tr><td>Systeembrede auditeerbaarheid</td><td><code>action_log</code> met succes/fout-uitkomst per handeling, append-only</td><td>4.8, NFR-08</td></tr>
         <tr><td>Wiki-kwaliteitspunten zijn geen pedagogisch cijfer</td><td>Apart datamodel (<code>wiki_quality_log</code> vs <code>rubric_scores</code>), nooit gate-blocking, nooit onderdeel van AC-03's verborgen rubriek</td><td>5.7, 7.2, FR-21</td></tr>
         <tr><td>AI-CBI-voorbereiding kleurt nooit het docentoordeel</td><td>Verplicht <code>source_ref</code>-veld per aandachtspunt/vraagsuggestie; geen outputveld voor een samenvattend oordeel (structureel, niet instructie)</td><td>5.8, NFR-10</td></tr>
+        <tr><td>Kwaliteitsrapport publiceert nooit een zichtbaar oordeel</td><td>Verplicht <code>source_ref</code>-veld per bewering; instructor-only route, geen Synthesize-terugschrijfpad naar de publieke wiki (structureel, niet instructie)</td><td>5.9, NFR-11</td></tr>
+        <tr><td>Survey-antwoorden beïnvloeden nooit een gate of cijfer</td><td>Apart datamodel (<code>survey_responses</code> vs <code>rubric_scores</code>/<code>gate_events</code>), geen enkel gate-schrijfpad leest deze tabel</td><td>7.2, NFR-11</td></tr>
       </tbody>
     </table>
     </div>
@@ -774,7 +839,7 @@ docent_id: instructor
     <h2 class="bds-part">Deel 12 — Testing- &amp; evaluatiestrategie</h2>
 
     <h3>12.1 Agent-evaluatie (AC-03, AC-05)</h3>
-    <p>Hergebruik van <code>adk2-blueprint</code>'s <code>AgentEvaluator</code> + <code>.evalset.json</code>-patroon (<code>tests/eval/</code>, gated achter <code>pytest.mark.eval</code>, los van de snelle CI): een evalset voor de Socratische Tutor Agent bevat cases die expliciet toetsen dat geen enkel teamgericht antwoord scoretaal ("goed", "fout", een cijfer) bevat (AC-03), en dat opeenvolgende rapporten binnen een team aantoonbaar voortbouwen op eerdere (AC-05). Deze evalsets zijn <strong>levende acceptatietests</strong>, niet eenmalige handmatige controles — ze draaien bij elke wijziging aan de tutor-prompts. Hetzelfde patroon dekt de Wiki Quality Check Agent (AC-13: geen gemiste duplicaten/bronvermeldingsfouten in een steekproef van testinvoer) en de Assessment-Prep Agent (AC-14: elke gegenereerde aandachtspunt/vraagsuggestie in de evalset moet een geldig <code>source_ref</code> hebben, anders faalt de test) — drie agents, één hergebruikt evaluatiemechanisme.</p>
+    <p>Hergebruik van <code>adk2-blueprint</code>'s <code>AgentEvaluator</code> + <code>.evalset.json</code>-patroon (<code>tests/eval/</code>, gated achter <code>pytest.mark.eval</code>, los van de snelle CI): een evalset voor de Socratische Tutor Agent bevat cases die expliciet toetsen dat geen enkel teamgericht antwoord scoretaal ("goed", "fout", een cijfer) bevat (AC-03), en dat opeenvolgende rapporten binnen een team aantoonbaar voortbouwen op eerdere (AC-05). Deze evalsets zijn <strong>levende acceptatietests</strong>, niet eenmalige handmatige controles — ze draaien bij elke wijziging aan de tutor-prompts. Hetzelfde patroon dekt de Wiki Quality Check Agent (AC-13: geen gemiste duplicaten/bronvermeldingsfouten in een steekproef van testinvoer), de Assessment-Prep Agent (AC-14: elke gegenereerde aandachtspunt/vraagsuggestie in de evalset moet een geldig <code>source_ref</code> hebben, anders faalt de test) en de Course Quality Advisor Agent (AC-16: dezelfde <code>source_ref</code>-assertie, nu tegen periodieke kwaliteitsrapporten) — vier agents, één hergebruikt evaluatiemechanisme.</p>
 
     <h3>12.2 Overige testlagen</h3>
     <p>Volgt <code>adk2-blueprint</code>'s bestaande indeling: <code>unit/</code> (losse functies, bv. escrow-vervalvensterlogica), <code>component/</code> (in-memory <code>Runner</code>-tests per agent), <code>integration/</code> (echte servicecalls tegen een testomgeving), <code>eval/</code> (12.1). OKF-conformance (AC-09) hergebruikt het lintpatroon dat <code>wiki-template</code> al heeft (<code>scripts/lint-page.mjs</code>-equivalent) tegen alle nieuwe concept-types uit Deel 7.1.</p>
@@ -791,11 +856,13 @@ docent_id: instructor
       <li><strong>Data-laag + OKF-bundelconventie per team.</strong> <code>small-medium-data-lake</code>-patroon toegepast op <code>team_id</code> (Deel 4.1–4.2), vóórdat enige agent live gaat.</li>
       <li><strong>Socratische Tutor Agent + evalharnas, alleen Gate 1 (Direct-fase)</strong> (↔ LRD 13.2 pilot). Handmatige transcriptcontrole vóórdat de verborgen rubriek vertrouwd wordt — zelfde volgorde als het LRD al voorschrijft.</li>
       <li><strong>Review-Ring Coordinator + instructor-dashboard</strong> (↔ LRD 13.3), naast de lopende pilot.</li>
-      <li><strong>Volledige 15-weekse cyclus, alle vier gates live</strong> (↔ LRD 13.4), override-logging vanaf dag één (Deel 7.2).</li>
+      <li><strong>Volledige 18-weekse cyclus (twee periodes), alle vier gates live</strong> (↔ LRD 13.4), override-logging vanaf dag één (Deel 7.2).</li>
       <li><strong>Kalibratie</strong> (↔ LRD 13.5) — drempelwaarden in de verborgen rubriek en de vervalvenster-timing bijstellen tegen AC-05/AC-07/AC-08.</li>
       <li><strong>Deploymenthardening &amp; compounding</strong> (↔ LRD 13.6) — DuckLake-duurzaamheid (Deel 14) oplossen vóór een tweede cohort instroomt.</li>
     </ol>
     <p>De Wiki Quality Check Agent (5.7), het admin-onderdeel (4.9, 6.5) en het studentdossier (5.8, 6.6) hebben geen eigen fase — ze zijn <strong>additief</strong> bovenop de kernpijplijn hierboven en kunnen parallel gebouwd worden zodra fase 2 (data-laag) staat, zonder een van de zeven fasen te blokkeren of te herordenen.</p>
+    <p><strong>Scope-uitbreiding: onboarding, hybride sessies, QMS, wiki-analytics, kwaliteitsadviseur.</strong> Deze zeven componenten (onboarding-flow 6.7, sessieplanning 4.10/6.8, aanwezigheid &amp; polls 6.8, survey 6.9, wiki-gebruiksanalyse 3.7/4.10, journey-view 6.10, Course Quality Advisor 5.9/6.11) zijn eveneens additief — ze bouwen op de kernpijplijn (fase 2 data-laag, fase 3/5 agentic services) maar blokkeren geen van de zeven bestaande fasen. Twee volgordelijke afhankelijkheden binnen deze uitbreiding zelf: de survey (6.9) heeft de check-in-flow (6.8) nodig als trigger, en de Course Quality Advisor (5.9) heeft zowel survey- als engagement-data nodig om iets zinnigs te kunnen rapporteren.</p>
+    <p><strong>Deployment eerder interleaven.</strong> Nu de scope een "volledige course website" omvat in plaats van een gate-systeem-widget, wordt fase 7 (deploymenthardening) relevanter dan een sluitstuk ná alle andere fasen — Dockerfile- en CI/CD-scaffolding (Deel 10.2/10.4) kunnen al starten zodra fase 1 (wiki-content) staat, parallel aan fase 2–6, in plaats van te wachten tot kalibratie (fase 6) volledig is afgerond. Dit is een aanbeveling voor de bouwvolgorde, geen wijziging van de fasen zelf.</p>
   </section>
 
   <section>
@@ -818,6 +885,9 @@ docent_id: instructor
         <tr><td><strong>Similariteitsdrempel voor "inhoudelijk duplicaat" (5.7, LRD 6.11)</strong></td><td>Nog niet vastgesteld; te behoudend kalibreren riskeert veel false positives (LRD Deel 12), te los kalibreren mist echte duplicaten</td><td>Kalibratie tegen AC-13 tijdens de pilot (LRD Deel 13)</td></tr>
         <tr><td><strong>Toegangsrol admin-onderdeel + conflictdetectie (4.9, 6.5)</strong></td><td>Velden gereserveerd (<code>docent_id</code>, <code>location</code>, <code>time_slot</code>), geen validatie-/rollenlogica gespecificeerd</td><td>Opdrachtgever — alle docenten of alleen coördinatoren; of dubbele boekingen automatisch gedetecteerd moeten worden (LRD Deel 12, GH issue #2)</td></tr>
         <tr><td><strong>Vaste locatielijst vs. vrije tekst voor <code>assessment-schedule.location</code></strong></td><td>Vrije tekst als eenvoudigste startpunt (KISS), met Arnhem/Nijmegen als bekende waarden</td><td>Bevestiging of een beheerde lijst nodig is vóór meerdere locaties in gebruik zijn</td></tr>
+        <tr><td><strong>Analytics-provider voor wiki-gebruiksanalyse (3.7)</strong></td><td>GoatCounter — zelf-hostbaar, privacy-georiënteerd, al ondersteund door Quartz zonder nieuwe code</td><td>Bevestiging vóór Task 19-kickoff (buildplan); Plausible/Umami zijn evenwaardige alternatieven binnen dezelfde privacy-eisen</td></tr>
+        <tr><td><strong>Poll-mechanisme (6.8)</strong></td><td>Korte client-side polling-interval (bv. elke 3-5s tijdens een actieve poll) i.p.v. WebSockets — eenvoudiger infrastructuur, acceptabele latency voor een in-collegepoll (geen harde real-time-eis)</td><td>Bevestiging dat deze latency voor een werkcollege-context volstaat</td></tr>
+        <tr><td><strong>Retentie survey- en aanwezigheidsdata (<code>survey_responses</code>, <code>attendance_log</code>)</strong></td><td>Nog niet vastgelegd, zelfde open categorie als <code>action_log</code>-retentie hierboven</td><td>Opdrachtgever/HAN IT — bewaartermijn vóór productie</td></tr>
       </tbody>
     </table>
     </div>

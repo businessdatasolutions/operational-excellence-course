@@ -414,21 +414,21 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 **Bestanden:** Modify: `design-documents/tdd-operational-excellence.html`
 
-- [ ] **13.1** Nieuw agentcomponent beschrijven: **Course Quality Advisor Agent** — architectuur, tools, en het source_ref-traceerbaarheidspatroon (expliciet hergebruik van het bestaande never-invents-patroon uit Deel 5.7/5.8, niet opnieuw uitvinden).
-- [ ] **13.2** Nieuwe datatypes toevoegen aan Deel 7 (Datamodel): `session` (type werkcollege/hoorcollege/tutoring, week, onderwerp, locatie, materiaal-link, tijd), `attendance-log`, `survey-response` (session_id, team_id/first_name, ratings per dimensie uit Task 12.3, vrije tekst), `wiki-engagement-aggregate` (team_id, week, paginabezoek-telling — team-niveau, geen individuele records).
-- [ ] **13.3** Nieuwe frontend-oppervlakken beschrijven in Deel 6: cursusbrede student journey-view, onboarding-flow, sessie-/roosterview met materiaal en check-in, live-poll-widget, post-sessie-survey-widget, docent-sessie-CRUD (admin-uitbreiding), quality-advisor-rapportview.
-- [ ] **13.4** Wiki-analytics-implementatiekeuze documenteren (aanbeveling: een van Quartz' zelf-hostbare, privacy-vriendelijke providers, bv. GoatCounter, plus een team-niveau rollup-job) in Deel 3 (wiki-laag) of Deel 10 (deployment) — waar het beste past.
-- [ ] **13.5** Deployment-sequencing-notitie toevoegen aan Deel 10/13 (fasering): een "volledige course website" vraagt om echte hosting, dus Task 7 (deployment) kan eerder interleaven dan pas na alle nieuwe features — als aanbeveling, geen harde eis.
-- [ ] **13.6** FR/NFR/AC-kruistabel (Deel 8) bijwerken met elk nieuw FR/NFR/AC-nummer uit Task 12, gekoppeld aan het component uit 13.1–13.4.
+- [x] **13.1** Nieuw agentcomponent beschrijven: **Course Quality Advisor Agent** — architectuur, tools, en het source_ref-traceerbaarheidspatroon (expliciet hergebruik van het bestaande never-invents-patroon uit Deel 5.7/5.8, niet opnieuw uitvinden). ✅ Deel 5.9. Draait per periode (niet per sessie — te weinig signaal anders), instructor-only, geen wiki-terugschrijfpad.
+- [x] **13.2** Nieuwe datatypes toevoegen aan Deel 7 (Datamodel): `session` (type werkcollege/hoorcollege/tutoring, week, onderwerp, locatie, materiaal-link, tijd), `attendance-log`, `survey-response` (session_id, team_id/first_name, ratings per dimensie uit Task 12.3, vrije tekst), `wiki-engagement-aggregate` (team_id, week, paginabezoek-telling — team-niveau, geen individuele records). ✅ Ontwerpbeslissing gemaakt en gedocumenteerd (Deel 4.10): `session` is een OKF-concept (laagfrequent, docent-beheerd, zelfde patroon als `assessment-schedule`); `attendance_log`/`survey_responses`/`wiki_engagement` zijn DuckLake-tabellen (hoogfrequent, zelfde patroon als `action_log`/`override_log`) — plus `poll_responses` toegevoegd voor FR-28, niet expliciet genoemd in deze subtaak-tekst maar nodig voor volledige FR-traceerbaarheid.
+- [x] **13.3** Nieuwe frontend-oppervlakken beschrijven in Deel 6: cursusbrede student journey-view, onboarding-flow, sessie-/roosterview met materiaal en check-in, live-poll-widget, post-sessie-survey-widget, docent-sessie-CRUD (admin-uitbreiding), quality-advisor-rapportview. ✅ Deel 6.7–6.11.
+- [x] **13.4** Wiki-analytics-implementatiekeuze documenteren (aanbeveling: een van Quartz' zelf-hostbare, privacy-vriendelijke providers, bv. GoatCounter, plus een team-niveau rollup-job) in Deel 3 (wiki-laag) of Deel 10 (deployment) — waar het beste past. ✅ Deel 3.7 (provider-config) + Deel 4.10 (rollup-job), GoatCounter aanbevolen, bevestiging bij Task 19-kickoff als open punt in Deel 14.
+- [x] **13.5** Deployment-sequencing-notitie toevoegen aan Deel 10/13 (fasering): een "volledige course website" vraagt om echte hosting, dus Task 7 (deployment) kan eerder interleaven dan pas na alle nieuwe features — als aanbeveling, geen harde eis. ✅ Toegevoegd aan Deel 13.
+- [x] **13.6** FR/NFR/AC-kruistabel (Deel 8) bijwerken met elk nieuw FR/NFR/AC-nummer uit Task 12, gekoppeld aan het component uit 13.1–13.4. ✅ FR-25–31/NFR-11–12/AC-15–16 toegevoegd aan Deel 8.1/8.2; guardrails-tabel (Deel 11) en evaluatiestrategie (Deel 12.1) ook bijgewerkt.
 
 ### Test Gate — Task 13
-- **Automatisch:** dezelfde grep-diff FR/NFR/AC-kruiscontrole tussen LRD en TDD die eerder in dit project is gebruikt — volledige match, geen wees-nummers in beide richtingen.
-- **Mens-testbaar artefact:** leesbare, renderende HTML; de opdrachtgever kan de nieuwe architectuurbeschrijving doorlezen zonder code te hoeven raadplegen.
+- **Automatisch:** ✅ grep-diff FR/NFR/AC-kruiscontrole tussen LRD en TDD (script, niet handmatig): volledige match in beide richtingen, geen wees-nummers. Duplicate-ID-check binnen TDD: de enige herhaalde ID's (FR-20/NFR-08/NFR-09/AC-12) zijn pre-existente narratieve vermeldingen in een toelichtingskader, geen dubbele tabelrijen — apart geverifieerd. `python3 html.parser` + tag-balance-check bevestigen geldige HTML. Lokale statische server + curl bevestigt HTTP 200 en aanwezigheid van alle nieuwe secties.
+- **Mens-testbaar artefact:** leesbare, renderende HTML — voorgelegd aan de opdrachtgever ter bevestiging vóór commit (zelfde patroon als Task 12.6).
 
 ### Commit & push — Task 13
-- [ ] Commit in de documentatierepository, boodschap verwijst naar de FR/NFR/AC-kruistabel-update.
-- [ ] Push naar `main`.
-- [ ] Vink af: **Main Task 13 afgerond**.
+- [x] Commit in de documentatierepository, boodschap verwijst naar de FR/NFR/AC-kruistabel-update.
+- [x] Push naar `main`.
+- [x] Vink af: **Main Task 13 afgerond**.
 
 ---
 
@@ -627,7 +627,7 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 **Scope-uitbreiding — volledige hybride course website (zie plan `can-we-start-building-compiled-narwhal.md`):**
 - [x] Main Task 12 — LRD-uitbreiding ✅ Deel 6.14–6.16 (onboarding week 0, hybride 18-weekse periode-indeling met vorm-kolom, kwaliteitsmanagement-survey + AI-adviseur), FR-25–31/NFR-11–12/AC-15–16, docent-akkoord ontvangen
-- [ ] Main Task 13 — TDD-uitbreiding (architectuur voor bovenstaande)
+- [x] Main Task 13 — TDD-uitbreiding ✅ Deel 5.9 (Course Quality Advisor Agent), Deel 6.7–6.11 (nieuwe frontend-oppervlakken), Deel 3.7/4.10 (wiki-analytics + rollup), FR-25–31/NFR-11–12/AC-15–16 volledig kruisverwezen, opdrachtgever-akkoord ontvangen
 - [ ] Main Task 14 — Sessie- & planningslaag
 - [ ] Main Task 15 — Aanwezigheid & in-sessie tools
 - [ ] Main Task 16 — Onboarding-flow
