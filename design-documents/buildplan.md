@@ -10,6 +10,8 @@
 
 **Tech stack:** Python 3.11+ (data-laag, agents — `google-adk[a2a,db,eval]~=2.0`, DuckDB/DuckLake, pytest), TypeScript/React + Vite (frontend), Quartz v4/Node (wiki, ongewijzigd), Cloud Run + managed Postgres (deployment, `europe-west4`).
 
+**Scope-uitbreiding (Main Tasks 12–20):** na afronding van Tasks 0–11 is de scope verbreed van "gate-systeem-prototype" naar een volledige hybride course website (onboarding → eindassessment, docentjourney, kwaliteitsmanagement via surveys, wiki-gebruiksanalyse, didactische AI-adviseur) — zie de brainstorm-beslissingen en architectuurkeuzes vastgelegd in `/Users/witoldtenhove/.claude/plans/can-we-start-building-compiled-narwhal.md`. Tasks 12–13 breiden eerst de LRD/TDD uit (pedagogiek/architectuur, geen code); Tasks 14–20 bouwen daarna de code. Dezelfde globale randvoorwaarden hieronder blijven onverkort gelden.
+
 ## Globale randvoorwaarden (gelden voor élke main task)
 
 Deze eisen zijn projectbreed en worden niet in elke task herhaald — een subtask die ze schendt is per definitie niet af:
@@ -39,6 +41,12 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 | 5 | **Task 6** (kalibratie) | Task 5 gepusht | Nee — vereist pilotdata uit Task 5 |
 | 5b | **Task 11** (HAN Huisstijl-ontwerpsysteem) | Task 5 én Task 10 gepusht | Ja — parallel aan Task 6: CSS/componentretrofit raakt geen Python, geen overlap met kalibratie |
 | 6 | **Task 7** (deployment hardening) | Task 6 gepusht (scaffolding uit 7.1–7.2 mag al eerder starten, parallel aan golf 3–5) | Deels — Dockerfile/CI-CD-scaffolding (7.1, 7.4) kan een aparte subagent zijn zodra Task 0 klaar is; de uiteindelijke smoke-test (7.6) niet |
+| 7 | **Task 12** (LRD-uitbreiding) | direct (huidige stand: Tasks 0–5, 8–11 gepusht) | Nee — content-taak, samen met de opdrachtgever direct geschreven, geen subagent |
+| 8 | **Task 13** (TDD-uitbreiding) | Task 12 gepusht | Nee — zelfde reden als Task 12 |
+| 9 | **Task 14** (sessie- & planningslaag) + **Task 16** (onboarding-flow) + **Task 19** (wiki-gebruiksanalyse) | Task 13 gepusht | Ja — drie onafhankelijke subagents; kleine overlapkans tussen 14 en 19 op `data/smdl/ducklake.py` (beide voegen een tabel toe) — laatste die pusht rebaset eerst |
+| 10 | **Task 15** (aanwezigheid & in-sessie tools) + **Task 17** (student journey-view) | Task 14 gepusht | Ja — twee onafhankelijke subagents; 17 is vrijwel puur frontend, 15 raakt vooral team_api + nieuwe check-in/poll-routes |
+| 11 | **Task 18** (survey/QMS-laag) | Task 15 gepusht (survey wordt getriggerd door de check-in-flow uit Task 15) | Nee — bouwt direct op Task 15's endpoints |
+| 12 | **Task 20** (Course Quality Advisor Agent) | Task 18 én Task 19 gepusht | Nee — heeft zowel survey- als engagement-data nodig om iets zinnigs te kunnen rapporteren |
 
 **Vuistregel voor de orkestrerende agent:** als twee main tasks in dezelfde golf staan én geen gedeelde bestanden aanraken (zie de submap-hints), spawn ze als aparte subagents/teammates. Laat elke subagent zijn eigen main task volledig afsluiten (incl. test gate + commit + push) vóórdat de volgende golf begint.
 
@@ -372,6 +380,232 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 
 ---
 
+## Main Task 12: LRD-uitbreiding — onboarding, hybride leerarrangement, kwaliteitsmanagement
+
+*(Golf 7 — mag direct starten, geen afhankelijkheid van Task 6/7. Geen coding-subagent: samen met de opdrachtgever direct in de HTML geschreven, zelfde patroon als het oorspronkelijke LRD/TDD-werk. Zie de brainstorm-beslissingen in `/Users/witoldtenhove/.claude/plans/can-we-start-building-compiled-narwhal.md`.)*
+
+**Bestanden:** Modify: `design-documents/lrd-operational-excellence.html`
+
+- [ ] **12.1** Nieuw Deel "Onboarding-fase (week 0)": pedagogisch ontwerp van een pre-week-1-sequentie — verwachtingen, zelfassessment (reflectief, geen scoring/verdict), tooling-walkthrough (wiki/AI-tutor/gates), team-koppeling-reveal. Formuleer als nieuwe FR's, doorlopend genummerd na FR-24.
+- [ ] **12.2** Nieuw Deel "Hybride leerarrangement": voeg een "vorm"-kolom toe aan de bestaande Deel-8-weektabel (hoorcollege / werkcollege / tutoring / zelfstudie-AI per week) — planning + lichte in-sessie tools (aanwezigheid-check-in, live polls, wekelijkse vraag-thread), geen volledige sessiefacilitatie. Nieuwe FR's voor sessieplanning, aanwezigheid, in-sessie polls.
+- [ ] **12.3** Nieuw Deel "Kwaliteitsmanagement & continue verbetering": pedagogiek van de survey (dimensies — bepaal hier definitief, bv. naar het model Informatie/Interactie/Inspiratie van `hanbedrijfskunde/retrospective` of cursus-eigen dimensies), waarom naam-gekoppeld (`first_name`+`team_id`, per gelogde fysieke sessie getriggerd) toch privacy-conform blijft, en de rol/grenzen van de AI-adviseur (instructor-only rapport, nooit een zichtbaar oordeel, mens houdt eindregie — analoog aan Socrates' never-scores-garantie). Nieuwe FR's.
+- [ ] **12.4** Kleine toevoeging aan bestaande Deel 6.7 (dashboard): één zin over het team-niveau wiki-betrokkenheidssignaal (geaggregeerd, geen individuele tracking — expliciet consistent met NFR-05), met FR-verwijzing.
+- [ ] **12.5** Ken de nieuwe FR/NFR/AC-nummers definitief toe en werk de bestaande FR/NFR/AC-tabellen (Deel 7/11) bij met elk nieuw nummer.
+- [ ] **12.6** Docent-sanity-check met de opdrachtgever op de hybride weekindeling vóór afronding — dit is een inhoudelijke, geen technische, beoordeling.
+
+### Test Gate — Task 12
+- **Automatisch:** grep-check dat geen twee FR/NFR/AC-nummers dubbel voorkomen in het bijgewerkte bestand; het bestand blijft geldige, foutloos renderende HTML (lokale statische server + browser-check, zelfde patroon als eerdere LRD-edits).
+- **Mens-testbaar artefact:** een leesbare diff van het LRD-bestand; de opdrachtgever beoordeelt de nieuwe Delen en de hybride-weekindeling inhoudelijk vóór dit wordt afgevinkt.
+
+### Commit & push — Task 12
+- [ ] Commit in de documentatierepository (`operational-excellence-course`), boodschap verwijst naar de nieuwe FR-reeks en naar het brainstorm-plan.
+- [ ] Push naar `main`.
+- [ ] Vink af: **Main Task 12 afgerond**.
+
+---
+
+## Main Task 13: TDD-uitbreiding — architectuur voor onboarding, hybride sessies, QMS, analytics, advisor
+
+*(Golf 8 — vereist Task 12 gepusht. Geen coding-subagent, zelfde aanpak als Task 12.)*
+
+**Bestanden:** Modify: `design-documents/tdd-operational-excellence.html`
+
+- [ ] **13.1** Nieuw agentcomponent beschrijven: **Course Quality Advisor Agent** — architectuur, tools, en het source_ref-traceerbaarheidspatroon (expliciet hergebruik van het bestaande never-invents-patroon uit Deel 5.7/5.8, niet opnieuw uitvinden).
+- [ ] **13.2** Nieuwe datatypes toevoegen aan Deel 7 (Datamodel): `session` (type werkcollege/hoorcollege/tutoring, week, onderwerp, locatie, materiaal-link, tijd), `attendance-log`, `survey-response` (session_id, team_id/first_name, ratings per dimensie uit Task 12.3, vrije tekst), `wiki-engagement-aggregate` (team_id, week, paginabezoek-telling — team-niveau, geen individuele records).
+- [ ] **13.3** Nieuwe frontend-oppervlakken beschrijven in Deel 6: cursusbrede student journey-view, onboarding-flow, sessie-/roosterview met materiaal en check-in, live-poll-widget, post-sessie-survey-widget, docent-sessie-CRUD (admin-uitbreiding), quality-advisor-rapportview.
+- [ ] **13.4** Wiki-analytics-implementatiekeuze documenteren (aanbeveling: een van Quartz' zelf-hostbare, privacy-vriendelijke providers, bv. GoatCounter, plus een team-niveau rollup-job) in Deel 3 (wiki-laag) of Deel 10 (deployment) — waar het beste past.
+- [ ] **13.5** Deployment-sequencing-notitie toevoegen aan Deel 10/13 (fasering): een "volledige course website" vraagt om echte hosting, dus Task 7 (deployment) kan eerder interleaven dan pas na alle nieuwe features — als aanbeveling, geen harde eis.
+- [ ] **13.6** FR/NFR/AC-kruistabel (Deel 8) bijwerken met elk nieuw FR/NFR/AC-nummer uit Task 12, gekoppeld aan het component uit 13.1–13.4.
+
+### Test Gate — Task 13
+- **Automatisch:** dezelfde grep-diff FR/NFR/AC-kruiscontrole tussen LRD en TDD die eerder in dit project is gebruikt — volledige match, geen wees-nummers in beide richtingen.
+- **Mens-testbaar artefact:** leesbare, renderende HTML; de opdrachtgever kan de nieuwe architectuurbeschrijving doorlezen zonder code te hoeven raadplegen.
+
+### Commit & push — Task 13
+- [ ] Commit in de documentatierepository, boodschap verwijst naar de FR/NFR/AC-kruistabel-update.
+- [ ] Push naar `main`.
+- [ ] Vink af: **Main Task 13 afgerond**.
+
+---
+
+## Main Task 14: Sessie- & planningslaag
+
+*(Golf 9, parallel aan Task 16/19 — vereist Task 13 gepusht.)*
+
+**Bestanden (in `oe-gate-system`):**
+- Modify: `data/smdl/okf.py`, `data/smdl/ducklake.py`, `agents/admin_api/routes.py`, `agents/admin_api/server.py`
+- Create: `frontend/src/routes/admin/Sessions.tsx`, `frontend/src/routes/team/Schedule.tsx`, `data/tests/test_session_concepts.py`
+
+- [ ] **14.1** Implementeer het `session`-OKF-concept-type in `okf.py` conform TDD Deel 7 (13.2): `session_id`, `type` (werkcollege|hoorcollege|tutoring), `week`, `onderwerp`, `locatie`, `materiaal_links`, `start_tijd`/`eind_tijd`, `cohort`/`klas_id`.
+- [ ] **14.2** Implementeer de `attendance-log`-DuckLake-tabel in `ducklake.py`: `session_id`, `team_id`/`first_name`, `checked_in_at`.
+- [ ] **14.3** Voeg CRUD-endpoints voor sessies toe aan `admin_api` (create/list/update/delete), analoog aan het bestaande course-period/teams/assessments-CRUD-patroon uit Task 9.
+- [ ] **14.4** Bouw `frontend/src/routes/admin/Sessions.tsx`: nieuw admin-tabblad — formulier voor type, week, onderwerp, locatie, materiaal-link, tijd.
+- [ ] **14.5** Bouw `frontend/src/routes/team/Schedule.tsx`: student-facing route (`/team/:teamId/schedule`) die alle sessies toont, gegroepeerd per week, met materiaal-links.
+- [ ] **14.6** Schrijf `data/tests/test_session_concepts.py` en tests voor de nieuwe CRUD-endpoints (analoog aan Task 9's teststructuur).
+- [ ] **14.7** Pas de `@log_action`-decorator (Task 2.10) toe op de nieuwe endpoints (NFR-08-consistentie).
+
+### Test Gate — Task 14
+- **Automatisch:** nieuwe pytest-tests slagen; volledige bestaande testsuite blijft ongewijzigd groen.
+- **Mens-testbaar artefact:** een docent maakt via het admin-scherm een werkcollege-sessie met materiaal aan; een student ziet die sessie op `/team/:teamId/schedule`.
+
+### Commit & push — Task 14
+- [ ] Commit met boodschap die refereert aan de nieuwe FR-nummers uit Task 12/13.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 14 afgerond**.
+
+---
+
+## Main Task 15: Aanwezigheid & in-sessie tools
+
+*(Golf 10, parallel aan Task 17 — vereist Task 14 gepusht.)*
+
+**Bestanden (in `oe-gate-system`):**
+- Modify: `agents/team_api/server.py`, `data/smdl/ducklake.py`
+- Create: `frontend/src/components/PollWidget.tsx`, `agents/tests/test_attendance_and_polls.py`
+
+- [ ] **15.1** Check-in-endpoint: `POST` die een `attendance-log`-rij schrijft (`team_id`/`first_name` + `session_id` + timestamp).
+- [ ] **15.2** Check-in-knop op `Schedule.tsx` (Task 14) — toont "ingecheckt"-status na een succesvolle aanroep.
+- [ ] **15.3** Implementeer een `poll`-datamodel (DuckLake-tabel: vraag, opties, `session_id`) en een `poll-response`-tabel.
+- [ ] **15.4** Bouw `PollWidget.tsx`: docent-kant (poll starten, resultaten met een korte polling-interval — geen WebSocket-infra nodig, KISS), student-kant (antwoorden).
+- [ ] **15.5** Schrijf `agents/tests/test_attendance_and_polls.py`: check-in-flow en poll-aanmaak/-beantwoording/-aggregatie.
+- [ ] **15.6** Pas `@log_action` toe op de nieuwe endpoints.
+
+### Test Gate — Task 15
+- **Automatisch:** nieuwe tests slagen; bestaande suite ongewijzigd groen.
+- **Mens-testbaar artefact:** als student inchecken, als docent een poll starten, als student beantwoorden, docent ziet de resultaten verschijnen.
+
+### Commit & push — Task 15
+- [ ] Commit met boodschap die refereert aan de sessie/aanwezigheid-FR's uit Task 12.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 15 afgerond**.
+
+---
+
+## Main Task 16: Onboarding-flow
+
+*(Golf 9, parallel aan Task 14/19 — vereist Task 13 gepusht.)*
+
+**Bestanden (in `oe-gate-system`):**
+- Modify: `data/smdl/okf.py` (uitbreiding team-roster met een onboarding-voortgangsvlag)
+- Create: `frontend/src/routes/onboarding/Welcome.tsx`, `frontend/src/routes/onboarding/SelfAssessment.tsx`, `frontend/src/routes/onboarding/ToolingWalkthrough.tsx`, `frontend/src/routes/onboarding/TeamReveal.tsx`
+
+- [ ] **16.1** Bepaal de minimale databehoefte: een `onboarding_completed`-vlag als uitbreiding van het bestaande team-roster-concept (Task 2) — geen nieuw datamodel nodig.
+- [ ] **16.2** Bouw de schermenreeks conform het nieuwe LRD-Deel (Task 12.1): welkom/verwachtingen, zelfassessment (reflectief, geen scoring), tooling-walkthrough (wiki/AI-tutor/gates), team-koppeling-reveal (eigen team + ring-partner).
+- [ ] **16.3** Routeer nieuwe studenten naar `/onboarding` met een duidelijke afsluiting ("verder naar week 1").
+- [ ] **16.4** Schrijf tests voor de opslag van onboarding-voortgang.
+
+### Test Gate — Task 16
+- **Automatisch:** nieuwe tests slagen; `tsc`/lint schoon.
+- **Mens-testbaar artefact:** een nieuwe student doorloopt de hele onboarding-sequentie end-to-end in de browser.
+
+### Commit & push — Task 16
+- [ ] Commit met boodschap die refereert aan de onboarding-FR's uit Task 12.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 16 afgerond**.
+
+---
+
+## Main Task 17: Student journey-view
+
+*(Golf 10, parallel aan Task 15 — vereist Task 14 gepusht; bouwt inhoudelijk voort op Task 16 maar is er niet hard van afhankelijk.)*
+
+**Bestanden (in `oe-gate-system`):**
+- Modify: `agents/dashboard_query/agent.py` (nieuwe team-scoped, read-only query — niet instructor-only)
+- Create: `frontend/src/routes/team/Journey.tsx`, `agents/tests/test_journey_view.py`
+
+- [ ] **17.1** Ontwerp een cursusbrede tijdlijn: onboarding + 4 D-fasen + capstone (15 weken), huidige positie gemarkeerd, per week de geplande sessie(s) (Task 14) en gate-status waar relevant.
+- [ ] **17.2** Backend: een team-scoped query (hergebruik het `dashboard_query`-patroon) die deze tijdlijn samenstelt — structureel nooit meer dan het eigen team tonen.
+- [ ] **17.3** Bouw `frontend/src/routes/team/Journey.tsx` + navigatie-link vanaf `CheckpointView`/`Schedule`.
+- [ ] **17.4** Schrijf `agents/tests/test_journey_view.py`: correcte scoping (team A ziet nooit team B's data via dit endpoint) + component-render.
+
+### Test Gate — Task 17
+- **Automatisch:** nieuwe tests slagen, inclusief de expliciete cross-team-scoping-test.
+- **Mens-testbaar artefact:** een student ziet zijn volledige 15-weekse pad met de huidige positie gemarkeerd.
+
+### Commit & push — Task 17
+- [ ] Commit met boodschap die refereert aan de journey-view-FR uit Task 12/13.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 17 afgerond**.
+
+---
+
+## Main Task 18: Survey/QMS-laag
+
+*(Golf 11 — vereist Task 15 gepusht, want de survey wordt getriggerd door de check-in-flow.)*
+
+**Bestanden (in `oe-gate-system`):**
+- Modify: `data/smdl/ducklake.py`, `agents/team_api/server.py`, `frontend/src/routes/instructor/Dashboard.tsx`
+- Create: `frontend/src/components/SurveyWidget.tsx`, `agents/tests/test_survey.py`
+
+- [ ] **18.1** Implementeer `survey_response` als append-only DuckLake-tabel: `session_id`, `team_id`, `first_name`, ratings per dimensie (definitief bepaald in Task 12.3), vrije tekst, timestamp.
+- [ ] **18.2** `POST`-endpoint dat een survey-response opslaat, client-side getriggerd na check-in (Task 15) + een korte vertraging of sessie-einde-signaal.
+- [ ] **18.3** Bouw `SurveyWidget.tsx`: sterren-rating per dimensie + vrije tekst — hergebruik de eenvoudige UX van het referentievoorbeeld (`hanbedrijfskunde/retrospective`), geen ingewikkelde flow.
+- [ ] **18.4** Basis instructor-aggregaatview op `Dashboard.tsx`: gemiddelde ratings per sessie/week — puur deterministische SQL-aggregatie, nooit een LLM-samenvatting van de cijfers zelf (never-invents-patroon).
+- [ ] **18.5** Schrijf `agents/tests/test_survey.py`: opslag, aggregatie-query, en dat individuele antwoorden nooit buiten instructor-only-context zichtbaar worden op een manier die verder gaat dan het bestaande privacymodel.
+
+### Test Gate — Task 18
+- **Automatisch:** nieuwe tests slagen; bestaande suite ongewijzigd groen.
+- **Mens-testbaar artefact:** een post-sessie-survey invullen als student, terugzien dat die gelogd is en meetelt in het instructor-aggregaat.
+
+### Commit & push — Task 18
+- [ ] Commit met boodschap die refereert aan de kwaliteitsmanagement-FR's uit Task 12.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 18 afgerond**.
+
+---
+
+## Main Task 19: Wiki-gebruiksanalyse
+
+*(Golf 9, parallel aan Task 14/16 — vereist Task 13 gepusht.)*
+
+**Bestanden:**
+- Modify (`oe-wiki`): `quartz.config.ts`
+- Create (`oe-gate-system`): `data/smdl/engagement_rollup.py`, `data/tests/test_engagement_rollup.py`
+- Modify (`oe-gate-system`): `frontend/src/routes/instructor/Dashboard.tsx` (team-activiteitsindicator)
+
+- [ ] **19.1** Schakel een zelf-hostbare, privacy-vriendelijke analytics-provider in `quartz.config.ts` in (aanbeveling: GoatCounter — bevestig bij kickoff of dit de definitieve keuze blijft, zie Task 13.4).
+- [ ] **19.2** Zorg dat paginabezoeken herleidbaar zijn tot een team via het bestaande URL-pad-patroon (of een pagina-tag), zonder individuele bezoeker-identificatie op te slaan.
+- [ ] **19.3** Schrijf `data/smdl/engagement_rollup.py`: haalt periodiek de provider's aggregaat-cijfers op en schrijft ze weg als `wiki-engagement-aggregate` (`team_id`, `week`, telling) in de team-lakehouse.
+- [ ] **19.4** Voeg een team-activiteitsindicator toe aan `Dashboard.tsx` (instructor-kant) en/of een lichte indicator op `Schedule.tsx`/`Journey.tsx` (team-kant).
+- [ ] **19.5** Schrijf `data/tests/test_engagement_rollup.py`: gegeven ruwe aggregaat-cijfers, de juiste DuckLake-rij.
+
+### Test Gate — Task 19
+- **Automatisch:** nieuwe tests slagen voor de rollup-transformatie.
+- **Mens-testbaar artefact:** als team-07-lid wiki-pagina's bezoeken en een rollup-run draaien, de teamtelling zien meebewegen.
+
+### Commit & push — Task 19
+- [ ] Commit in `oe-wiki` (config) én `oe-gate-system` (rollup-code), beide met boodschap die refereert aan het wiki-betrokkenheidssignaal uit Task 12.4.
+- [ ] Push beide.
+- [ ] Vink af: **Main Task 19 afgerond**.
+
+---
+
+## Main Task 20: Course Quality Advisor Agent
+
+*(Golf 12 — vereist Task 18 én Task 19 gepusht, want de agent heeft zowel survey- als engagement-data nodig.)*
+
+**Bestanden (in `oe-gate-system`):**
+- Create: `agents/quality_advisor/agent.py`, `agents/quality_advisor/tools.py`, `agents/quality_advisor/quality_advisor.evalset.json`, `agents/tests/test_quality_advisor.py`
+- Modify: `frontend/src/routes/instructor/Dashboard.tsx` (rapportview)
+
+- [ ] **20.1** Scaffold als task-mode `Agent`, zelfde tweelaags patroon (chat-coördinator + task-worker) als `socratic_tutor`/`wiki_quality_check`.
+- [ ] **20.2** Tools `query_survey_responses(cohort, period)` en `query_engagement(cohort, period)`: puur deterministische DuckDB-aggregatie (never-invents-patroon, TDD Deel 4.4).
+- [ ] **20.3** Tool `generate_quality_report(cohort, period)`: LLM synthetiseert sterke/zwakke punten, met verplicht `source_ref` per bewering — hergebruik het structurele patroon uit `dashboard_query`'s `generate_prep_summary`/`wiki_quality_check` (nooit een niet-traceerbare bewering).
+- [ ] **20.4** Instructor-only rapportview op `Dashboard.tsx` (nieuwe kaart/route).
+- [ ] **20.5** Schrijf een evalset + `agents/tests/test_quality_advisor.py`, inclusief een adversarial test dat een poging tot een niet-traceerbare bewering geweigerd wordt (zelfde patroon als Task 10's hallucinatietest).
+- [ ] **20.6** Pas `@log_action` toe op de nieuwe tools.
+
+### Test Gate — Task 20
+- **Automatisch:** nieuwe tests slagen, inclusief de adversarial source_ref-test; bestaande suite ongewijzigd groen.
+- **Mens-testbaar artefact:** na het seeden van voorbeeld-surveydata genereert de agent een rapport dat naar specifieke antwoorden citeert, zichtbaar in de instructor-UI.
+
+### Commit & push — Task 20
+- [ ] Commit met boodschap die refereert aan de kwaliteitsmanagement-FR's uit Task 12/13.
+- [ ] Push naar `oe-gate-system` `main`.
+- [ ] Vink af: **Main Task 20 afgerond**.
+
+---
+
 ## Voortgangsoverzicht (samenvatting — werk bovenstaande secties bij, dit is alleen een snelle scan)
 
 - [x] Main Task 0 — Repository- en projectscaffolding ✅ https://github.com/businessdatasolutions/oe-gate-system
@@ -386,5 +620,16 @@ Main tasks zijn genummerd in de volgorde van de kernketen (0→7). Tasks 8, 9 en
 - [x] Main Task 9 — Admin-onderdeel ✅ CRUD voor course-period/team-roster/assessment-schedule (admin/klas-lakehouses), team-roster↔ring-fallback-integratie (echte end-to-end-test tégen Task 4's eigen module, niet een mock), FR-20-uploadroutering (team/ring/klas via de data-laag; "iedereen" via een gedocumenteerd-maar-nog-niet-uitgevoerd wiki-commit-integratiepunt, nooit stilzwijgend), vier admin-schermen incl. een zware "iedereen"-bevestigingsdialoog (LRD 6.10), 36+18 tests (CRUD + twee tijdens de build gevonden-en-gerepareerde beveiligingsfixes: path traversal, CORS-wildcard), commit `c18c28f`
 - [x] Main Task 10 — Studentdossier + AI-CBI-voorbereiding ✅ drie nieuwe tools op de bestaande Dashboard Query Agent (`build_student_timeline` met echte DuckLake-snapshot-tijdreizen, `generate_prep_summary` met een onvoorwaardelijk in-tool `source_ref`-filter, `export_student_history`→PDF via `fpdf2`), structurele never-cijfer-garantie (`extra="forbid"`, verplicht non-empty `source_ref`, bewezen met een adversarial hallucinatie-test), instructor-only-isolatie bewezen via echte AST-importanalyse (niet een substring-scan), 38 tests + evalset (5 cases uit een échte pipeline-run, 100% source_ref-dekking + een test die de checker zelf op een ongeldige case laat falen), zelfstandige `StudentDossier.tsx` met klikbare/springende citatielinks, commit `253b1be`
 - [x] Main Task 11 — HAN Huisstijl-ontwerpsysteem toepassen ✅ `han-huisstijl-tokens.css` (enige plek met letterlijke hexwaarden, incl. gelabelde extrapolaties voor niet-in-de-mockup-statussen), alle bestaande stylesheets herwezen (index.css/Dashboard.css/CheckpointView.css/StudentDossier.css/admin.css — één echte grijs-op-grijs-inputbug gevonden en gerepareerd tijdens de screenshot-verificatie), drie nieuwe gedeelde componenten (`HanHeader` — eigen instantie per scherm, want admin.html is een apart Vite-bundle; `PhaseTracker` — één component met een `scope`-prop, behoudt CheckpointView's bestaande fase-navigatie; `NoGradeFooter` — mockup's exacte tekst als default, echte servervelden als props), CheckpointView.tsx het diepst geherstructureerd (mockup's eigen twee-rijen-kaartlayout, aparte Gate A/B-kaarten), `pytest` ongewijzigd 198/1-geskipt, `npm run build`/`npm run lint` schoon, Playwright-screenshots van alle vier routes + 2 extra CheckpointView-states + 2 admin-tabs naast de daadwerkelijke mockup-HTML (zelfde browser, eerlijke vergelijking), commit `e792608`
+
+**Scope-uitbreiding — volledige hybride course website (zie plan `can-we-start-building-compiled-narwhal.md`):**
+- [ ] Main Task 12 — LRD-uitbreiding (onboarding, hybride leerarrangement, kwaliteitsmanagement)
+- [ ] Main Task 13 — TDD-uitbreiding (architectuur voor bovenstaande)
+- [ ] Main Task 14 — Sessie- & planningslaag
+- [ ] Main Task 15 — Aanwezigheid & in-sessie tools
+- [ ] Main Task 16 — Onboarding-flow
+- [ ] Main Task 17 — Student journey-view
+- [ ] Main Task 18 — Survey/QMS-laag
+- [ ] Main Task 19 — Wiki-gebruiksanalyse
+- [ ] Main Task 20 — Course Quality Advisor Agent
 
 **Traceerbaarheid:** elke main task citeert de FR/NFR/AC-nummers die hij dekt (zie de commit-boodschap-eisen per task). Voor de volledige matrix, zie TDD Deel 8.
