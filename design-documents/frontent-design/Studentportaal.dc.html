@@ -151,10 +151,10 @@ a:hover{text-decoration:underline}
 
 <sc-if value="{{ isTutor }}" hint-placeholder-val="{{ false }}"><div class="w2-tutor">
 <div class="w2-tlist"><sc-for list="{{ reports }}" as="r" hint-placeholder-count="4"><div class="{{ r.itemClass }}" onClick="{{ r.select }}"><span class="w2-tgate">{{ r.gate }}</span><span class="w2-tmeta">{{ r.phase }} · {{ r.date }}</span></div></sc-for></div>
-<div class="w2-tread"><div class="w2-tnote">Alleen Socratische vragen — nooit een score of verdict zichtbaar voor het team.</div>
+<div class="w2-tread"><div class="w2-tnote">Alleen Socratische vragen: nooit een score of verdict zichtbaar voor het team.</div>
 <sc-if value="{{ reportSel.hasQuestions }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ reportSel.questions }}" as="q" hint-placeholder-count="2"><div class="w2-bubble">{{ q }}</div></sc-for></sc-if>
 <sc-if value="{{ reportSel.isLocked }}" hint-placeholder-val="{{ false }}"><div class="w2-tlocked">Vergrendeld tot de vorige gate is afgerond.</div></sc-if>
-<sc-if value="{{ reportSel.isOpen }}" hint-placeholder-val="{{ false }}"><div class="w2-tlocked">Nog niet ingediend — dien het checkpoint in om een rapport te ontvangen.</div></sc-if>
+<sc-if value="{{ reportSel.isOpen }}" hint-placeholder-val="{{ false }}"><div class="w2-tlocked">Nog niet ingediend: dien het checkpoint in om een rapport te ontvangen.</div></sc-if>
 </div>
 </div></sc-if>
 
@@ -165,7 +165,7 @@ a:hover{text-decoration:underline}
 <div class="{{ s.bodyClass }}">
 <sc-if value="{{ s.doneNote }}" hint-placeholder-val="{{ false }}"><p class="rg1-note">{{ s.doneNote }}</p></sc-if>
 <sc-if value="{{ s.isVerwerken }}" hint-placeholder-val="{{ false }}">
-<p class="rg1-note"><strong>Escrow-onthulling:</strong> feedback van Team 6 wordt pas zichtbaar zodra jullie zelf feedback aan Team 8 hebben ingediend — wachten op andermans review levert dus niets op.</p>
+<p class="rg1-note"><strong>Escrow-onthulling:</strong> feedback van Team 6 wordt pas zichtbaar zodra jullie zelf feedback aan Team 8 hebben ingediend. Wachten op andermans review levert dus niets op.</p>
 <div class="rg1-row"><span class="pill done">Gegeven</span>Feedback ingediend aan {{ ringGiven.to }}: {{ ringGiven.note }}</div>
 <div class="rg1-row"><span class="pill current">Wacht</span>Nog geen feedback ontvangen van {{ ringReceived.from }}: {{ ringReceived.note }}</div>
 </sc-if>
@@ -178,29 +178,29 @@ a:hover{text-decoration:underline}
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 const PHASES=[
-{key:'direct',label:'Direct',weeks:'Week 1–4',status:'done',statusLabel:'Afgerond',gateNote:'Gate 1 — gehaald in week 4',body:'Strategie & positionering: waar concurreert de case op, en wat moet operations daaraan bijdragen?'},
-{key:'design',label:'Design',weeks:'Week 5–8',status:'done',statusLabel:'Afgerond',gateNote:'Gate 2 — gehaald in week 8',body:'Procesontwerp: netwerk, lay-out en procestechnologie passend bij de volume-variëteitspositie.'},
-{key:'deliver',label:'Deliver',weeks:'Week 10–13',status:'current',statusLabel:'Bezig',gateNote:'Gate 3 — checkpoint over 2 weken (week 13)',body:'Planning & control: capaciteit, voorraad en supply chain op elkaar afstemmen.'},
-{key:'develop',label:'Develop',weeks:'Week 14–17',status:'upcoming',statusLabel:'Vergrendeld',gateNote:'Gate 4 — vergrendeld tot Deliver is afgerond',body:'Verbeteraanpak kiezen en onderbouwen, met Lean 4.0 / Industry 5.0 als kritische lens.'}
+{key:'direct',label:'Direct',weeks:'Week 1–4',status:'done',statusLabel:'Afgerond',gateNote:'Gate 1: gehaald in week 4',body:'Strategie & positionering: waar concurreert de case op, en wat moet operations daaraan bijdragen?'},
+{key:'design',label:'Design',weeks:'Week 5–8',status:'done',statusLabel:'Afgerond',gateNote:'Gate 2: gehaald in week 8',body:'Procesontwerp: netwerk, lay-out en procestechnologie passend bij de volume-variëteitspositie.'},
+{key:'deliver',label:'Deliver',weeks:'Week 10–13',status:'current',statusLabel:'Bezig',gateNote:'Gate 3: checkpoint over 2 weken (week 13)',body:'Planning & control: capaciteit, voorraad en supply chain op elkaar afstemmen.'},
+{key:'develop',label:'Develop',weeks:'Week 14–17',status:'upcoming',statusLabel:'Vergrendeld',gateNote:'Gate 4: vergrendeld tot Deliver is afgerond',body:'Verbeteraanpak kiezen en onderbouwen, met Lean 4.0 / Industry 5.0 als kritische lens.'}
 ];
 const WEEKS=[
-{n:1,phase:'direct',title:'Ch1 — Operations als functie',form:'Hoorcollege'},
-{n:2,phase:'direct',title:'Ch2 — Operations strategie',form:'Werkcollege'},
-{n:3,phase:'direct',title:'Ch3 — Product- & dienstinnovatie',form:'Hoorcollege'},
-{n:4,phase:'direct',title:'Ch4 — Netwerkontwerp',form:'Werkcollege',gateNote:'Gate 1 — checkpoint deze week'},
-{n:5,phase:'design',title:'Ch5 — Locatie & lay-out',form:'Hoorcollege'},
-{n:6,phase:'design',title:'Ch6 — Procestechnologie & Mass Customisation',form:'Werkcollege'},
-{n:7,phase:'design',title:'Ch7 — Mensen in operations & I5.0-technologieën',form:'Hoorcollege'},
-{n:8,phase:'design',title:'Ch8 — Capaciteitsmanagement',form:'Werkcollege',gateNote:'Gate 2 — checkpoint deze week'},
+{n:1,phase:'direct',title:'Ch1: Operations als functie',form:'Hoorcollege'},
+{n:2,phase:'direct',title:'Ch2: Operations strategie',form:'Werkcollege'},
+{n:3,phase:'direct',title:'Ch3: Product- & dienstinnovatie',form:'Hoorcollege'},
+{n:4,phase:'direct',title:'Ch4: Netwerkontwerp',form:'Werkcollege',gateNote:'Gate 1: checkpoint deze week'},
+{n:5,phase:'design',title:'Ch5: Locatie & lay-out',form:'Hoorcollege'},
+{n:6,phase:'design',title:'Ch6: Procestechnologie & Mass Customisation',form:'Werkcollege'},
+{n:7,phase:'design',title:'Ch7: Mensen in operations & I5.0-technologieën',form:'Hoorcollege'},
+{n:8,phase:'design',title:'Ch8: Capaciteitsmanagement',form:'Werkcollege',gateNote:'Gate 2: checkpoint deze week'},
 {n:9,phase:'tentamen',title:'Tussentijdse studievoortgangstoets',form:'Tentamenweek'},
-{n:10,phase:'deliver',title:'Ch9 — Supply chain & Human-CPS',form:'Hoorcollege'},
-{n:11,phase:'deliver',title:'Ch10 — Voorraadbeheer',form:'Werkcollege'},
-{n:12,phase:'deliver',title:'Ch11 — Planning & control als netwerk',form:'Hoorcollege'},
-{n:13,phase:'deliver',title:'Ch12 — Lean basis',form:'Werkcollege',gateNote:'Gate 3 — checkpoint deze week'},
-{n:14,phase:'develop',title:'Ch15 — Operations improvement',form:'Hoorcollege'},
-{n:15,phase:'develop',title:'Ch16 — Lean operations',form:'Werkcollege'},
-{n:16,phase:'develop',title:'Ch17 — Quality management & resilience',form:'Hoorcollege'},
-{n:17,phase:'develop',title:'Ch18/19 — Risk & projectmanagement',form:'Werkcollege',gateNote:'Gate 4 — checkpoint deze week'},
+{n:10,phase:'deliver',title:'Ch9: Supply chain & Human-CPS',form:'Hoorcollege'},
+{n:11,phase:'deliver',title:'Ch10: Voorraadbeheer',form:'Werkcollege'},
+{n:12,phase:'deliver',title:'Ch11: Planning & control als netwerk',form:'Hoorcollege'},
+{n:13,phase:'deliver',title:'Ch12: Lean basis',form:'Werkcollege',gateNote:'Gate 3: checkpoint deze week'},
+{n:14,phase:'develop',title:'Ch15: Operations improvement',form:'Hoorcollege'},
+{n:15,phase:'develop',title:'Ch16: Lean operations',form:'Werkcollege'},
+{n:16,phase:'develop',title:'Ch17: Quality management & resilience',form:'Hoorcollege'},
+{n:17,phase:'develop',title:'Ch18/19: Risk & projectmanagement',form:'Werkcollege',gateNote:'Gate 4: checkpoint deze week'},
 {n:18,phase:'tentamen',title:'CBI & afronding',form:'Tentamenweek'}
 ];
 const PHASE_LABEL={direct:'Direct',design:'Design',deliver:'Deliver',develop:'Develop',tentamen:'Tentamenweek'};
@@ -213,21 +213,21 @@ const TOOLS=[
 const DOCS=[
 {label:'Rubriek Deliver-checkpoint.pdf'},
 {label:'Ch9–11 samenvatting.pdf'},
-{label:'Teamcase-pagina — FlinkFiets (wiki)'},
-{label:'Lean 4.0-koppelingen — Tabel VII.pdf'},
+{label:'Teamcase-pagina: FlinkFiets (wiki)'},
+{label:'Lean 4.0-koppelingen: Tabel VII.pdf'},
 {label:'Gate 2-rapport & terugkoppeling.pdf'}
 ];
 const WIKI_PAGES=[
-{id:'ch10',type:'Boekconcept',title:'Ch10 — Voorraadbeheer',tags:['deliver','ch10'],body:'Behandelt onafhankelijke vraag, voorraadkosten en bestelbeleid (EOQ, (R,Q)- en periodieke systemen). Voor FlinkFiets vertaalt dit zich naar de voorraad aan fietsonderdelen en verpakkingsmateriaal per vestiging.'},
-{id:'ch9',type:'Boekconcept',title:'Ch9 — Supply chain design',tags:['deliver','ch9'],body:'Introduceert de supply chain als netwerk van locaties, capaciteiten en informatiestromen, en de afweging tussen efficiëntie en responsiviteit.'},
-{id:'ikea',type:'Bedrijfscase',title:'IKEA — Supply chain als netwerk',tags:['deliver'],body:'Illustreert hoe voorraadpositie en netwerkontwerp samen de levertijd en kosten bepalen, met flat-pack-logistiek als centraal voorbeeld.'},
-{id:'toyota',type:'Bedrijfscase',title:'Toyota — Lean & JIT-voorraad',tags:['deliver','ch10'],body:'Klassiek voorbeeld van just-in-time-voorraadbeheer en de rol van leveranciersrelaties daarin.'},
-{id:'team',type:'Team-case',title:'FlinkFiets Bezorgdienst — teampagina',tags:['team-case','deliver'],body:'Jullie eigen casuspagina: analyse, aannames en het antwoord op de twee kernvragen én de Lean 4.0-kritische-lensvraag voor de Deliver-fase.'},
+{id:'ch10',type:'Boekconcept',title:'Ch10: Voorraadbeheer',tags:['deliver','ch10'],body:'Behandelt onafhankelijke vraag, voorraadkosten en bestelbeleid (EOQ, (R,Q)- en periodieke systemen). Voor FlinkFiets vertaalt dit zich naar de voorraad aan fietsonderdelen en verpakkingsmateriaal per vestiging.'},
+{id:'ch9',type:'Boekconcept',title:'Ch9: Supply chain design',tags:['deliver','ch9'],body:'Introduceert de supply chain als netwerk van locaties, capaciteiten en informatiestromen, en de afweging tussen efficiëntie en responsiviteit.'},
+{id:'ikea',type:'Bedrijfscase',title:'IKEA: supply chain als netwerk',tags:['deliver'],body:'Illustreert hoe voorraadpositie en netwerkontwerp samen de levertijd en kosten bepalen, met flat-pack-logistiek als centraal voorbeeld.'},
+{id:'toyota',type:'Bedrijfscase',title:'Toyota: Lean en JIT-voorraad',tags:['deliver','ch10'],body:'Klassiek voorbeeld van just-in-time-voorraadbeheer en de rol van leveranciersrelaties daarin.'},
+{id:'team',type:'Team-case',title:'FlinkFiets Bezorgdienst: teampagina',tags:['team-case','deliver'],body:'Jullie eigen casuspagina: analyse, aannames en het antwoord op de twee kernvragen én de Lean 4.0-kritische-lensvraag voor de Deliver-fase.'},
 {id:'lean40',type:'Concept',title:'Lean 4.0-koppelingen (Tabel VII)',tags:['lean-tool','industrie4.0'],body:'De 23 koppelingen tussen klassieke Lean-tools en Industrie 4.0-technologie uit Gomaa (2025), als referentie bij de kritische-lensvraag.'}
 ];
 const REPORTS=[
-{gate:'Gate 1',phase:'Direct',status:'done',date:'Ingediend week 4',questions:['Welke van de vijf performance-objectives weegt voor FlinkFiets het zwaarst, en waarom niet de andere vier?','Jullie noemen snelheid als kernprioriteit — wat zou een klant zeggen die net een beschadigd pakket ontving?']},
-{gate:'Gate 2',phase:'Design',status:'done',date:'Ingediend week 8',questions:['Jullie lay-out-voorstel gaat uit van vaste routeclusters — wat gebeurt daarmee op een dag met drie keer de normale vraag?','Welke aanname over de rijders zelf zit verstopt in dit ontwerp?']},
+{gate:'Gate 1',phase:'Direct',status:'done',date:'Ingediend week 4',questions:['Welke van de vijf performance-objectives weegt voor FlinkFiets het zwaarst, en waarom niet de andere vier?','Jullie noemen snelheid als kernprioriteit. Wat zou een klant zeggen die net een beschadigd pakket ontving?']},
+{gate:'Gate 2',phase:'Design',status:'done',date:'Ingediend week 8',questions:['Jullie lay-out-voorstel gaat uit van vaste routeclusters. Wat gebeurt daarmee op een dag met drie keer de normale vraag?','Welke aanname over de rijders zelf zit verstopt in dit ontwerp?']},
 {gate:'Gate 3',phase:'Deliver',status:'open',date:'Deadline week 13',questions:[]},
 {gate:'Gate 4',phase:'Develop',status:'locked',date:'Vergrendeld',questions:[]}
 ];
@@ -237,7 +237,7 @@ const RING_STEPS=[
 {key:'verwerken',label:'Verwerken',status:'current',doneNote:''}
 ];
 const RING_GIVEN={to:'Team 8',note:'Feedback op hun Deliver-checkpoint ingediend: het voorraadmodel mist een piekscenario, de supply-chain-tekening klopt.'};
-const RING_RECEIVED={from:'Team 6',note:'Nog niet binnen. Vervalvenster sluit over 18 uur — daarna vervalt deze voorwaarde automatisch.'};
+const RING_RECEIVED={from:'Team 6',note:'Nog niet binnen. Vervalvenster sluit over 18 uur. Daarna vervalt deze voorwaarde automatisch.'};
 class Component extends DCLogic{
   state={dv2View:'home',week:CURRENT_WEEK,wikiSel:WIKI_PAGES[0].id,tutorSel:'Gate 2',ringOpen:'verwerken'};
   buildWeeks(sel,onSelect){
