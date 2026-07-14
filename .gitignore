@@ -1,3 +1,4 @@
 .DS_Store
 .vscode/
 background-material/
+.playwright-mcp/
