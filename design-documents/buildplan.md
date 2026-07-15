@@ -848,6 +848,77 @@ Tot dit is opgelost is de deploy **niet productiewaardig**, hoe groen de smoke-t
 
 ---
 
+## Main Task 27: Toegang — één persoonlijke link per student en per docent
+
+*(Golf 18: vereist Task 7.2's tweede helft (duurzame `okf_bundle`) — een link uitdelen naar een roster die bij elke deploy verdwijnt, heeft geen zin.)*
+
+**Waarom deze task bestaat:** het systeem had **geen enkele authenticatie**, en dat was geen zwakke plek maar een ontbrekende laag. `team_api`'s handlers lazen `team_id` uit het verzoek en geloofden het; `admin_api`'s actor was de constante string `"instructor"`; `StudentDossier.tsx` liet je élke voornaam en élk team intypen. `nav-config.ts` zei het zelf: zone-scoping is *"EXPLICITLY cosmetic... no server-side check exists anywhere"*. Lokaal prima, gedeployed onhoudbaar.
+
+**Correctie op de aanleiding, expliciet vastgelegd:** het voorstel ging uit van "het systeem bevat geen persoonsgegevens". Dat klopt niet — voornaam + klas + team + inzendingen + aanwezigheid + survey + dossier is gepseudonimiseerde data, dus persoonsgegevens (`survey_responses` zegt het zelf: *"Name-linked, NOT anonymous"*), en LRD 9.2 rékent erop dat een docent een student aan zijn voornaam herkent. De links zijn daarom gerechtvaardigd als **proportionele** maatregel, niet omdat er niets te beschermen valt. Zie LRD 6.21, TDD 9.5.
+
+**Bestanden:** Create: `agents/shared/identity.py`, `agents/admin_api/roster_import.py`, `agents/admin_api/access_sheet.py`, `frontend/src/auth.ts`, `frontend/src/routes/Toegang.tsx`, `frontend/src/routes/team/OwnTeamGuard.tsx`, `frontend/src/routes/admin/AccessLinks.tsx`. Modify: `data/smdl/ducklake.py` (`access_grants`, `bundle_log`), `data/smdl/okf.py` (`Bundle.append_log`, `KlasRoster.docent_first_name`), beide servers, beide API-clients, `templates/team-indeling-template.csv`.
+
+- [x] **27.0** Prerequisite: `okf_bundle` duurzaam. ✅ Bucket gemount op `OE_LAKEHOUSE_ROOT`; alles in de bundel is write-once of whole-file-overwrite, dus objectopslag is er veilig. Eén uitzondering: `Bundle.append_log` voegde toe aan een gedeelde `log.md`, en objectopslag kan niet appenden — die verhuisde naar een `bundle_log`-tabel. Signatuur ongewijzigd, ~30 aanroepers onaangeroerd. Live bewezen vóór de fix: inzending zichtbaar → nieuwe revisie → verdwenen.
+- [x] **27.1** `access_grants`-tabel: alleen `sha256(link)`, nooit de platte tekst. ✅ Bewust een DuckLake-tabel en geen OKF-concept: concepten zijn leesbare, git-diffbare markdown; een credentialstore hoort daar niet. `subject_id` in plaats van naam-matching — twee docenten "Jan" zouden anders elkaars klassen erven.
+- [x] **27.2** `shared/identity.py` + handhaving in beide servers. ✅ Studentkant: de 14 handlers **lezen** `team_id` niet meer, ze leiden hem af. Docentkant: klas-claim centraal gevalideerd in het dispatch-pad (een docent heeft meerdere klassen en moet kiezen). `_OPEN_ROUTES` is een allowlist, dus een nieuwe route is authenticated tenzij iemand zichtbaar anders beslist.
+- [x] **27.3** Frontend: credential in het URL-fragment. ✅ Beide servers loggen de volledige requestregel inclusief query-string; de statische server heeft geen log-override; Cloud Run logt paden buiten onze code om. Een geheim in een pad wordt op ≥4 plekken vastgelegd. Fragmenten sturen browsers nooit.
+- [x] **27.4** Roster-import met `docentvoornaam`. ✅ **Niet** op `ingest_csv` gebouwd: die leest komma-gescheiden (de template is puntkomma, NL-Excel) en verwerpt `cohort` als gereserveerde kolom. Preview-dan-commit, want een typo in `docentvoornaam` geeft een vreemde toegang tot een klas.
+- [x] **27.5** Printvel met QR-codes. ✅ POST, geen GET: alleen digests worden bewaard, dus een vel kan alleen worden geproduceerd dóór uit te geven — en dat vervangt de vorige links. Een GET zou via prefetch of refresh een klas buitensluiten. `reissue_one` bestaat zodat "Fenna is haar link kwijt" niet de andere 24 kost.
+- [x] **27.6** Klas-gescoped docentdashboard + `/api/override`. ✅ `Dashboard.tsx` haalde `/api/dashboard` op sinds Task 4 en kreeg altijd 404 — het docentscherm toonde al die tijd verzonnen teams. `OverrideLogRow` kreeg `instructor_id`: tot deze task kón het systeem niet weten wie overrode.
+- [x] **27.7** Walkthrough tegen echte servers. ✅ Vier bugs gevonden die alle unittests groen doorstonden — zie hieronder.
+
+### Test Gate — Task 27
+- **Automatisch:** ✅ 427 passed / 2 skipped (was 335). Tegenproeven uitgevoerd op de load-bearing tests: de vertrouwende `team_id` terugzetten faalt 2 tests, authenticatie weghalen faalt er 12, de docent-only-check weghalen 1, klas-scoping weghalen 5.
+- **Mens-testbaar artefact:** ✅ echte link in een echte browser: fragment uit de adresbalk, portal laadt als die student, credential in **geen enkele** serverlog — geverifieerd mét een controle die aantoont dat de zoekopdracht zou aanslaan als hij er wél stond.
+
+**Wat de walkthrough vond en de tests niet:**
+1. **De link wees naar een route die niet bestond.** `/toegang` zat in het printvel, de QR-codes en de docs — en was nooit gebouwd. Elke QR leidde nergens heen. Bovendien redirectte `/team` naar een hardgecodeerde `team-07`, dus élke student landde op één team.
+2. **Het studentportaal las van de docent-API.** `Programma.tsx` haalde sessies en CBI-data van `admin_api`'s klas-brede routes, die terecht stopten met antwoorden. Dat legde iets ergers bloot: `listAssessments` stuurde het **hele klasrooster** — elke klasgenoot met naam, datum, tijd, locatie — naar elke browser, en filterde client-side. Nu server-side gefilterd op identiteit.
+3. **De UI labelde jouw data als die van een ander.** `/team/team-02/programma` toonde team-01's gegevens onder "TEAM-02". Niets lekte; de pagina loog over van wie het was. `OwnTeamGuard` corrigeert de URL.
+4. **`tsc --noEmit` controleerde niets.** `tsconfig.json` is een project-references-stub (`"files": []`), dus `--noEmit` checkt nul bestanden en geeft exit 0 — élke "tsc clean" in dit project was een no-op, en het buildplan noemde die opdracht als conventie. De echte check is `tsc -b` (wat `npm run build` draait) en vond meteen zes fouten.
+
+### Commit & push: Task 27
+- [x] Commits in `oe-gate-system`: `d40dd05`, `b3c5cb2`, `64d3aac`, `f732060`, `219d445`, `0211271`, `643d471`, `45d68b1`, `4542ae9`.
+- [ ] Push.
+- [x] Vink af: **Main Task 27 afgerond** (op 7.5/7.6 na, die een live deploy vragen).
+
+---
+
+## Main Task 28: OE-Wiki-tab — van tweederangs lezer naar contextuele index
+
+*(Golf 19: vereist Task 27 (de credential levert de context).)*
+
+**Waarom deze task bestaat:** de opdrachtgever vroeg wat de OE-Wiki-tab studenten eigenlijk opleverde. Eerlijk antwoord: weinig. Hij toonde 66 pagina's plat op `type`, met een leespaneel dat markdown niet rendert (`**sterretjes**` op het scherm) en een uitgeschakeld zoekveld. De Quartz-wiki doet dat alles beter.
+
+**Een verouderde aanname als fundament:** `weekProgramma.ts` beweerde dat de Quartz-site *"not live yet"* was met een falende deploy — dát was het argument om een in-app lezer te bouwen. De site is wél live (handmatige deploy 13-07-2026), rendert markdown en heeft werkend zoeken.
+
+- [x] **28.1** `stage` en `description` niet meer weggooien. ✅ Alle 70 wiki-pagina's dragen `stage` in hun frontmatter; `wiki_index.WikiPage` parste het en bewaarde het niet — terwijl de *andere* parser (`query_wiki`) het al die tijd wél teruggaf. `_SCAN_GLOBS` ongemoeid: die scan is gedeeld met `check_duplicates`.
+- [x] **28.2** `build_wiki_context(chapter, stage)`. ✅ Twee secties, additief op de volledige lijst. De join bestond al aan beide kanten: `chNN`-tags in de wiki, `chapter` op `checkpoint-submission`.
+- [x] **28.3** `GET /api/wiki-context`, identity-scoped; `get_wiki_page` en `/api/wiki-page` verwijderd. ✅ Dát wás de NFR-02-uitbreiding.
+- [x] **28.4** `WikiBrowser.tsx` als index die doorlinkt naar Quartz. ✅ `path` (relatief, zonder `.md`) bouwt de URL — de bestandsnaam alleen volstaat niet, `concepts/` en `concepts/ai-wiki/` liggen op verschillende diepten.
+- [x] **28.5** Eén source of truth voor de weekindeling. ✅ Zie hieronder.
+- [x] **28.6** CSS-bug: de `h1` had nooit een `line-height`. ✅ Gemeten: 56px letters op 26,1px regelhoogte (ratio 0,47) — twee regels dwars door elkaar. Elke andere `h1` paste op één regel, dus het viel nooit op.
+
+**28.5 — de weekindeling (SSoT).** Die stond op ~25 plekken tegelijk, met de hand overgeschreven, en was gedivergeerd: **13 van de 19 hoofdstukken spraken elkaar tegen** (wiki: Ch17 → week 13; portal: week 15), en niet met een vaste offset. De wiki citeerde bovendien LRD Deel 8 voor weekbereiken die Deel 8 niet zegt — Deel 8 heeft develop op wk14–16 met Gate 4 in wk17 en de capstone in wk18; de wiki had develop op week 13–14. Die pagina's zijn ooit uit Deel 8 geschreven; daarna kwamen week 9 en week 18 erbij en schoof alles op.
+
+Op aanwijzing van de opdrachtgever niet gesynchroniseerd maar **gededupliceerd**: het weeknummer staat nu uitsluitend in Deel 8 en het daaruit afgeleide `weekProgramma.ts`. De wiki draagt alleen nog `stage` + `chNN`. Wat de wiki niet zegt, kan de wiki niet tegenspreken. 25 bestanden, 200 regels weg (commit `8bd32d7` in `oe-wiki`). Bewaakt door `test_wiki_no_week_numbers.py`, dat beide kanten test — geen weeknummers terug, én de join-sleutels moeten blijven.
+
+### Test Gate — Task 28
+- **Automatisch:** ✅ 434 passed / 2 skipped (was 427). `tsc -b`/`build`/`lint` schoon.
+- **Mens-testbaar artefact:** ✅ echte servers + echte wiki. Zonder checkpoint: alleen de fase-sectie, met een zin die uitlegt wanneer de andere komt. Na een checkpoint op Ch04: de sectie vult zich met het Ch04-concept én de Toyota-bedrijfscase (die `ch04` als tag draagt) — precies het verband dat een alfabetische lijst van 66 begroef. Alle 9 gerenderde links opgehaald: **allemaal 200**.
+
+**Wat deze task oplevert buiten de UX:** de NFR-02-uitbreiding is **ingetrokken, niet geaccepteerd**. Er gaat geen wiki-content meer door dit systeem. De tab werd nuttiger én de architectuur kleiner.
+
+**Bewust uitgesteld:** echte tutor-citaten. `query_wiki` kent elk pad maar niets bewaart de lijst (TDD 5.4a); alsnog bewaren opent het `extra="forbid"`-schema waarop de nooit-cijfers-garantie rust.
+
+### Commit & push: Task 28
+- [x] Commit in `oe-wiki`: `8bd32d7`. Commits in `oe-gate-system`: `10acccc` (CSS), `07a77fd` (tab).
+- [ ] Commit in `operational-excellence-course` (LRD/TDD/buildplan).
+- [ ] Push alle drie.
+- [ ] **Let op:** `oe-wiki` moet opnieuw deployen voordat studenten de opgeschoonde pagina's zien; die workflow faalt op elke push en slaagde alleen via een handmatige `workflow_dispatch`.
+
+---
+
 ## Voortgangsoverzicht (samenvatting: werk bovenstaande secties bij, dit is alleen een snelle scan)
 
 - [x] Main Task 0: Repository- en projectscaffolding ✅ https://github.com/businessdatasolutions/oe-gate-system
@@ -881,6 +952,10 @@ Tot dit is opgelost is de deploy **niet productiewaardig**, hoe groen de smoke-t
 - [x] Main Task 24: Studentportaal — vijf kernviews ✅ code gebouwd en geverifieerd (`wiki_query`-service + `WikiBrowser.tsx`, cross-gate `TutorHistory.tsx`, `ReviewRingStatus.tsx`, Onboarding bevestigd als bestaande `nav-config.ts`-entry), 277/1 (was 249/1), `tsc`/`build`/`lint` schoon, Playwright-walkthrough incl. volledige happy path (checkpoint → Gate A → Gate B → escrow-onthulling) live over alle vijf tabs, nul regressies — gecommit en gepusht in `b7d09d9` (Main Tasks 24–26 samen)
 - [x] Main Task 25: Klas-scoping — peers op Onderwijsprogramma & docentoverzicht per klas ✅ code gebouwd en geverifieerd (`build_cohort_positions` vereist nu `klas_id`, `TeamDashboardRow.klas_id` + `Dashboard.tsx`-klas-secties), 281/1 (was 277/1), `tsc`/`build`/`lint` schoon, Playwright-walkthrough met twee geseede klassen bevestigt klas-isolatie op Onderwijsprogramma en klas-groepering op het docentdashboard — gecommit en gepusht in `b7d09d9` (Main Tasks 24–26 samen)
 - [x] Main Task 26: Socratische vragen in het studentdossier (CBI-koppeling) ✅ code gebouwd en geverifieerd (`prep_agent._socratic_events` als 4e tijdlijnbron uit het scorevrije teamkanaal, `/api/student-timeline`+`/api/prep-summary` gewired op `admin_api`, `StudentDossier.tsx`-socratic-eventtype + fetches naar `admin_api`, `Dashboard.tsx` "Open dossier"-link, dossier-demo met Socratisch rapport), LRD/TDD bijgewerkt (FR-23/AC-19, Deel 5.8/6.6), 290/1 (was 281/1), `tsc`/`build`/`lint` schoon, Playwright-walkthrough bevestigt echte data (mock-badge weg), Socratische vragen zichtbaar met bron, CBI-punt citeert die bron, nergens een score — gecommit en gepusht in `b7d09d9` (Main Tasks 24–26 samen)
+
+**Scope-uitbreiding: toegang & contextuele wiki (het systeem had geen authenticatie; de OE-Wiki-tab dupliceerde een betere site):**
+- [x] Main Task 27: Toegang — één persoonlijke link per student en per docent ✅ `shared/identity.py` + `access_grants` (alleen `sha256(link)`, nooit platte tekst) + handhaving in beide servers (studentkant leidt `team_id` áf i.p.v. het te geloven; docentkant valideert de klas-claim centraal), credential in het URL-fragment (beide servers loggen de volledige requestregel), roster-import met `docentvoornaam` (puntkomma-CSV, preview-dan-commit) + printvel met QR per klas (POST, want uitgeven vervangt de vorige links), klas-gescoped `/api/dashboard` (bestond nog niet: `Dashboard.tsx` kreeg sinds Task 4 altijd 404 en toonde verzonnen teams) + `instructor_id` op `override_log`. 427/2 (was 335/2), tegenproeven gedraaid op elke load-bearing test. Walkthrough vond vier bugs die alle unittests groen doorstonden — waaronder een echte privacylek: `listAssessments` stuurde het hele klasrooster naar elke browser en filterde client-side. Commits `d40dd05`…`4542ae9`, **nog niet gepusht**. LRD 6.21/FR-42–45/NFR-16/AC-20–21, TDD 9.5
+- [x] Main Task 28: OE-Wiki-tab — van tweederangs lezer naar contextuele index ✅ de tab toonde 66 pagina's plat op `type`, met een leespaneel dat markdown niet rendert en een uitgeschakeld zoekveld — alles wat de live Quartz-wiki beter doet. Nu een index rond `chapter` (checkpoint) + `stage` (fase), met lezen op Quartz zelf. Gevolg voor de architectuur: **de NFR-02-uitbreiding is ingetrokken, niet geaccepteerd** — er gaat geen wiki-content meer door dit systeem. Inclusief de weekindeling-SSoT (13/19 hoofdstukken spraken elkaar tegen; de wiki citeerde LRD Deel 8 verkeerd): weeknummers staan nu uitsluitend in Deel 8 + `weekProgramma.ts`, de wiki draagt alleen `stage` + `chNN`. 434/2 (was 427/2). Commits `8bd32d7` (oe-wiki), `10acccc` + `07a77fd` (oe-gate-system), **nog niet gepusht**; `oe-wiki` vraagt een handmatige `workflow_dispatch`-deploy. LRD FR-37/6.19, TDD 5.4a/5.10/6.14
 
 **Traceerbaarheid:** elke main task citeert de FR/NFR/AC-nummers die ze dekt (zie de commit-boodschap-eisen per task). Voor de volledige matrix, zie TDD Deel 8.
 
