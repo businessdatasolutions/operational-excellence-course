@@ -1137,6 +1137,37 @@ De oorzaak is structureel, geen promptkwestie: **er was geen route naar de inzen
 
 ---
 
+## Main Task 35: Een credential is geen modeltoegang (`has_model_access`)
+
+*(Golf 26: vereist Task 33 (Vertex). Opdrachtgever-gemeld: "het is slordig om API-keys rond te laten slingeren. Dit moet netjes dichtgeknoopt worden" — met als concrete vraag of de Gemini-credential na de Vertex-omzetting weg kon.)*
+
+**Het probleem, bewezen en niet beredeneerd.** Hij kon niet weg, en het antwoord waarom is erger dan "hij is nog nodig". Vijf plekken deden `if not _api_key():` om te beslissen of ze een model mochten aanroepen: `wiki_quality_check/tools.py` (2×), `quality_advisor/tools.py`, `dashboard_query/prep_agent.py`, `data/smdl/ingest_pdf.py`. Op Vertex authenticeert ADC en is er geen credential — dus hem weghalen (een volstrekt redelijke handeling, en precies wat de opdrachtgever wilde doen) zou **stilzwijgend** conceptextractie, duplicaatdetectie, het kwaliteitsrapport, de dashboardverwoording en PDF-samenvatting hebben uitgezet. Geen foutmelding: ze vallen terug op hun deterministische noodpad, dus alles blijft "werken" en is alleen dommer. Gemeten: de credential wordt **nergens** aan een client doorgegeven — geen enkele constructor krijgt hem mee. Hij was uitsluitend een schakelaar.
+
+Dat is voor de vierde keer dezelfde denkfout: **de aanwezigheid van een credential verward met toegang tot een model.** Zelfde fout als de vacuous-pass-guard, ander gevolg — daar vals groen, hier stille degradatie.
+
+**Bestanden:** Modify: `data/compliance/__init__.py`, `conftest.py`, `agents/{wiki_quality_check,quality_advisor,dashboard_query}/`, `data/smdl/ingest_pdf.py`, `agents/quality_advisor/{__init__.py,quality_advisor.evalset.json}`, `agents/tests/*`. Create: `agents/quality_advisor/test_config.json`.
+
+- [x] **35.1** `compliance.has_model_access()`: één antwoord op "kan ik bij een model?" — een credential óf (Vertex-vlag + project). ✅ In `compliance` en niet in `agents/shared/`, om exact de reden die dat pakket zelf al opschrijft: `data/smdl/ingest_pdf.py` heeft hem ook nodig en niets onder `data/` importeert uit `agents/`.
+- [x] **35.2** Alle zeven call sites om; `_api_key()` bestaat nergens meer. ✅ Inclusief de skip-guards van twee live evals, die zichzelf op een Vertex-machine in stilte zouden hebben overgeslagen, en `_has_model_credentials` (die bovendien de tweede credential-naam miste).
+- [x] **35.3** Guard-test: geen module mag zelf naar een credential grijpen. ✅ De regel staat nu in een test, niet in een docstring die om medewerking vraagt.
+- [x] **35.4** `no_model_access`-fixture. ✅ Zie hieronder.
+- [x] **35.5** `quality_advisor/__init__.py` miste `from . import agent`. ✅ Zonder die regel faalt `AgentEvaluator` met *"Module quality_advisor does not have a member named `agent`"*. De test die hem nodig had, had nooit gedraaid.
+- [x] **35.6** De evalset van de quality advisor verwachtte gedrag dat de agent nooit vertoonde. ✅ Zie hieronder.
+
+**35.4 — zeven tests die een kapotte omgeving meetten.** Nadat Vertex aanstond, vielen zeven tests om die er niets mee te maken leken te hebben. Ze asserten `extraction_method == "heuristic_fallback"`, onder een comment dat zei dat deze omgeving nu eenmaal geen credential had. Ze slaagden al die tijd omdat het LLM-pad **crashte** (404) en netjes terugviel op de heuristiek. Zodra het model bereikbaar werd, slaagde dat pad en kregen ze `"llm"`. Ze bewezen niet "de fallback werkt" maar "de omgeving is stuk". Een test van een fallback moet die conditie **veroorzaken**, niet erop hopen: de `no_model_access`-fixture verwijdert nu elke credential, op elke machine.
+
+**35.6 — de agent had gelijk, de evalset niet.** `tool_trajectory_avg_score: expected 1.0, got 0.0`. De evalset eiste `query_survey_responses` → `query_engagement` → `generate_quality_report`; waargenomen is alleen `generate_quality_report`. Dat is **correct gedrag**: die functie roept beide aggregatietools zelf aan (staat in haar eigen docstring), dus het model deed het werk terecht niet dubbel. Ook geleerd, empirisch: `AgentEvaluator` telt de delegatie naar de worker níét mee als tool use, en vergelijkt óók de argumenten, niet alleen de namen. Verder ontbrak `test_config.json`, waardoor ADK's default `response_match_score` (0.8) meetelde — een ROUGE-achtige vergelijking met één referentiezin is geen zinnige toets op generatieve tekst; `socratic_tutor`'s config toetst dan ook alleen de trajectorie. **Let op:** beide aggregatietools blijven op de worker geregistreerd, dus een run die er één direct aanroept, faalt deze gate op een *extra* stap. Gebeurt dat, stop dan met het exposen van tools die `generate_quality_report` al omhult — verlaag de drempel niet.
+
+### Test Gate — Task 35
+- **Automatisch:** ✅ 504 passed / 2 skipped (was 497/2; de 2 skips zijn Postgres-tests zonder DSN, niets modelgerelateerds). Zes nieuwe `has_model_access`-tests faalden eerst om de juiste reden. De quality-advisor-eval draait nu écht en slaagt (was: nooit gedraaid).
+- **Mens-testbaar artefact:** ✅ de vraag die deze task startte, nu beantwoordbaar: de Gemini-credential kan uit `.env` zonder dat er iets stil uitvalt. De guard-test verhindert dat iemand de val opnieuw bouwt.
+
+### Commit & push: Task 35
+- [x] Commit `oe-gate-system`: `ad4e45a`. Docs: deze commit.
+- [ ] Opdrachtgever verwijdert de credential uit `.env`.
+
+---
+
 ## Voortgangsoverzicht (samenvatting: werk bovenstaande secties bij, dit is alleen een snelle scan)
 
 - [x] Main Task 0: Repository- en projectscaffolding ✅ https://github.com/businessdatasolutions/oe-gate-system
