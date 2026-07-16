@@ -1168,6 +1168,35 @@ Dat is voor de vierde keer dezelfde denkfout: **de aanwezigheid van een credenti
 
 ---
 
+## Main Task 36: Inleveren ís het verzoek (asynchrone gate + `assessing`)
+
+*(Golf 27: vereist Task 34 (de echte agent). Opdrachtgever-gemeld, en het ontwerp komt letterlijk uit zijn woorden: "In de praktijk hoeven studenten niet meteen een reactie terug te krijgen. Het is geen chatbot. Het volstaat om een melding te geven dat het rapport ontvangen is en beoordeeld wordt. Studenten krijgen op een of andere manier een signaal dat er een reactie teruggestuurd is.")*
+
+**Het probleem.** Task 34 zette de echte agent op de HTTP-route en daarmee een modelaanroep van 25–35s middenin het request van een student, achter een spinner. Dat is niet weg te optimaliseren maar wél weg te ontwerpen: als niemand staat te wachten, is die halve minuut gratis.
+
+**Wat er verandert.** De knop "Vraag de Socratische tutor" is weg, en de route erachter (`POST /api/run-socratic-tutor`) ook. Inleveren start de tutor. Twee handelingen werden er één, wat ook pedagogisch klopt: je inzending ís het verzoek om beoordeling, en het single-shot-protocol (`system_instruction.md`: "You see exactly one submission and you produce exactly one report") kent geen tweede vraag.
+
+**Bestanden:** Modify: `data/smdl/ducklake.py`, `agents/team_api/{schemas,service,server}.py`, `agents/review_ring_coordinator/workflow.py`, `frontend/src/routes/team/{api.ts,CheckpointView.tsx}`, `frontend/src/routes/instructor/Dashboard.tsx`. Create: `agents/tests/test_submit_starts_the_tutor.py`.
+
+- [x] **36.1** `GateStatus` kent `assessing`. ✅ Een wachtstand is geen oordeel. `pending` betekent al iets waar een team *naar moet handelen* ("score onder de drempel, herzien"); één woord kan niet "wacht" én "herschrijf" betekenen zonder dat een student de twee niet meer uit elkaar houdt. Veilig te verbreden, anders dan een kolom (Task 32.1): in de catalogus is het een string, de `Literal` is alleen pydantic-validatie. Stond op **zes** losse plekken gedefinieerd (2× Python-schema's, ducklake, workflow, 2× frontend) — allemaal bijgewerkt; `tsc` ving de twee die ik vergat, dankzij de exhaustieve `Record`.
+- [x] **36.2** `submit_checkpoint_answer` schrijft zélf het `assessing`-gate-event. ✅ Niet in de aanroeper: een team dat heeft ingeleverd mag nooit "Nog niet gestart" lezen, ook niet in de milliseconden vóór een thread gescheduled is, en al helemaal niet als die thread onderweg sterft. De inzending en de belofte dat er iets mee gebeurt zijn één feit, dus één write.
+- [x] **36.3** `server._start_tutor_in_background`. ✅ Bewust **zónder** `_DUCKLAKE_LOCK`: die lock omvat een heel request, dus hem hier nemen zou elk ander verzoek een halve minuut bevriezen — precies de blokkade die deze task opheft, verplaatst naar iedereen. Veilig, want de attach-contentie die hij bewaakt wordt al op de juiste laag opgevangen (`ducklake.connect`'s `_ATTACH_RETRY_ATTEMPTS`; die docstring noemt het lokale venster zelf "a few milliseconds that the retry does cover").
+- [x] **36.4** Frontend: geen knop, wél een signaal. ✅ De Gate A-kaart pollt elke 5s zolang hij `assessing` is en slaat vanzelf om. `silent`-reload, want een spinner elke 5 seconden over een pagina die iemand zit te lezen is erger dan geen update. Pollen en geen socket/SSE: dit wacht ~30s, vier keer per module — een push-kanaal is een nieuwe transportlaag op een stdlib-server voor een wachttijd in seconden.
+- [ ] **36.5** Herstelpad bij een mislukte tutorrun. **Openstaand — en niet hypothetisch**, zie hieronder. Wordt Task 37.
+
+**36.5 — het gat sloeg toe bij de eerste live proef.** De allereerste echte run van deze code kreeg `429 RESOURCE_EXHAUSTED` van Vertex: een doodgewone, verwachte, tijdelijke quota-fout. Gevolg: de thread stierf, en Gate A bleef op `assessing` staan — poll na poll, voor altijd. Het team kan niet opnieuw inleveren (het formulier rendert alleen zonder inzending) en de tutorknop bestaat niet meer. De enige uitweg is de docent-override (FR-06): een echt mechanisme, maar niet iets wat een vastgelopen student ziet of kan bereiken. Een 429 verdient een retry met backoff, geen doodlopende weg.
+
+**Quota-waarschuwing voor de opdrachtgever.** Die 429 kwam na een dag testen op één project, met één gebruiker. Vertex' default-quota voor `gemini-2.5-flash` in `europe-west4` is voor een nieuw project laag. 30 studenten die in hetzelfde werkcollege inleveren, is 30 gelijktijdige modelaanroepen — dat raakt dezelfde grens, en met 36.5 nog open betekent dat 30 vastgelopen gates. Quota verhogen vóór de eerste echte les, en 36.5 bouwen.
+
+### Test Gate — Task 36
+- **Automatisch:** ✅ 509 passed / 2 skipped (was 504/2; 5 nieuwe tests, die eerst faalden om de juiste reden). `tsc -b`, `npm run build` en `npm run lint` alle exit 0 (expliciet gecontroleerd, niet door een pipe).
+- **Mens-testbaar artefact:** ✅ de flow, end-to-end: **inleveren beantwoord in 299 ms** (was 25–35s), gate direct op `assessing`, volgende fase `dicht`; poller ziet t+15,8s `open` met de vragen zichtbaar. **Het model is in díé proef gestubd, en alleen het model** — thread, `assessing`-write, poll en omslag zijn echt. Expliciet vermeld omdat de live variant op dat moment niet tot een oordeel kón komen (429), en een proef die stilletjes een nepmodel inschuift om een vinkje te halen precies is wat dit buildplan verbiedt. Dat de échte agent goede vragen stelt, is eerder vandaag live aangetoond (Task 34).
+
+### Commit & push: Task 36
+- [ ] Commit + push beide repo's.
+
+---
+
 ## Voortgangsoverzicht (samenvatting: werk bovenstaande secties bij, dit is alleen een snelle scan)
 
 - [x] Main Task 0: Repository- en projectscaffolding ✅ https://github.com/businessdatasolutions/oe-gate-system
