@@ -1193,7 +1193,34 @@ Dat is voor de vierde keer dezelfde denkfout: **de aanwezigheid van een credenti
 - **Mens-testbaar artefact:** ✅ de flow, end-to-end: **inleveren beantwoord in 299 ms** (was 25–35s), gate direct op `assessing`, volgende fase `dicht`; poller ziet t+15,8s `open` met de vragen zichtbaar. **Het model is in díé proef gestubd, en alleen het model** — thread, `assessing`-write, poll en omslag zijn echt. Expliciet vermeld omdat de live variant op dat moment niet tot een oordeel kón komen (429), en een proef die stilletjes een nepmodel inschuift om een vinkje te halen precies is wat dit buildplan verbiedt. Dat de échte agent goede vragen stelt, is eerder vandaag live aangetoond (Task 34).
 
 ### Commit & push: Task 36
-- [ ] Commit + push beide repo's.
+- [x] Commit `oe-gate-system`: `3e8e834`. Docs: deze commit. Beide gepusht.
+
+---
+
+## Main Task 37: Een mislukte tutorrun mag een team niet stranden (retry + `failed`)
+
+*(Golf 28: vereist Task 36, en repareert het gat dat 36's eigen eerste live run blootlegde.)*
+
+**Het probleem, bewezen door de code zelf.** De allereerste echte run van Task 36 kreeg `429 RESOURCE_EXHAUSTED` van Vertex — een doodgewone, tijdelijke quota-fout. De achtergrondthread stierf en Gate A bleef op `assessing` staan: een scherm dat zegt "Socrates leest jullie checkpoint" terwijl niemand iets leest. Het team kon niet opnieuw inleveren (het formulier rendert alleen zonder inzending) en de tutorknop bestond niet meer. De enige uitweg was een docent-override, per team, met de hand.
+
+**Bestanden:** Modify: `data/smdl/ducklake.py`, `agents/team_api/{schemas,service,server}.py`, `agents/review_ring_coordinator/workflow.py`, `frontend/src/routes/team/{api.ts,CheckpointView.tsx}`, `frontend/src/routes/instructor/Dashboard.tsx`. Create: `agents/tests/test_tutor_retry.py`.
+
+- [x] **37.1** `is_transient_model_error()`: onderscheidt "Google is druk" van "onze code is stuk". ✅ Op **tekst** gematcht en niet op klasse, want ADK verpakt een 429 in een *private* type (`google_llm._ResourceExhaustedError`) — daarop importeren zou de retry aan een underscore vastknopen die in een point release kan verdwijnen. De evalset-gate leest quota-fouten al op dezelfde manier, om dezelfde reden. 429/503/504 → retry; 403 en 404 níét: die klaren niet op, en 404 is precies hoe Task 33's Developer-API-doodlopende-weg eruitzag.
+- [x] **37.2** `run_tutor_with_recovery()`: 3 pogingen, backoff 2s/4s, en **werpt nooit**. ✅ Het ís de top van een thread — een exception heeft daar nergens heen te gaan behalve een traceback die niemand leest. Elk einde wordt naar de gate geschreven, want dat is de enige plek waar een student het ziet.
+- [x] **37.3** `failed` als gate-status. ✅ Zesde plek weer bijgewerkt; `tsc` ving het dashboard dat ik vergat — tweede keer dat die exhaustieve `Record` zijn nut bewijst.
+- [x] **37.4** `POST /api/retry-socratic-tutor`, met bewaking. ✅ **Geen terugkeer van de knop uit Task 36:** de route weigert (400) tenzij Gate A daadwerkelijk `failed` is, server-side gelezen uit de lakehouse en niet uit het verzoek. Zonder die bewaking is dit letterlijk de oude route en kan een team twee rapporten voor één inzending krijgen.
+- [x] **37.5** Frontend: eerlijke eindtoestand met een weg terug. ✅ *"Er ging iets mis bij het beoordelen — dit ligt aan ons, niet aan jullie inzending. Die staat gewoon opgeslagen."* De schuld bij het systeem leggen is hier geen beleefdheid maar accuratesse: deze status bestáát alleen als ónze kant het niet afmaakte, en een student die denkt dat zijn inzending is afgekeurd, gaat werk herschrijven dat nooit gelezen is.
+
+**Wat dit expliciet níét oplost.** `daemon=True`: een server die middenin een run stopt, doodt de thread zonder dat er `failed` geschreven wordt — dan blijft de gate op `assessing` en verschijnt de knop nooit. Aanvaardbaar voor een dev-/demoserver die iemand met de hand start. **Niet** aanvaardbaar op Cloud Run, waar een container onder een team weg gerecycled kan worden: die deployment heeft een duurzame wachtrij nodig, geen thread (TDD Deel 10).
+
+**En het lost de quota niet op.** Drie pogingen over ~6 seconden vangen een quota-venster van seconden. Ze vangen niet dat dertig teams tegelijk inleveren en het uur vol zit — zie [issue #3](https://github.com/businessdatasolutions/oe-gate-system/issues/3). Dat vraagt quota, geen geduld.
+
+### Test Gate — Task 37
+- **Automatisch:** ✅ 523 passed / 2 skipped (was 509/2; 14 nieuwe tests, eerst rood om de juiste reden). `tsc -b`/`build`/`lint` alle exit 0.
+- **Mens-testbaar artefact:** ✅ het scenario dat echt gebeurde, end-to-end: inleveren → `assessing` → 429 → poging 1/3, wacht 2s → 2/3, wacht 4s → 3/3 → **`failed`** → "opnieuw proberen" → `assessing` → quota vrij → **`open`**, vragen zichtbaar. En de bewaking: bij `failed` is retry toegestaan, bij `open` wordt hij geweigerd. Het model is in die proef gestubd en **alleen** het model — retry, backoff, de `failed`-write, de bewaking en het herstel zijn echte code.
+
+### Commit & push: Task 37
+- [x] Commit `oe-gate-system`: `3e8e834`. Docs: deze commit. Beide gepusht.
 
 ---
 
