@@ -1109,6 +1109,34 @@ De oorzaak is structureel, geen promptkwestie: **er was geen route naar de inzen
 
 ---
 
+## Main Task 34: De browserroute denkt eindelijk (echte agent i.p.v. template)
+
+*(Golf 25: vereist Task 33 — zonder `read_submission` zou dit een tutor live zetten die vragen stelt over werk dat hij niet gelezen heeft, en dat is pedagogisch slechter dan de template.)*
+
+**Het probleem.** `team_api/service.py` riep geen model aan: het draaide de drie tools direct en zette er een vaste Nederlandse template in, met `_DEMO_RUBRIC_SCORE = 82.0` — boven de drempel van 70, dus **Gate A slaagde in de browser altijd**, voor elk team, bij elke inzending. Openlijk gedocumenteerd, op twee gronden die beide verlopen zijn: "no GOOGLE_API_KEY in this dev environment" (Vertex draait sinds Task 33) en een modelswap-race op een langlevende server — een artefact van de `ScriptedLlm`-stub, want de echte agent wisselt niets.
+
+**Bestanden:** Modify: `agents/team_api/service.py`, `agents/socratic_tutor/testing.py`, `agents/tests/test_socratic_tutor_component.py`.
+
+- [x] **34.1** `_compose_socratic_transcript`/`_STAGE_FOCUS`/`_DEMO_RUBRIC_SCORE` verwijderd (65 regels); `run_socratic_tutor_for_checkpoint` draait de echte tweelaagse agent via `asyncio.run` in de handler-thread. ✅ Verse `InMemoryRunner` per request: het protocol is single-shot, en een gedeelde runner zou twee gelijktijdige teams sessiestate laten delen op een `ThreadingHTTPServer`.
+- [x] **34.2** Resultaat geverifieerd tegen de lakehouse, niet tegen de agent zijn eigen woord. ✅ Ontbreekt `write_report` of `read_submission` in de tool calls → `RuntimeError`. Een LLM kan zijn beurt beëindigen met een opgewekt slotbericht en nul weggeschreven werk; "klaar" melden op grond daarvan is precies de never-invents-fout die TDD 4.4 verbiedt.
+- [x] **34.3** De AC-03-scan is van sluitpost naar echte guard gepromoveerd — en bleek onbruikbaar. ✅ Zie hieronder.
+- [ ] **34.4** Lof-als-oordeel. **Openstaand:** het levende model opent met *"Jullie beschrijven treffend de strategie van Ryanair"* en *"Jullie kritische blik is waardevol"*. De instructie verbiedt dat expliciet ("praise tied to correctness is also a verdict"), maar geen woordenlijst kan "treffend"/"waardevol" vangen zonder half Nederlands te verbieden. Promptwerk, geen guardwerk.
+
+**34.3 — de guard had nog nooit echte taal gezien.** `scan_for_scoring_language` was een kale substring-check, en had alleen ooit tekst gescand die niet kón falen: de vaste template en de handgeschreven evalset-referenties. Tegen een levend model verwierp hij doodnormale vragen — "passagiers" en "toepassing" en "aanpassing" bevatten `pass`, "aandachtspunten:" bevat `punten:`, "fouten" bevat `fout`. Bij een Ryanair-case is "passagiers" geen hypothese. Bewezen: twee identieke runs, één geweigerd op `punten:`, één geslaagd — de gate werkte of faalde naar gelang het woord dat het model toevallig koos, en de student zou willekeurig een foutmelding zien in plaats van een tutor. Nu woordgrens-bewust (`SCORING_PATTERNS`), met tests aan beide kanten: zes legitieme zinnen moeten erdóór, negen echte oordelen moeten gevangen blijven. Derde keer in dit systeem dat dezelfde vorm van schijnzekerheid opduikt (`ScriptedLlm`, de vacuous pass, deze scan): een test die alleen draait tegen input die niet kan falen, meet niets.
+
+**Bekende regressie, vastgelegd i.p.v. weggepoetst.** Het templatepad reeg één `correlation_id` door zijn drie tool calls, zodat een run als één logische actie terugleesbaar was in de action log. De agent roept de tools zelf aan en ADK heeft geen hook om die context te injecteren, dus de rijen landen nu ongecorreleerd. Niets hangt er vandaag van af, maar "wie deed wat in één keer" is niet meer uit de log alleen te beantwoorden.
+
+### Test Gate — Task 34
+- **Automatisch:** ✅ 497 passed / 2 skipped (was 482/2; 15 nieuwe scannertests). De zes legitieme-taal-tests faalden eerst om de juiste reden. Evalset blijft écht draaien (8 passed / 15s).
+- **Mens-testbaar artefact:** ✅ de HTTP-route zelf, 3× achter elkaar tegen een live model op Vertex: **25,2s / 26,3s / 35,1s**, Gate A open, geen `rubric_score` in de response. Team-07 schreef over Ryanair's omkeertijd van 25 minuten en zelfbedienings-apps; de tutor vroeg terug: *"Welke specifieke organisatie- of proceselementen zijn cruciaal om deze snelle omkeertijd van 25 minuten consistent te realiseren?"* en *"wat zou een concreet 'mensgericht Industry 5.0-antwoord' voor Ryanair betekenen, binnen hun kostprijsleiderschapsstrategie?"* — zijn eigen woorden, niet die van het boek.
+- **Openstaand punt voor de opdrachtgever:** die 25–35s zit middenin het request van een student, met een spinner. Dat is een productbeslissing (wachten? achtergrondtaak? polling?), geen implementatiedetail — expliciet niet stilzwijgend ingevuld.
+
+### Commit & push: Task 34
+- [x] Commit `oe-gate-system`: `6274197`.
+- [ ] Commit `operational-excellence-course`.
+
+---
+
 ## Voortgangsoverzicht (samenvatting: werk bovenstaande secties bij, dit is alleen een snelle scan)
 
 - [x] Main Task 0: Repository- en projectscaffolding ✅ https://github.com/businessdatasolutions/oe-gate-system
