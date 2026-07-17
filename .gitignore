@@ -2,3 +2,8 @@
 .vscode/
 background-material/
 .playwright-mcp/
+
+# Lokaal geïnstalleerde skills: .agents/ is de opslag, .claude/skills/ linkt erheen
+.agents/
+.claude/skills/architecture-blueprint-generator
+skills-lock.json
