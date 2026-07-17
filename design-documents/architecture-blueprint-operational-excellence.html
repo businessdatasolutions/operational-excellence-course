@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Architecture Blueprint: Operational Excellence Gate-systeem</title>
+<style>
+/* ================================================================
+   Huisstijl "palette C strict minimal" — hergebruikt uit
+   tdd-operational-excellence.html / lrd-operational-excellence.html
+   voor visuele/navigatie-consistentie binnen design-documents/.
+   Toevoegingen t.o.v. TDD: sticky inhoudsopgave, mermaid-container,
+   severity-badges, printstijlen. Zelfde tokens, geen nieuwe kleuren.
+   ================================================================ */
+:root {
+  --primary: #d4db3e;
+  --supporting: #1a1a1a;
+  --cream: #f5f0e6;
+  --bg-yellow: #fafbf0;
+  --bg-cream: #f5f0e6;
+  --bg-cream-2: #f0ebe0;
+  --bg-off-white: #f9f8f4;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --bg-page: #ffffff;
+  --bg-section: #f9fafb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text-xs: 0.75rem;  --text-sm: 0.875rem; --text-base: 1rem;
+  --text-lg: 1.125rem; --text-xl: 1.25rem;  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem; --text-4xl: 2.25rem; --text-5xl: 3rem;
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem; --space-16: 4rem;
+  --space-20: 5rem;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-md: 0 2px 4px rgba(0,0,0,.06), 0 8px 16px rgba(0,0,0,.06);
+  --shadow-lg: 0 4px 8px rgba(0,0,0,.08), 0 16px 32px rgba(0,0,0,.08);
+  --radius-sm: 6px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 9999px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+a:hover { background: var(--bg-yellow); }
+:focus-visible { outline: 3px solid var(--supporting); outline-offset: 2px; border-radius: 2px; }
+
+/* NAV */
+.bds-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-4) var(--space-8);
+}
+.bds-nav-inner {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-6); flex-wrap: wrap;
+}
+.bds-wordmark {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-weight: 700; font-size: var(--text-xl);
+  text-decoration: none; color: var(--text-primary);
+}
+.bds-wordmark .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+.bds-wordmark:hover { background: transparent; }
+.bds-nav-tag {
+  font-size: var(--text-sm); color: var(--text-muted);
+  display: inline-flex; align-items: center; gap: var(--space-4);
+}
+/* Onder 1180px is er geen sidebar en dus geen knop; dan hoort het label alleen
+   te staan zoals in de LRD/TDD. */
+@media (max-width: 640px) { .bds-nav-tag-text { display: none; } }
+
+/* TOC-toggle: leeft in de nav, niet in de sidebar zelf — een knop die met de
+   sidebar mee verdwijnt kan hem niet terughalen. Verborgen onder 1180px, waar
+   er sowieso geen sidebar is om in te klappen. */
+.bds-toc-toggle { display: none; }
+@media (min-width: 1180px) {
+  .bds-toc-toggle {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    font: inherit; font-size: var(--text-sm); color: var(--text-secondary);
+    background: var(--bg-page); cursor: pointer;
+    border: 1px solid var(--border); border-radius: var(--radius-full);
+    padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+  }
+  .bds-toc-toggle:hover { background: var(--bg-yellow); border-color: var(--border-strong); color: var(--text-primary); }
+}
+.bds-toc-toggle .chev {
+  width: 14px; height: 14px; flex-shrink: 0;
+  transition: rotate 0.25s ease;
+}
+html[data-toc="collapsed"] .bds-toc-toggle .chev { rotate: -90deg; }
+
+/* SHELL: inhoudsopgave naast de pagina zodra er ruimte is. */
+.bds-shell {
+  max-width: 1400px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr; gap: var(--space-8);
+}
+@media (min-width: 1180px) {
+  /* minmax(0, 1fr) en niet minmax(0, 880px): de hoofdkolom pakt de volle
+     beschikbare breedte, zodat inklappen ruimte oplevert die de figuren
+     kunnen gebruiken. De leesbare regellengte wordt niet hier maar per
+     tekstblok begrensd (zie .bds-page hieronder) -- anders zit een diagram
+     opgesloten in een maat die alleen voor lopende tekst bedoeld is. */
+  .bds-shell {
+    grid-template-columns: 250px minmax(0, 1fr);
+    transition: grid-template-columns 0.25s ease, gap 0.25s ease;
+  }
+  html[data-toc="collapsed"] .bds-shell { grid-template-columns: 0 minmax(0, 1fr); gap: 0; }
+}
+
+/* TOC */
+.bds-toc { display: none; }
+@media (min-width: 1180px) {
+  .bds-toc {
+    display: block;
+    position: sticky; top: 5rem;
+    align-self: start;
+    max-height: calc(100vh - 7rem); overflow-y: auto; overflow-x: clip;
+    padding: var(--space-12) 0 var(--space-8) var(--space-4);
+    font-size: var(--text-sm);
+    transition: opacity 0.2s ease;
+  }
+  /* visibility (niet alleen opacity) haalt de links uit de tabvolgorde: een
+     onzichtbare inhoudsopgave mag geen focusval zijn. De 0s-vertraging laat de
+     fade eerst aflopen; bij uitklappen is er geen vertraging, dus hij is er meteen. */
+  html[data-toc="collapsed"] .bds-toc {
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bds-shell, .bds-toc, .bds-toc-toggle .chev { transition: none; }
+}
+.bds-toc h2 {
+  font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted); font-weight: 600; margin: 0 0 var(--space-3);
+}
+.bds-toc ol { list-style: none; margin: 0; padding: 0; }
+.bds-toc li { margin: 0; }
+.bds-toc a {
+  display: block; padding: var(--space-2) var(--space-3);
+  text-decoration: none; color: var(--text-secondary);
+  border-left: 2px solid var(--border);
+  line-height: 1.35;
+}
+.bds-toc a:hover { background: var(--bg-yellow); color: var(--text-primary); }
+.bds-toc a.is-current {
+  border-left-color: var(--supporting);
+  background: var(--bg-yellow);
+  color: var(--text-primary); font-weight: 600;
+}
+.bds-toc .toc-num { color: var(--text-muted); font-variant-numeric: tabular-nums; margin-right: var(--space-2); }
+.bds-toc a.is-current .toc-num { color: var(--text-primary); }
+
+/* PAGE LAYOUT */
+.bds-page { padding: var(--space-12) var(--space-8) var(--space-20); min-width: 0; }
+
+/* De leesbaarheidsmaat zit op de tekstblokken zelf, niet op de kolom. Zo houdt
+   proza een vaste regellengte van 880px terwijl een <figure> de hele kolom mag
+   pakken -- en levert het inklappen van de inhoudsopgave dus echt bredere
+   diagrammen op in plaats van bredere marges.
+   Blokniveau (niet de kolom) is ook waarom marges hier gewoon blijven
+   samenvallen: de secties blijven block, geen grid. */
+.bds-page > header,
+.bds-page > section > * { max-width: 880px; margin-inline: auto; }
+.bds-page > section > figure { max-width: none; }
+
+.bds-page-header {
+  margin-bottom: var(--space-12);
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+.bds-eyebrow {
+  font-size: var(--text-xs); text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted);
+  font-weight: 600; margin-bottom: var(--space-2);
+}
+h1.bds-h1 { font-size: var(--text-4xl); font-weight: 700; margin: 0 0 var(--space-6); line-height: 1.15; text-wrap: balance; }
+
+.lead-quote {
+  margin: 0 0 var(--space-6); padding: var(--space-4) var(--space-6);
+  border-left: 4px solid var(--primary);
+  background: var(--bg-yellow);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-lg); color: var(--text-secondary);
+}
+.lead-quote em { font-style: italic; }
+
+h2.bds-part {
+  font-size: var(--text-3xl); font-weight: 700; line-height: 1.2;
+  margin: var(--space-20) 0 var(--space-6);
+  padding-top: var(--space-8);
+  border-top: 2px solid var(--supporting);
+  text-wrap: balance;
+}
+h2.bds-part::before {
+  content: ""; display: block;
+  width: 48px; height: 5px; background: var(--primary);
+  border-radius: var(--radius-full); margin-bottom: var(--space-4);
+}
+h3 { font-size: var(--text-xl); font-weight: 700; margin: var(--space-12) 0 var(--space-3); line-height: 1.3; text-wrap: balance; }
+h4 { font-size: var(--text-lg); font-weight: 700; margin: var(--space-8) 0 var(--space-2); line-height: 1.3; }
+
+p { margin: 0 0 var(--space-4); }
+p, li { text-wrap: pretty; }
+ul, ol { margin: 0 0 var(--space-4); padding-left: var(--space-6); }
+li { margin: 0 0 var(--space-2); }
+li > ul, li > ol { margin-top: var(--space-2); }
+strong { font-weight: 700; }
+em { font-style: italic; }
+hr { border: none; border-top: 1px solid var(--border); margin: var(--space-12) 0; }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; margin: var(--space-6) 0; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+thead th {
+  background: var(--bg-cream);
+  text-align: left; font-weight: 700;
+  border-bottom: 2px solid var(--border-strong);
+}
+th, td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  vertical-align: top; line-height: 1.5;
+}
+th:last-child, td:last-child { border-right: none; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: var(--bg-off-white); }
+td a { word-break: break-word; }
+.meta-tbl th { width: 180px; background: var(--bg-cream-2); }
+
+/* Theme cards */
+.theme {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-8);
+  margin: var(--space-8) 0;
+}
+.theme h3, .theme h4 { margin-top: 0; }
+.theme > :last-child { margin-bottom: 0; }
+.theme.warn { border-left-color: var(--supporting); background: var(--bg-yellow); }
+
+code {
+  font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.9em; background: var(--bg-section);
+  padding: 0.15em 0.4em; border-radius: 4px; border: 1px solid var(--border);
+}
+/* Inline code mag afbreken, code in een <pre> niet: dit document staat vol met
+   lange padnamen en testnamen (test_no_module_decides_model_access_by_...) die
+   op een telefoon anders de héle pagina horizontaal laten scrollen. Een <pre>
+   heeft zijn eigen overflow-x en moet zijn regels juist intact houden. */
+:not(pre) > code { overflow-wrap: anywhere; }
+pre {
+  font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.82em; background: var(--bg-section);
+  padding: var(--space-4) var(--space-5); border-radius: var(--radius-md);
+  border: 1px solid var(--border); overflow-x: auto; line-height: 1.5;
+  margin: 0 0 var(--space-4);
+}
+pre code { background: none; border: none; padding: 0; }
+figure { margin: var(--space-6) 0; position: relative; }
+figcaption {
+  font-size: var(--text-sm); color: var(--text-muted);
+  margin-top: var(--space-3); text-align: center;
+}
+
+/* Vergrootknop. Op de <figure> en niet in de .diagram: die laatste scrollt
+   horizontaal, en een absoluut gepositioneerde knop daarbinnen zou met de
+   inhoud meeschuiven en uit beeld verdwijnen -- precies bij het brede diagram
+   waarvoor je hem nodig hebt. Altijd zichtbaar, niet pas bij hover: op touch
+   bestaat hover niet, en een knop die je moet ontdekken is geen knop. */
+.diagram-zoom {
+  position: absolute; top: var(--space-3); right: var(--space-3); z-index: 1;
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font: inherit; font-size: var(--text-xs); color: var(--text-secondary);
+  background: var(--bg-page); cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+}
+.diagram-zoom:hover { background: var(--bg-yellow); border-color: var(--border-strong); color: var(--text-primary); }
+.diagram-zoom svg { width: 13px; height: 13px; }
+
+/* DIALOG */
+.diagram-dialog {
+  width: 96vw; max-width: 96vw; height: 92vh; max-height: 92vh;
+  padding: 0; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md); background: var(--bg-off-white);
+  color: var(--text-primary);
+}
+.diagram-dialog::backdrop { background: rgb(17 24 39 / 0.6); }
+.diagram-dialog__bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-4); padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border); background: var(--bg-page);
+}
+.diagram-dialog__title { font-size: var(--text-sm); color: var(--text-muted); }
+.diagram-dialog__close {
+  font: inherit; font-size: var(--text-sm); cursor: pointer;
+  background: var(--bg-page); color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+}
+.diagram-dialog__close:hover { background: var(--bg-yellow); color: var(--text-primary); }
+.diagram-dialog__body {
+  height: calc(100% - 49px); overflow: auto; padding: var(--space-6);
+  /* 'safe' is dragend: bij gewone centering knipt een diagram dat hóger is dan
+     het dialoog (gate-flow is 954px) zijn bovenkant af, buiten het scrollbereik.
+     Met 'safe' valt de uitlijning in dat geval terug op start. */
+  display: flex; align-items: safe center; justify-content: safe center;
+}
+/* Hier mág de svg wél krimpen: de gebruiker vroeg expliciet om "toon het
+   geheel". Passen gaat voor: pas als een diagram breder is dan het dialoog
+   wordt hij verkleind, en dat is bij deze vijf zelden of nooit nodig. */
+.diagram-dialog__body svg { display: block; max-width: 100%; height: auto; flex: none; }
+
+/* MERMAID */
+.diagram {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-off-white);
+  padding: var(--space-6);
+  margin: var(--space-6) 0;
+  overflow-x: auto;
+}
+.diagram .mermaid { display: flex; justify-content: center; }
+/* Bewust GEEN max-width: 100% op de svg. Dat zou een breed diagram in de
+   tekstkolom persen en de labels tot ~7px verkleinen; .diagram scrollt liever
+   horizontaal (zie overflow-x hierboven) en houdt de tekst leesbaar. */
+/* flex: none, anders krimpt de svg als flex-item alsnog tot de kolombreedte --
+   precies het probleem dat useMaxWidth: false hierboven moest oplossen. */
+.diagram .mermaid svg { height: auto; flex: none; }
+/* Pre-render: verberg de bron tot mermaid klaar is, zodat er nooit
+   losse tekst opflitst. Zonder JS/netwerk valt hij terug op leesbare bron. */
+.diagram .mermaid:not([data-processed]) { display: block; }
+.diagram .mermaid:not([data-processed])::before {
+  content: "Diagram wordt geladen…";
+  display: block; color: var(--text-muted); font-size: var(--text-sm);
+  text-align: center; padding: var(--space-4);
+}
+.diagram .mermaid:not([data-processed]) > .mmd-src { display: none; }
+.diagram.failed .mermaid:not([data-processed])::before {
+  content: "Diagram kon niet worden gerenderd (geen netwerk?). De bron staat hieronder.";
+}
+.diagram.failed .mermaid:not([data-processed]) > .mmd-src {
+  display: block; white-space: pre; font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: var(--text-xs); color: var(--text-secondary);
+  background: var(--bg-section); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: var(--space-4); overflow-x: auto;
+}
+
+/* Severity badges (Deel 15) */
+.sev {
+  display: inline-block; font-size: var(--text-xs); font-weight: 700;
+  padding: 0.15em 0.6em; border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong); background: var(--bg-cream-2);
+  color: var(--text-primary); white-space: nowrap;
+}
+.sev.hoog { background: var(--supporting); color: #fff; border-color: var(--supporting); }
+.sev.middel { background: var(--primary); border-color: var(--primary); }
+.sev.laag { background: var(--bg-cream-2); color: var(--text-secondary); }
+
+/* Blueprint badges */
+.tag-blueprint {
+  display: inline-block; font-size: var(--text-xs); font-weight: 600;
+  padding: 0.15em 0.6em; border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong); background: var(--bg-cream-2);
+  color: var(--text-secondary); margin: 0 var(--space-2) var(--space-1) 0;
+  white-space: nowrap;
+}
+.tag-blueprint.new { background: var(--bg-yellow); border-color: var(--primary); color: var(--text-primary); }
+
+.bds-footer {
+  border-top: 1px solid var(--border);
+  padding: var(--space-8); background: var(--bg-section);
+  text-align: center; color: var(--text-muted); font-size: var(--text-sm);
+}
+.bds-footer-inner { max-width: 1024px; margin: 0 auto; }
+.bds-footer .bds-wordmark { font-size: var(--text-base); margin-bottom: var(--space-2); justify-content: center; }
+
+@media (max-width: 640px) {
+  .bds-nav { padding: var(--space-3) var(--space-4); }
+  .bds-page { padding: var(--space-8) var(--space-4) var(--space-12); }
+  h1.bds-h1 { font-size: var(--text-3xl); }
+  h2.bds-part { font-size: var(--text-2xl); }
+  .theme { padding: var(--space-4); }
+  .diagram { padding: var(--space-3); }
+}
+
+@media print {
+  .bds-nav, .bds-toc, .bds-toc-toggle, .diagram-zoom, .diagram-dialog { display: none; }
+  .bds-page > header, .bds-page > section > * { max-width: none; }
+  .bds-shell { display: block; max-width: none; }
+  .bds-page { padding: 0; max-width: none; }
+  body { font-size: 10pt; }
+  h2.bds-part { break-before: page; margin-top: 0; padding-top: 0; }
+  h2.bds-part:first-of-type { break-before: avoid; }
+  h3, h4 { break-after: avoid; }
+  table, figure, .diagram, .theme, pre { break-inside: avoid; }
+  a { text-decoration: none; }
+  .bds-footer { border: none; }
+}
+</style>
+<script>
+  // Vóór de eerste paint, niet onderaan de body: anders staat de sidebar er even
+  // en klapt hij zichtbaar dicht zodra het script draait -- precies de flits die
+  // de opgeslagen voorkeur zou moeten voorkomen.
+  try {
+    if (localStorage.getItem('oe.blueprint.toc') === 'collapsed') {
+      document.documentElement.dataset.toc = 'collapsed';
+    }
+  } catch (e) { /* private mode: geen voorkeur, gewoon uitgeklapt beginnen */ }
+</script>
+</head>
+<body>
+
+<nav class="bds-nav">
+  <div class="bds-nav-inner">
+    <a href="#top" class="bds-wordmark">
+      <span class="dot"></span>
+      <span>HAN · Operational Excellence</span>
+    </a>
+    <span class="bds-nav-tag">
+      <button type="button" class="bds-toc-toggle" id="toc-toggle" aria-expanded="true" aria-controls="bds-toc">
+        <svg class="chev" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 6l4 4 4-4" />
+        </svg>
+        <span>Inhoud</span>
+      </button>
+      <span class="bds-nav-tag-text">Architecture Blueprint</span>
+    </span>
+  </div>
+</nav>
+
+<div class="bds-shell">
+
+<aside class="bds-toc" id="bds-toc" aria-label="Inhoudsopgave">
+  <h2>Inhoud</h2>
+  <ol>
+    <li><a href="#deel-0"><span class="toc-num">0</span>Waar de code leeft</a></li>
+    <li><a href="#deel-1"><span class="toc-num">1</span>Architectuurdetectie</a></li>
+    <li><a href="#deel-2"><span class="toc-num">2</span>Architectuuroverzicht (C4)</a></li>
+    <li><a href="#deel-3"><span class="toc-num">3</span>Kerncomponenten</a></li>
+    <li><a href="#deel-4"><span class="toc-num">4</span>Lagen &amp; afhankelijkheden</a></li>
+    <li><a href="#deel-5"><span class="toc-num">5</span>Data-architectuur</a></li>
+    <li><a href="#deel-6"><span class="toc-num">6</span>Privacy-invarianten</a></li>
+    <li><a href="#deel-7"><span class="toc-num">7</span>Cross-cutting concerns</a></li>
+    <li><a href="#deel-8"><span class="toc-num">8</span>De transparantie-SSOT</a></li>
+    <li><a href="#deel-9"><span class="toc-num">9</span>Servicecommunicatie</a></li>
+    <li><a href="#deel-10"><span class="toc-num">10</span>Deployment</a></li>
+    <li><a href="#deel-11"><span class="toc-num">11</span>Frontend</a></li>
+    <li><a href="#deel-12"><span class="toc-num">12</span>Testarchitectuur</a></li>
+    <li><a href="#deel-13"><span class="toc-num">13</span>Governance</a></li>
+    <li><a href="#deel-14"><span class="toc-num">14</span>Blueprint voor nieuw werk</a></li>
+    <li><a href="#deel-15"><span class="toc-num">15</span>Drift</a></li>
+    <li><a href="#bijlage-a"><span class="toc-num">A</span>Snelle oriëntatie</a></li>
+  </ol>
+</aside>
+
+<main class="bds-page" id="top">
+
+  <header class="bds-page-header">
+    <div class="bds-eyebrow">HAN University of Applied Sciences · Architectuurreferentie</div>
+    <h1 class="bds-h1">Architecture Blueprint: Operational Excellence Gate-systeem</h1>
+    <blockquote class="lead-quote"><em>Dit document beschrijft de architectuur zoals die daadwerkelijk in de code staat, niet zoals ze bedoeld is. Het is afgeleid van <code>oe-gate-system</code>, niet van het ontwerp. Waar het afwijkt van het TDD is dat een bevinding, geen correctie — zie Deel 15.</em></blockquote>
+
+    <div class="tbl-wrap">
+    <table class="meta-tbl">
+      <tbody>
+        <tr><th>Document</th><td>Project Architecture Blueprint</td></tr>
+        <tr><th>Versie</th><td>1.0 (gegenereerd)</td></tr>
+        <tr><th>Datum</th><td>17 juli 2026</td></tr>
+        <tr><th>Gegenereerd tegen</th><td><code>oe-gate-system</code> @ <code>main</code> (227 getrackte bestanden) en deze documentatierepository @ <code>77a3bc1</code></td></tr>
+        <tr><th>Programma</th><td>HAN University of Applied Sciences, cursus <strong>Operational Excellence</strong></td></tr>
+        <tr><th>Scope</th><td>De implementatie van <a href="tdd-operational-excellence.html">het TDD</a>: data-laag, agentic-services-laag, frontend, infra</td></tr>
+        <tr><th>Gerelateerde documenten</th><td><a href="lrd-operational-excellence.html"><code>lrd-operational-excellence.html</code></a> (wat &amp; waarom) · <a href="tdd-operational-excellence.html"><code>tdd-operational-excellence.html</code></a> (hoe het bedoeld is) · <a href="buildplan.md"><code>buildplan.md</code></a> (voortgang) · <a href="SPEC.md"><code>SPEC.md</code></a> (OKF v0.1)</td></tr>
+        <tr><th>Markdown-bron</th><td><code>../Project_Architecture_Blueprint.md</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>Wat dit document is.</strong> Een referentie om architecturale consistentie te bewaren bij nieuw werk. <strong>Wat het niet is:</strong> een vervanging van het LRD (wat &amp; waarom), het TDD (hoe het bedoeld is) of het buildplan (voortgang).</p>
+
+    <p><strong>Onderhoud.</strong> Regenereer dit document na elke golf uit het buildplan waarin een nieuwe laag, agent of cross-cutting mechanisme is toegevoegd. Het is een momentopname, geen levend contract; de guard-tests uit <a href="#deel-13">Deel 13</a> zijn dat wél.</p>
+
+    <p><strong>Hoe te lezen.</strong> Deel 0 legt uit waar de code eigenlijk staat — dat is niet af te leiden uit één repository en is het eerste dat een nieuwe ontwikkelaar moet weten. Deel 1–2 geven het overzicht en de diagrammen. Delen 3–6 werken de componenten, lagen en het datamodel uit. Deel 7–8 behandelen de cross-cutting mechanismen, waaronder de transparantie-SSOT die het meest karakteristieke deel van dit systeem is. Delen 9–12 gaan over communicatie, deployment, frontend en tests. <strong>Delen 13–15 zijn de kern voor wie hier gaat bouwen</strong>: hoe consistentie wordt afgedwongen, waar je begint, en waar code en TDD uiteenlopen.</p>
+  </header>
+
+  <!-- ============================ DEEL 0 ============================ -->
+  <section id="deel-0">
+    <h2 class="bds-part">Deel 0: Waar de code leeft</h2>
+
+    <p>Dit is het eerste dat een nieuwe ontwikkelaar moet weten, en het is niet af te leiden uit één repository:</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Repository</th><th>Inhoud</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><code>operational-excellence-course</code> (deze)</td><td>LRD, TDD, buildplan, OKF-SPEC, test-data, frontend-mockups</td><td>Documentatie; <strong>geen code</strong></td></tr>
+        <tr><td><code>oe-gate-system</code></td><td>data-laag, agentic-services-laag, frontend, infra</td><td><strong>De implementatie</strong></td></tr>
+        <tr><td><code>oe-wiki</code> (fork van <code>wiki-template</code>)</td><td>boekconcepten, bedrijfscases, gepubliceerde content</td><td>Wordt <strong>gebruikt</strong>, niet gewijzigd (NFR-02)</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>De splitsing is een architectuurbeslissing, geen historisch ongeluk. NFR-02 eist minimale nieuwe infrastructuur; de wiki blijft daarom in haar eigen Quartz-fork en het gate-systeem leest haar bestanden read-only van schijf. Het buildplan woont in de documentatierepository omdat het de gedeelde bron van waarheid is voor voortgang over beide repo's heen (<code>oe-gate-system/README.md:28</code>: <em>"vink daar taken af, niet hier"</em>).</p>
+  </section>
+
+  <!-- ============================ DEEL 1 ============================ -->
+  <section id="deel-1">
+    <h2 class="bds-part">Deel 1: Architectuurdetectie en -analyse</h2>
+
+    <h3>1.1 Technologiestack (auto-gedetecteerd)</h3>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Laag</th><th>Stack</th><th>Bewijs</th></tr></thead>
+      <tbody>
+        <tr><td>Data</td><td>Python 3.11+, DuckDB/DuckLake, pydantic 2, pandas, PyYAML</td><td><code>pyproject.toml:5-25</code></td></tr>
+        <tr><td>Agentic services</td><td>Google ADK 2.4 (<code>google-adk[a2a,db,eval]~=2.0</code>), stdlib <code>ThreadingHTTPServer</code></td><td><code>pyproject.toml:7</code>, <code>agents/team_api/server.py:42</code></td></tr>
+        <tr><td>Frontend</td><td>React 19, Vite 8, TypeScript 6, react-router-dom 7</td><td><code>frontend/package.json</code></td></tr>
+        <tr><td>Deployment</td><td>Docker (multi-stage), Cloud Run, Cloud SQL Postgres, GCS + gcsfuse, <code>europe-west4</code></td><td><code>infra/Dockerfile</code>, <code>infra/cloudrun.yaml</code></td></tr>
+        <tr><td>CI</td><td>GitHub Actions + Workload Identity Federation</td><td><code>.github/workflows/deploy-gate-system.yml</code></td></tr>
+        <tr><td>Test</td><td>pytest 8 + pytest-asyncio, Playwright 1.61</td><td><code>pyproject.toml:29-41</code>, <code>playwright.config.ts</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="theme">
+      <h4>Wat opvalt door afwezigheid</h4>
+      <p>Elk van deze is een gedocumenteerde keuze, geen omissie:</p>
+      <ul>
+        <li><strong>Geen FastAPI, geen uvicorn, geen Starlette.</strong> Beide HTTP-servers zijn stdlib <code>ThreadingHTTPServer</code> + <code>BaseHTTPRequestHandler</code> met een dict-routetabel. KISS (LRD Deel 5.1), expliciet vastgelegd in <code>agents/team_api/server.py:6-8</code>.</li>
+        <li><strong>Geen ORM, geen migratieframework.</strong> Ruwe DuckDB-SQL achter een functie-façade.</li>
+        <li><strong>Geen state-managementbibliotheek, geen data-fetchingbibliotheek, geen UI-kit in de frontend.</strong> Alleen <code>useState</code> en een handgeschreven <code>request&lt;T&gt;()</code>.</li>
+        <li><strong>Geen unit-testrunner in de frontend.</strong> Alleen <code>tsc -b</code> en <code>oxlint</code>; alle frontendverificatie loopt via Playwright.</li>
+        <li><strong>Geen <code>GOOGLE_MODEL</code>-env-var.</strong> Bewust verwijderd (Main Task 30) en met een test bewaakt — zie <a href="#deel-7">Deel 7.5</a>.</li>
+      </ul>
+    </div>
+
+    <h3>1.2 Architectuurpatroon</h3>
+
+    <p>Het systeem is <strong>een gelaagd monoliet-in-drieën, gedeployed als drie Cloud Run-services</strong>, met twee patronen die het gedrag echt bepalen:</p>
+
+    <ol>
+      <li><strong>Schema-afdwinging boven instructie.</strong> Waar het TDD een garantie eist (geen cijfer zichtbaar, nooit cijfers verzinnen, traceerbaarheid), is die geïmplementeerd als een pydantic-schema met <code>extra="forbid"</code> zonder veld waar de verboden waarde in zou passen — niet als een regel in een prompt. Een LLM kan een instructie negeren; hij kan geen <code>ValidationError</code> wegpraten.</li>
+      <li><strong>Guard-tests als architectuurmechanisme.</strong> De single sources of truth (modelnamen, weeknummers, runtime-datafiles, regio) worden bewaakt door tests die de échte boom scannen en CI rood maken. Het projectgeheugen hierover is expliciet: de vorige SSOT (<code>agents/shared/models.py</code>) stond in een docstring en was <strong>stil onwaar — 2 van de 9 call sites hielden zich eraan</strong> (<code>agents/tests/test_transparantie_ssot.py:8-12</code>).</li>
+    </ol>
+
+    <p>De afhankelijkheidsrichting is strikt eenrichtings: <code>frontend → agents → data</code>. Niets onder <code>data/</code> importeert <code>agents</code> — <code>data/compliance/__init__.py:33-38</code> legt uit dat de compliance-SSOT dáárom in <code>data/</code> woont en niet in <code>agents/shared/</code>.</p>
+
+    <h3>1.3 Leidende principes, zoals afleesbaar uit de code</h3>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Principe</th><th>Hoe je het herkent</th></tr></thead>
+      <tbody>
+        <tr><td>Privacy by design</td><td>Uitsluitend <code>first_name</code>, <code>team_id</code>, <code>klas_id</code>, <code>cohort</code>. Geen studentnummer, e-mail of achternaam in enig schema</td></tr>
+        <tr><td>Never invents</td><td>Elk cijfer, duplicaatoordeel en aandachtspunt is herleidbaar tot een <code>source_ref</code> die naar een echte DuckLake-snapshot wijst</td></tr>
+        <tr><td>Fail closed</td><td>Nieuwe routes zijn authenticated tenzij iemand ze zichtbaar op een allowlist zet; onbekend team → weigeren</td></tr>
+        <tr><td>Eerlijk over wat niet werkt</td><td>Code documenteert open gaten (<code>test.fail()</code> in plaats van <code>skip</code>, <code>subject_id</code>-collisie beschreven én niet gesloten)</td></tr>
+        <tr><td>De les staat bij de fix</td><td>Vrijwel elke niet-triviale docstring noemt de productiefout waarvoor hij geschreven is</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============================ DEEL 2 ============================ -->
+  <section id="deel-2">
+    <h2 class="bds-part">Deel 2: Architectuuroverzicht (C4)</h2>
+
+    <h3>2.1 Niveau 1 — Context</h3>
+
+    <figure>
+      <div class="diagram">
+        <div class="mermaid"><pre class="mmd-src">graph TB
+    student["Student&lt;br/&gt;(voornaam + team)"]
+    docent["Docent"]
+    beheerder["Beheerder"]
+    gate["OE Gate-systeem&lt;br/&gt;Socratische gate, peer-review-gate,&lt;br/&gt;dashboard, studentdossier"]
+    wiki["OE-Wiki&lt;br/&gt;(Quartz, aparte repo)&lt;br/&gt;read-only"]
+    vertex["Google Vertex AI&lt;br/&gt;europe-west4"]
+    gc["GoatCounter&lt;br/&gt;(aggregate-only analytics)"]
+
+    student -->|capability-link| gate
+    docent -->|capability-link| gate
+    beheerder -->|wachtwoord| gate
+    gate -->|leest markdown van schijf| wiki
+    gate -->|Gemini via ADC| vertex
+    gate -->|batch rollup| gc</pre></div>
+      </div>
+      <figcaption>Systeemcontext. Drie rollen, drie externe systemen — waarvan de wiki read-only is (NFR-02).</figcaption>
+    </figure>
+
+    <h3>2.2 Niveau 2 — Containers</h3>
+
+    <figure>
+      <div class="diagram">
+        <div class="mermaid"><pre class="mmd-src">graph TB
+    spa["oe-frontend&lt;br/&gt;React SPA, Vite build&lt;br/&gt;static_server.py"]
+
+    subgraph run["Cloud Run — europe-west4"]
+        team["oe-team-api&lt;br/&gt;ThreadingHTTPServer&lt;br/&gt;19 routes, studentgericht"]
+        admin["oe-admin-api&lt;br/&gt;ThreadingHTTPServer&lt;br/&gt;38 routes, docent/beheerder"]
+    end
+
+    agentlaag["Agentic services (in-process)&lt;br/&gt;socratic_tutor · review_ring_coordinator&lt;br/&gt;dashboard_query · wiki_quality_check&lt;br/&gt;quality_advisor · wiki_query&lt;br/&gt;(zie Deel 3.2)"]
+
+    subgraph datalaag["Data-laag"]
+        okf["OKF-bundels&lt;br/&gt;markdown + frontmatter&lt;br/&gt;gcsfuse /app/lakehouse"]
+        dl["DuckLake&lt;br/&gt;catalog: Cloud SQL Postgres&lt;br/&gt;data: GCS Parquet"]
+    end
+
+    ssot["compliance/transparantie.json&lt;br/&gt;SSOT — modellen, regio, bewaartermijn"]
+
+    spa -->|Bearer + JSON| team
+    spa -->|Bearer + JSON| admin
+    team --> agentlaag
+    admin --> agentlaag
+    agentlaag --> okf
+    agentlaag --> dl
+    agentlaag -.model.-> ssot
+    spa -.build-time define.-> ssot</pre></div>
+      </div>
+      <figcaption>Containers. De gestippelde pijlen verklaren het meest: dezelfde JSON configureert de agents én wordt in de onboarding aan studenten getoond.</figcaption>
+    </figure>
+
+    <div class="theme">
+      <p>De pijl die het meeste verklaart is de gestippelde: <strong>dezelfde JSON configureert de agents én wordt in de onboarding aan studenten getoond</strong>. Een model kan niet veranderen zonder dat de tekst die studenten lezen in dezelfde commit verandert.</p>
+    </div>
+
+    <h3>2.3 Niveau 3 — De gate-flow (dataflow)</h3>
+
+    <figure>
+      <div class="diagram">
+        <div class="mermaid"><pre class="mmd-src">sequenceDiagram
+    participant S as Student (SPA)
+    participant T as team_api
+    participant BG as achtergrondthread
+    participant A as socratic_tutor (ADK)
+    participant L as lakehouse
+
+    S->>T: POST /api/submit-checkpoint
+    T->>L: schrijf checkpoint-submission (OKF)
+    T->>L: gate_events: status=assessing
+    T-->>S: 200 (geen cijfer in de response)
+    T->>BG: start thread (geen DuckLake-lock)
+    BG->>A: InMemoryRunner, verse sessie
+    A->>L: read_submission (tool)
+    A->>L: query_wiki / read_team_history
+    A->>L: write_report: team-file + instructeur-file
+    A->>L: rubric_scores + gate_events(open|pending)
+    Note over BG,A: 429? 3 pogingen, lineaire backoff.&lt;br/&gt;Daarna gate_events: status=failed
+    loop elke 5s zolang status=assessing
+        S->>T: GET /api/checkpoint-view
+    end
+    T-->>S: SocratesCard (vragen, geen score)</pre></div>
+      </div>
+      <figcaption>De Gate-A-flow. Inleveren ís het verzoek; de tutor draait op een achtergrondthread en de student pollt.</figcaption>
+    </figure>
+
+    <p>Twee dingen in dit diagram zijn architectureel, niet incidenteel:</p>
+    <ul>
+      <li><strong>De kickoff-boodschap bevat de inzendingstekst niet.</strong> De agent moet <code>read_submission</code> aanroepen. Een gekopieerde tekst zou van het lakehouse kunnen afdrijven en de <code>@log_action</code>-trail overslaan (<code>agents/team_api/service.py:483-489</code>).</li>
+      <li><strong>Na afloop verifieert de server het lakehouse, niet de agent.</strong> <code>run_socratic_tutor_for_checkpoint</code> eist dat <code>write_report</code> én <code>read_submission</code> in de tool-calls voorkomen en gooit anders <code>RuntimeError</code> — <em>"an LLM can end its turn having written nothing; reporting 'done' on the strength of a cheerful final message is exactly the never-invents failure TDD 4.4 forbids"</em> (<code>service.py:539-553</code>).</li>
+    </ul>
+  </section>
+
+  <!-- ============================ DEEL 3 ============================ -->
+  <section id="deel-3">
+    <h2 class="bds-part">Deel 3: Kerncomponenten</h2>
+
+    <h3>3.1 Data-laag — <code>data/</code></h3>
+
+    <p><strong>Verantwoordelijkheid:</strong> alle persistente staat, in twee vormen die elk hun eigen reden hebben.</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Vorm</th><th>Wat</th><th>Waarom deze vorm</th></tr></thead>
+      <tbody>
+        <tr><td>OKF-bundel (markdown + YAML-frontmatter)</td><td>inzendingen, gate-events, rosters, escrow, sessies</td><td>Mens-leesbaar, diffbaar, <code>git</code>-baar; FR-09-historie-export is letterlijk het bestand</td></tr>
+        <tr><td>DuckLake-tabellen (Parquet + catalog)</td><td>16 tabellen voor aggregatie, audit en credentials</td><td>Snapshot-versionering geeft gratis citeerbaarheid</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>Interne structuur.</strong> <code>data/smdl/</code> is een <em>quarantainegrens</em>: <code>ducklake.py</code> (1096 regels) is de enige module die DuckLake-SQL kent. Callers gebruiken <code>write_x</code>/<code>query_x</code>-paren; niemand schrijft ooit zelf een <code>ATTACH</code>- of <code>AT (VERSION =&gt; n)</code>-string.</p>
+
+    <p>Het idioom, ontdaan van ruis (<code>data/smdl/ducklake.py:271-285, 365-370</code>):</p>
+
+<pre><code>def append_rows(conn, table: str, df: pd.DataFrame) -&gt; int:
+    conn.register("df_view", df)
+    conn.execute("BEGIN")
+    conn.execute(f'CREATE TABLE IF NOT EXISTS lake."{table}" AS SELECT * FROM df_view WHERE 0 = 1')
+    conn.execute(f'INSERT INTO lake."{table}" SELECT * FROM df_view')
+    conn.execute("COMMIT")
+    conn.unregister("df_view")
+    return latest_snapshot(conn, table)
+
+def write_gate_event(conn, row: GateEventRow) -&gt; int:
+    return append_rows(conn, "gate_events", pd.DataFrame([row.model_dump()]))</code></pre>
+
+    <div class="theme warn">
+      <h4>Er is geen migratieframework</h4>
+      <p>De consequentie is precies gedocumenteerd (<code>ducklake.py:355-359</code>): een <code>Literal</code> verbreden is gratis (kolommen zijn in de catalog gewoon strings), maar <strong>een kolom toevoegen breekt schrijfacties tegen een bestaand lakehouse</strong>, omdat de <code>INSERT</code> positioneel is. Dit is de reden dat de admin-sessie-vervaltijd wordt <em>afgeleid</em> uit <code>created_at</code> in plaats van opgeslagen in een <code>expires_at</code>-kolom (<code>shared/identity.py:171-192</code>). Wie een kolom wil toevoegen, moet dat weten vóórdat hij begint.</p>
+    </div>
+
+    <p><strong>Vijf lakehouse-tiers</strong> (<code>data/smdl/storage.py:69-188</code>), elk een eigen namespace, catalog en Parquet-pad:</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Tier</th><th>Namespace</th><th>Inhoud</th></tr></thead>
+      <tbody>
+        <tr><td>team</td><td><code>&lt;cohort&gt;-team-&lt;id&gt;</code></td><td>inzendingen, gate-events, escrow, wiki-kwaliteit</td></tr>
+        <tr><td>ring</td><td><code>&lt;cohort&gt;-ring-&lt;id&gt;</code></td><td>instructeur-documenten</td></tr>
+        <tr><td>klas</td><td><code>&lt;cohort&gt;-klas-&lt;id&gt;</code></td><td>rosters, assessmentplanning, sessies</td></tr>
+        <tr><td>admin</td><td><code>&lt;cohort&gt;-admin</code></td><td>cursusperiode, <code>access_grants</code>, <code>admin_accounts</code>, <code>docenten</code></td></tr>
+        <tr><td>system</td><td><code>_system</code> (cohort-onafhankelijk)</td><td><code>action_log</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Isolatie tussen scopes is <strong>structureel via het bestandssysteem</strong>, niet via een <code>WHERE</code>-clausule: elke scope is een ander lakehouse met een eigen catalog. <code>storage.py:23-26</code>: <em>"nothing in this module ever opens more than one lakehouse namespace at a time."</em></p>
+
+    <p>De scope <code>iedereen</code> bestaat bewust <strong>niet</strong> in de data-laag. <code>route_instructor_document</code> gooit een <code>ValueError</code> met een verwijzing naar het git-commitpad van de wiki (<code>data/smdl/service.py:65-69</code>) — en die check bestaat ondanks de <code>Literal</code>-typehint, omdat een HTTP-body op runtime <code>"everyone"</code> kan bevatten.</p>
+
+    <h3>3.2 Agentic-services-laag — <code>agents/</code></h3>
+
+    <p>Drie soorten module, en het onderscheid is bewust:</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Soort</th><th>Packages</th><th>Heeft een <code>Agent</code>?</th></tr></thead>
+      <tbody>
+        <tr><td>LLM-agents</td><td><code>socratic_tutor</code>, <code>dashboard_query</code>, <code>wiki_quality_check</code>, <code>quality_advisor</code></td><td>ja</td></tr>
+        <tr><td>Deterministische orkestratie</td><td><code>review_ring_coordinator</code> (ADK <code>Workflow</code>, geen LLM-node), <code>wiki_query</code> (geen LLM)</td><td>nee</td></tr>
+        <tr><td>HTTP-adapters</td><td><code>team_api</code>, <code>admin_api</code></td><td>nee — zij <em>roepen</em> agents aan</td></tr>
+        <tr><td>Cross-cutting</td><td><code>shared/</code> (<code>session</code>, <code>identity</code>, <code>action_log</code>)</td><td>n.v.t.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>Het constructie-idioom</strong> (<code>agents/socratic_tutor/agent.py:34-77</code>) — model uit de SSOT, instructie van schijf, tools op de task-worker, chat-coördinator erboven:</p>
+
+<pre><code>from google.adk import Agent
+from compliance import model_for
+from .tools import query_wiki, read_submission, read_team_history, write_report
+
+_PROMPTS_DIR = Path(__file__).parent / "prompts"
+WORKER_INSTRUCTION = (_PROMPTS_DIR / "system_instruction.md").read_text(encoding="utf-8")
+
+socratic_tutor_worker = Agent(
+    name="socratic_tutor_worker",
+    model=model_for("socratische_tutor"),
+    mode="task",
+    instruction=WORKER_INSTRUCTION,
+    tools=[read_submission, query_wiki, read_team_history, write_report],
+)
+
+root_agent = Agent(
+    name="socratic_tutor",
+    model=model_for("socratische_tutor"),
+    sub_agents=[socratic_tutor_worker],
+    instruction="You are the entry point... Delegate every incoming checkpoint submission to "
+                "`socratic_tutor_worker` immediately -- you never generate Socratic questions "
+                "or a rubric score yourself...",
+)</code></pre>
+
+    <p>De twee lagen zijn <strong>geen stijl</strong>: ADK 2.4 gooit <code>ValueError: LlmAgent as root agent must have mode='chat', but got mode='task'</code> (<code>agent.py:10-18</code>). Tools zijn gewone Python-functies; ADK's automatic function calling leest de typehints en docstrings. Er is nergens een <code>FunctionTool(...)</code>-wrapper.</p>
+
+    <p>Dat <code>(_PROMPTS_DIR / "system_instruction.md").read_text()</code> op <strong>importtijd</strong> gebeurt, is de reden dat <code>pyproject.toml:52</code> een <code>package-data</code>-regel heeft: zonder die regel laadt de module niet in de container. Dat is niet theoretisch — het is hoe het gevonden is (Main Task 7.6, een live smoke-test).</p>
+
+    <div class="theme">
+      <h4>Waar "never invents" wordt afgedwongen — zes plaatsen, geen daarvan een prompt-instructie</h4>
+      <ol>
+        <li><code>_derive_gate_status(rubric_score)</code> (<code>socratic_tutor/tools.py:113-118</code>) — <code>write_report</code> accepteert <code>gate_a_status</code> als argument, maar wat <em>opgeslagen</em> wordt is altijd herberekend tegen <code>RUBRIC_PASS_THRESHOLD = 70.0</code>. De claim van de LLM komt terug als <code>gate_a_status_llm_claim</code>: zichtbaar, nooit stil weggegooid.</li>
+        <li>Twee gescheiden schema's met <code>extra="forbid"</code> (<code>socratic_tutor/schemas.py:33-67</code>) — <code>TeamFacingReport</code> heeft geen veld waar een score in past.</li>
+        <li>De returnwaarde van <code>write_report</code> laat <code>rubric_score</code> weg, zodat de score niet terug de conversatiecontext in kan (<code>tools.py:409-412</code>).</li>
+        <li><code>scan_for_scoring_language</code> (<code>socratic_tutor/testing.py:101-116</code>) — 16 woordgrens-regexes, NL+EN, <strong>live gedraaid op elk echt rapport</strong> (<code>team_api/service.py:562-564</code>). Woordgrenzen zijn dragend: de oude substring-check verwierp "passagiers" en "toepassing".</li>
+        <li>Lakehouse-verificatie boven agent-say-so (zie <a href="#deel-2">Deel 2.3</a>).</li>
+        <li><code>_filter_valid_points</code> (<code>dashboard_query/prep_agent.py:692-718</code>) — schrapt onvoorwaardelijk elk <code>PrepPoint</code> waarvan de <code>source_ref</code> geen echt event benoemt. Verplicht-en-niet-leeg bewijst <em>aanwezigheid</em>; dit bewijst <em>echtheid</em>. Niet uit te zetten.</li>
+      </ol>
+      <p>Plus de structurele variant in <code>build_cohort_positions</code> (<code>dashboard_query/agent.py:355-388</code>): de query die zou kunnen lekken <strong>wordt niet gedraaid</strong>. <code>TeamPositionRow</code> heeft exact twee velden en <code>extra="forbid"</code>.</p>
+    </div>
+
+    <h3>3.3 HTTP-oppervlak</h3>
+
+    <p>Beide servers: stdlib, dict-routetabel <code>(method, path) → handler</code>, dunne handlers die JSON-bare waarden teruggeven.</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Server</th><th>Poort (dev)</th><th>Routes</th><th>Publiek</th></tr></thead>
+      <tbody>
+        <tr><td><code>team_api</code></td><td>8801</td><td>19 (<code>server.py:413-438</code>)</td><td>studenten</td></tr>
+        <tr><td><code>admin_api</code></td><td>8799</td><td>38, verdeeld over 4 tabellen (<code>ROUTES</code>, <code>IDENTITY_ROUTES</code>, <code>BINARY_ROUTES</code>, <code>HTML_ROUTES</code>)</td><td>docenten, beheerders</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Vier tabellen in <code>admin_api</code> in plaats van één, omdat de responsetypes verschillen: JSON, een PDF (<code>application/pdf</code>, ruwe bytes), HTML (de printbare toegangssheet), en handlers die de opgeloste <code>Identity</code> nodig hebben.</p>
+
+    <p><code>_DUCKLAKE_LOCK = threading.Lock()</code> serialiseert elke routehandler (<code>team_api/server.py:61</code>) — gevonden bij een ATTACH-race op <code>/api/cohort-positions</code>, dat elk teamlakehouse in één request opent. De achtergrondthread van de tutor neemt die lock <strong>niet</strong>: dat zou elk ander request bevriezen voor de halve minuut dat een model nadenkt (<code>server.py:164-171</code>).</p>
+
+    <p><strong>CORS</strong> echoot exact één geconfigureerde origin, nooit <code>*</code> — beide servers accepteren state-changing POSTs. <code>Access-Control-Allow-Headers: Content-Type, Authorization</code> is dragend: <code>Authorization</code> is niet CORS-safelisted, dus weglaten breekt stil het hele toegangsmodel (<code>team_api/server.py:455-458</code>).</p>
+
+    <h3>3.4 Frontend — <code>frontend/</code></h3>
+
+    <p><strong>Organisatieprincipe:</strong> routes-per-zone, CSS ernaast, één API-client per zone.</p>
+
+<pre><code>src/
+  main.tsx          captureCredentialFromFragment() vóór createRoot
+  App.tsx           de complete routetabel — één BrowserRouter, platte &lt;Routes&gt;
+  nav-config.ts     NavItem-registry: SSOT voor nav én headerlabels
+  auth.ts           credential capture/opslag/authHeaders
+  transparantie.ts  getypte view op de __TRANSPARANTIE__ build-constante
+  styles/           han-huisstijl-tokens.css + studentportaal-palette.css
+  components/       AppShell, HanHeader, NoGradeFooter, PhaseTracker, PollWidget, SurveyWidget
+  routes/
+    team/           api.ts (438) + 5 kernviews + OwnTeamGuard
+    instructor/     Dashboard, dossier/StudentDossier, quality-report/
+    admin/          api.ts (663) + 7 tabs + AdminApp/AdminLogin
+    onboarding/     useOnboardingParams + 7 componenten / 8 URLs</code></pre>
+
+    <p><strong>Twee API-clients die bewust geen code delen</strong> (<code>routes/team/api.ts:405-407</code>) — zodat de studentclient geen importtijd-koppeling heeft met de docentclient, precies zoals <code>team_api</code> en <code>admin_api</code> aan Python-kant gescheiden zijn. Types worden gedupliceerd, niet over de grens geïmporteerd.</p>
+
+    <p>Het fetch-idioom (<code>frontend/src/routes/team/api.ts:34-67</code>), met het commentaar dat de belangrijkste regel verklaart:</p>
+
+<pre><code>async function request&lt;T&gt;(path: string, init?: RequestInit): Promise&lt;T&gt; {
+  let res: Response
+  try {
+    res = await fetch(`${apiBase()}${path}`, {
+      ...init,
+      // Spread `init` FIRST: a caller passing its own `headers` (every POST
+      // below does) would otherwise replace this object wholesale and drop the
+      // credential... one place that cannot be forgotten beats fourteen that can.
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders(),
+        ...(init?.headers as Record&lt;string, string&gt; | undefined),
+      },
+    })
+  } catch {
+    throw new TeamApiError(`Kan de team-API niet bereiken op ${apiBase()}. ...`)
+  }
+  const text = await res.text()
+  const body = text ? JSON.parse(text) : {}
+  if (!res.ok) {
+    if (res.status === 401) throw new TeamApiError('Je toegangslink is niet (meer) geldig...')
+    throw new TeamApiError(typeof body.error === 'string' ? body.error : `Aanvraag mislukt: ${res.status}`)
+  }
+  return body as T
+}</code></pre>
+
+    <p>Het consumentenidioom is overal hetzelfde: een <code>useState</code>-drieslag <code>{data|null, loading, error|null}</code> + <code>useCallback reload({silent})</code> + <code>useEffect</code>. Er is <strong>geen error boundary</strong>; elk scherm handelt zijn eigen falen af. Annulering via een <code>let cancelled</code>-closure, niet <code>AbortController</code>.</p>
+
+    <p><strong>Polling, geen sockets:</strong> zolang <code>gate_a.status === 'assessing'</code> draait <code>setInterval(reload({silent:true}), 5000)</code>. De afweging staat erbij (<code>CheckpointView.tsx:386-396</code>): ~30s wachten, 4× per module; een pushkanaal zou een nieuw transport op een stdlib-server betekenen. <code>silent</code> onderdrukt de spinner zodat de pagina niet flikkert onder de ogen van een lezende student.</p>
+
+    <h3>3.5 Cross-cutting: <code>agents/shared/</code></h3>
+
+    <p>Drie modules, elk één zorg:</p>
+    <ul>
+      <li><strong><code>identity.py</code></strong> (314 regels) — het volledige toegangsmodel. Zie <a href="#deel-7">Deel 7.1</a>.</li>
+      <li><strong><code>action_log.py</code></strong> (182 regels) — één decorator, <code>@log_action(layer=...)</code>. Zie <a href="#deel-7">Deel 7.3</a>.</li>
+      <li><strong><code>session.py</code></strong> (46 regels) — ongewijzigd overgenomen uit <code>adk2-blueprint</code>. <code>SESSION_BACKEND=database</code> + <code>DATABASE_URL</code> → <code>DatabaseSessionService</code>, anders <code>InMemorySessionService</code>. De import is lui, zodat het in-memory-pad de <code>[db]</code>-extra nooit nodig heeft.</li>
+    </ul>
+  </section>
+
+  <!-- ============================ DEEL 4 ============================ -->
+  <section id="deel-4">
+    <h2 class="bds-part">Deel 4: Lagen en afhankelijkheden</h2>
+
+    <figure>
+      <div class="diagram">
+        <div class="mermaid"><pre class="mmd-src">graph LR
+    fe["frontend/&lt;br/&gt;React"] --> team["agents/team_api"]
+    fe --> admin["agents/admin_api"]
+    team --> ag["agents/socratic_tutor&lt;br/&gt;review_ring_coordinator&lt;br/&gt;wiki_query"]
+    admin --> ag2["agents/dashboard_query&lt;br/&gt;quality_advisor&lt;br/&gt;wiki_quality_check"]
+    ag --> sh["agents/shared"]
+    ag2 --> sh
+    ag --> smdl["data/smdl"]
+    ag2 --> smdl
+    sh --> smdl
+    ag --> comp["data/compliance"]
+    ag2 --> comp
+    fe -.build-time.-> comp
+    smdl --> comp</pre></div>
+      </div>
+      <figcaption>Afhankelijkheidsrichting: <code>agents/* → data/*</code>, nooit terug.</figcaption>
+    </figure>
+
+    <p><strong>De regel:</strong> <code>agents/* → data/*</code>, nooit terug. Geen enkele module onder <code>data/</code> importeert iets uit <code>agents/</code>.</p>
+
+    <p><strong>Hoe de scheiding wordt afgedwongen:</strong> niet met een tool (er is geen import-linter), maar met packaging. <code>pyproject.toml:44-46</code> zet <code>where = ["data", "agents"]</code>, dus imports zijn plat: <code>from smdl import ducklake</code>, <code>from compliance import model_for</code>, <code>from shared.session import ...</code>. Er is geen <code>data.</code> of <code>agents.</code> prefix om achter te schuilen; de richting is een conventie die door de codereview wordt bewaakt.</p>
+
+    <p><strong>Eén bekende cirkel, expliciet gebroken:</strong> <code>ducklake.py:34</code> doet <code>from .okf import Stage, utc_now_iso</code>, dus <code>Bundle.append_log</code> importeert <code>ducklake</code> <em>binnenin de functie</em> (<code>okf.py:622</code>) in plaats van bovenaan het bestand.</p>
+
+    <p><strong>Geen dependency injection-container.</strong> Configuratie komt binnen via drie mechanismen, in deze volgorde van voorkeur:</p>
+    <ol>
+      <li>Modulefuncties uit <code>compliance</code> (model, regio, toegang) — één vraag, één antwoord.</li>
+      <li>Env-vars gelezen op importtijd, met een <code>configure_*</code>-override voor tests (<code>configure_lakehouse_root</code>).</li>
+      <li>Keyword-defaults op handlers (<code>root: Path = LAKE_ROOT</code>) — <strong>de gevaarlijkste van de drie</strong>, zie <a href="#deel-12">Deel 12.2</a>.</li>
+    </ol>
+  </section>
+
+  <!-- ============================ DEEL 5 ============================ -->
+  <section id="deel-5">
+    <h2 class="bds-part">Deel 5: Data-architectuur</h2>
+
+    <h3>5.1 Domeinmodel — 11 OKF-concepttypes</h3>
+
+    <p>Elk type is een pydantic-model waarvan <code>type</code> een <code>Literal</code> met default is (<code>data/smdl/okf.py:52-116</code>). Dát is wat "elk concept heeft een niet-lege <code>type</code>" (SPEC §9, FR-11/NFR-07) <strong>structureel</strong> maakt in plaats van conventioneel.</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Type</th><th>Tier</th><th>Kernvelden</th></tr></thead>
+      <tbody>
+        <tr><td><code>checkpoint-submission</code></td><td>team</td><td>team_id, stage, chapter, submitted_by[], company_case</td></tr>
+        <tr><td><code>gate-pass-event</code></td><td>team</td><td>stage, gate (A|B), status, actor, timestamp</td></tr>
+        <tr><td><code>escrow-state</code></td><td>team</td><td>from_team_id, given_submitted, revealed, lapse_deadline</td></tr>
+        <tr><td><code>reviewring-assignment</code></td><td>team</td><td>klas_id, ring[], reconfigured_from</td></tr>
+        <tr><td><code>wiki-quality-check</code></td><td>team</td><td>submission_ref, outcome, points_*</td></tr>
+        <tr><td><code>instructor-document</code></td><td>team/ring/klas</td><td>scope, source_format, deterministic</td></tr>
+        <tr><td><code>klas-roster</code></td><td>klas</td><td>klas_id, docent_first_name, team_ids[]</td></tr>
+        <tr><td><code>team-roster</code></td><td>klas</td><td>team_id, members[], onboarding_completed</td></tr>
+        <tr><td><code>assessment-schedule</code></td><td>klas</td><td>student_first_name, date, time_slot, docent_id</td></tr>
+        <tr><td><code>session</code></td><td>klas</td><td>session_id, kind, week, topic, materials[]</td></tr>
+        <tr><td><code>course-period</code></td><td>admin</td><td>start_date, end_date, holidays[]</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Twee detailkeuzes die het patroon tonen:</p>
+    <ul>
+      <li><strong><code>CheckpointSubmission.create</code> neemt <code>kritische_lens</code> als keyword-only argument zonder default</strong> (<code>okf.py:155-173</code>). Er is dus geen codepad dat een inzending schrijft zonder FR-15's kritische lens. Niet gecheckt — onmogelijk.</li>
+      <li><strong>De frontmatter-regex is verankerd</strong>: <code>\A---\n(.*?)\n---\n?(.*)\Z</code> (<code>okf.py:42</code>), non-greedy op de frontmatter, greedy op de body. Een <code>---</code> horizontale lijn midden in een checkpointantwoord wordt daardoor nooit voor een tweede fence aangezien.</li>
+    </ul>
+
+    <h3>5.2 DuckLake — 16 tabellen</h3>
+
+    <p>Alle append-only via <code>append_rows</code>, behalve <code>access_grants</code>, <code>admin_accounts</code> en <code>docenten</code> (muteerbaar, met <code>?</code>-geparameteriseerde SQL).</p>
+
+    <p><code>gate_events</code>, <code>rubric_scores</code>, <code>reviewring_log</code>, <code>override_log</code>, <code>wiki_quality_log</code>, <code>uploaded_tables</code>, <code>bundle_log</code>, <code>action_log</code>, <code>access_grants</code>, <code>admin_accounts</code>, <code>docenten</code>, <code>attendance_log</code>, <code>polls</code>, <code>poll_responses</code>, <code>wiki_engagement</code>, <code>survey_responses</code>.</p>
+
+    <div class="theme warn">
+      <p><strong>Stale comment.</strong> De moduleheader (<code>ducklake.py:334-340</code>) spreekt nog van <em>"the seven named DuckLake tables"</em>. Het zijn er 16. Onschadelijk, maar het is het soort drift dat dit blueprint hoort te melden.</p>
+    </div>
+
+    <h3>5.3 Het query-patroon: <code>source_ref</code> = <code>&lt;tabel&gt;#&lt;snapshot_id&gt;</code></h3>
+
+    <p>Er is <strong>geen <code>source_ref</code>-kolom</strong>. De DuckLake-snapshot <em>is</em> de identifier. <code>QueryResult</code> (<code>data/smdl/query.py:31-45</code>) draagt <code>rows</code>, <code>sql</code>, <code>table</code>, <code>snapshot</code>, <code>confidence</code>, en de docstring stelt: <em>"<code>sql</code>/<code>table</code>/<code>snapshot</code> together ARE the citation"</em> — een lezer kan altijd exact dezelfde query overdoen.</p>
+
+<pre><code>snapshot = ducklake.latest_snapshot(conn, table)
+sql = sql_template.format(table_ref=ducklake.table_ref(table, snapshot))
+relation = conn.sql(sql)
+rows = [dict(zip(relation.columns, row)) for row in relation.fetchall()]
+return QueryResult(rows=rows, sql=sql, table=table, snapshot=snapshot)</code></pre>
+
+    <p>Dit is precies waarom <code>ReviewringLogRow</code> geen <code>ts</code>-kolom nodig heeft: de snapshot is zijn tijdstempel.</p>
+
+    <p>Aan de frontendkant is de <code>source_ref</code> een echte klikbare <code>&lt;a href="#..."&gt;</code> in het studentdossier, die opnieuw client-side gevalideerd wordt (<code>StudentDossier.tsx:368-370, 646-647</code>) — een docent kan van elk aandachtspunt doorklikken naar het event waaruit het volgt.</p>
+
+    <h3>5.4 Escrow — de wederkerigheidsgarantie</h3>
+
+    <p>Geen DuckLake-tabel; een <code>escrow-state</code>-concept in het lakehouse van het <strong>ontvangende</strong> team.</p>
+
+    <div class="theme">
+      <p>De garantie zit <strong>in de lezer, niet in de schrijver</strong> (<code>review_ring_coordinator/workflow.py:353-392</code>): de feedbacktekst staat fysiek al op schijf in de bundel van de ontvanger, maar wordt alleen teruggegeven als die ontvanger zélf zijn uitgaande review heeft ingediend — en dat wordt bij <strong>elke aanroep</strong> opnieuw afgeleid uit live data via <code>_own_review_given</code>, nooit uit een gecachete vlag. <code>reveal_feedback</code> heeft drie <code>return None</code>-guards en de ADK-workflow kan niet geforceerd worden door hem met een truthy payload te hervatten (getest: <code>test_workflow_resume_true_without_real_data_stays_locked</code>).</p>
+    </div>
+
+    <h3>5.5 Caching</h3>
+
+    <p>Er is er precies één: <code>@lru_cache(maxsize=1)</code> op <code>compliance.config()</code>. Alle andere caches zijn bewust geweigerd. Het scherpste voorbeeld staat in <code>identity.py:205-209</code>: <code>resolve_identity</code> kost één DuckLake-ATTACH per request, en de voor de hand liggende in-process cache is afgewezen omdat <em>een intrekking die ongelijkmatig werkt erger is dan een die 30ms kost</em>.</p>
+  </section>
+
+  <!-- ============================ DEEL 6 ============================ -->
+  <section id="deel-6">
+    <h2 class="bds-part">Deel 6: Datamodel-invarianten rond privacy</h2>
+
+    <p><strong>Identifiers:</strong> <code>first_name</code>, <code>team_id</code>, <code>klas_id</code>, <code>cohort</code> — exact de vier die <code>transparantie.json:87-93</code> aan studenten belooft, plus de niet-persoonlijke <code>ring_id</code>, <code>session_id</code>, <code>docent_id</code>.</p>
+
+    <p><strong>Vier plaatsen waar het schema meer zou kunnen lekken dan bedoeld</strong> — alle vier gevonden bij deze analyse, geen ervan een acute fout, alle vier het vermelden waard:</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Plaats</th><th>Aard</th></tr></thead>
+      <tbody>
+        <tr><td><code>action_log.actor_id</code></td><td>De regel "nooit een voornaam" staat in twee docstrings (<code>ducklake.py:477-496</code>, <code>action_log.py:60-63</code>) en wordt <strong>door niets gevalideerd</strong>. <code>_pop_context</code> neemt <code>actor_id</code> als ongetypeerde <code>kwargs.pop</code>. Een caller die <code>actor_id="Fenna"</code> doorgeeft schrijft een voornaam in de cohort-overstijgende audittrail</td></tr>
+        <tr><td><code>uploaded_tables</code></td><td><code>ConfigDict(extra="allow")</code> — willekeurige bronkolommen uit een geüploade CSV landen ongevalideerd in het lakehouse. Alleen naamcollisies worden gecheckt, inhoud niet. Een docent die een sheet met <code>studentnummer</code> uploadt, schrijft dat erin</td></tr>
+        <tr><td><code>survey_responses</code></td><td><strong>Bewust</strong> naam-gekoppeld (LRD 6.16), instructor-only. De claim "geen gate-code leest deze tabel" is proza, geen guard</td></tr>
+        <tr><td><code>access_grants.subject_id</code></td><td>Gedocumenteerd én niet gesloten: de docstring betoogt uitvoerig dat dit géén voornaam is, en geeft dan toe dat <code>roster_import._subject_id</code> <code>docent-&lt;slugify(first_name)&gt;</code> bouwt. <em>"The intent above is real but unachieved."</em> Twee docenten die Jan heten zien elkaars klassen (geverifieerd 16-07-2026)</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>De vierde is representatief voor de projectcultuur: de fix van Main Task 30 maakt de collisie <strong>luid</strong> (<code>create_docent</code> weigert een dubbele naam) in plaats van hem te verbergen. Echt sluiten vereist een discriminator in de CSV — een open LRD-vraag, niet een codeprobleem.</p>
+
+    <div class="theme">
+      <h4>Wat wél goed dichtgetimmerd is</h4>
+      <p><code>access_grants</code> bewaart alleen de SHA-256; de plaintext bestaat één functieaanroep lang en gaat de geprinte sheet op. <code>admin_accounts</code> gebruikt scrypt met <strong>per-rij KDF-parameters</strong> (<code>n</code>, <code>r</code>, <code>p</code>), zodat de kosten later verhoogd kunnen worden zonder bestaande accounts te invalideren. <code>wiki_engagement</code> attribueert uitsluitend via een URL-padregex (<code>team-(\d+)</code>), nooit via een cookie of bezoeker-id — en GoatCounter is precies gekozen omdat zijn stats-API structureel alleen aggregaten teruggeeft (NFR-12).</p>
+    </div>
+  </section>
+
+  <!-- ============================ DEEL 7 ============================ -->
+  <section id="deel-7">
+    <h2 class="bds-part">Deel 7: Cross-cutting concerns</h2>
+
+    <h3>7.1 Authenticatie &amp; autorisatie</h3>
+
+    <p><strong>Model: capability-link</strong> (FR-43/44, NFR-16). Elke student, en elk docent-klas-paar, krijgt één ongeraadbare URL; die tonen ís de authenticatie.</p>
+
+    <p>Twee eigenschappen maken het verdedigbaar:</p>
+    <ol>
+      <li><strong>Het credential komt nooit waar een server het kan zien.</strong> Het staat in het URL-<strong>fragment</strong> (<code>#t=...</code>), dat browsers nooit versturen. De frontend leest het één keer en stuurt daarna <code>Authorization: Bearer</code>. Dit is geen preutsheid: beide servers printen de volledige request-regel naar Cloud Logging, <code>static_server.py</code> heeft geen log-override, en Cloud Run logt paden hoe dan ook — een credential in een pad of query landt op minstens vier plekken, twee daarvan buiten deze codebase (<code>identity.py:13-23</code>).</li>
+      <li><strong>De server gelooft de client niet meer.</strong> Handlers lezen <code>team_id</code>/<code>klas_id</code>/<code>cohort</code> uit de opgeloste <code>Identity</code>. De vórm van die fix is het punt: parameters worden niet <em>gevalideerd</em>, ze worden <strong>niet meer gelezen</strong> — <code>_require(query, "team_id")</code> is verdwenen, niet aangevuld met een check (<code>team_api/server.py:126-136</code>).</li>
+    </ol>
+
+    <p>Expliciet vastgelegd als <strong>bearer</strong>-auth zonder tweede factor: een doorgestuurde link werkt voor wie hem krijgt. Een geaccepteerde, proportionele afweging voor pseudonieme coursework (alleen voornamen), als restrisico opgenomen in het LRD (<code>identity.py:31-36</code>).</p>
+
+    <p><strong>Autorisatie, <code>team_api</code></strong> (<code>server.py:485-500</code>): allowlist <code>_OPEN_ROUTES = {("GET","/api/health")}</code>. Een nieuwe route is authenticated tenzij iemand hem zichtbaar uitzondert — vergeten faalt dicht.</p>
+
+    <p><strong>Autorisatie, <code>admin_api</code></strong> (<code>server.py:833-873</code>) — drie poorten op volgorde:</p>
+    <ol>
+      <li>Geauthenticeerd? → anders 401.</li>
+      <li><code>is_instructor or is_admin</code>? → anders <code>PermissionError</code>. <strong>Een student met een geldig credential krijgt 403, niet 401</strong>: hij is wie hij zegt te zijn, hij mag hier alleen niet zijn (<code>:838-840</code>).</li>
+      <li><code>(method, path) in _ADMIN_ONLY_ROUTES and not is_admin</code> → 403.</li>
+    </ol>
+
+    <p>Daarna <code>authorize_scope</code>. De identity wordt <strong>teruggegeven</strong>, niet in een thread-local gestopt — <em>"ambient 'current user' state is how a request reads the previous request's identity"</em> (<code>:842-847</code>).</p>
+
+    <p><code>authorize_scope</code> valideert de scope-claim één keer in dispatch in plaats van in ~30 handlers, omdat <code>admin_api</code> de scope niet kan afleiden (een docent heeft meerdere klassen en moet zeggen welke). <strong>De cohort-check is toegevoegd in Main Task 32</strong> na een walkthrough die vond dat 23 handlers <code>cohort</code> lazen en geen enkele hem controleerde: <code>GET /api/course-period?cohort=&lt;ander&gt;</code> gaf 200.</p>
+
+    <div class="theme warn">
+      <p>Er staat één expliciete waarschuwing bij de cohort-brede early return (<code>:255-268</code>): een toekomstige geprivilegieerde route die niet in <code>_ADMIN_ONLY_ROUTES</code> staat, wordt daar stil bereikbaar. Dat is een landmijn met een bordje ernaast — behandel hem als zodanig.</p>
+    </div>
+
+    <p><strong><code>Identity.is_instructor</code> betekent exact "is een docent" en dekt bewust géén admins</strong> (<code>identity.py:99</code>). De verleidelijke one-liner om hem te verbreden zou admins stil élke check in de codebase hebben gegeven, inclusief de nog niet geschreven checks.</p>
+
+    <h4>Het beheerderswachtwoord (FR-48/49/50)</h4>
+
+    <p>Lost een echte cirkel op: <code>/api/roster-import</code> had een docent-credential nodig, en docent-credentials kwamen alleen uit een roster-import. <code>admin_api/bootstrap.py</code> is één CLI-commando per cohort, gedraaid door de deploy-operator — <em>"the seam cannot be removed, only made small"</em>; een bootstrap-<em>route</em> zou zelf een geheim nodig hebben en de recursie opnieuw openen.</p>
+
+    <p><code>login()</code> is <strong>geen tweede auth-systeem</strong>: het verifieert scrypt en mint daarna een gewone <code>access_grants</code>-rij met <code>subject_type="admin"</code>. Alles stroomafwaarts blijft onaangeraakt — daarom was er geen migratie nodig. Lockout: 5 pogingen, exponentieel 2min→1u, <strong>gecheckt vóór het verifiëren</strong> (<em>"a lockout that the right answer walks through is not a lockout"</em>). Een onbekende gebruiker verbrandt vergelijkbare KDF-tijd om een username-orakel te sluiten. <code>TooManyAttempts</code> → <strong>429, bewust niet 401</strong>: <em>"a human who is told the former while the latter is true will keep trying and stay locked out."</em></p>
+
+    <h4><code>has_model_access()</code></h4>
+
+    <p><code>data/compliance/__init__.py:108-138</code> is één vraag met één antwoord: <em>zijn er credentials?</em> — bewust niet <em>antwoordt het model?</em>. Vijf call sites vroegen elk de smallere vraag "is er een API key?" en kregen op een correct geconfigureerde machine het <strong>verkeerde antwoord</strong>: Vertex authenticeert via ADC en heeft geen key nodig. Een nu doelloze key verwijderen zou stil de conceptextractie, duplicaatdetectie, het kwaliteitsrapport, de dashboardformulering en de PDF-samenvatting naar hun domme fallbacks hebben laten zakken — zonder error, zonder log. Bewaakt door <code>test_no_module_decides_model_access_by_reading_a_credential_itself</code>.</p>
+
+    <h3>7.2 Error handling &amp; resilience</h3>
+
+    <p><strong>Tutor retry</strong> (<code>team_api/service.py:349-461</code>, Main Task 37):</p>
+    <ul>
+      <li><code>_TRANSIENT_MARKERS</code> matcht op de <strong>tekst</strong> van de exception, niet op zijn klasse — ADK verpakt een 429 in het private <code>google_llm._ResourceExhaustedError</code>, en een underscore importeren koppelt de retry aan iets dat in een point release kan verdwijnen.</li>
+      <li>Een 429 trekt bij; een 403 (geblokkeerd credential) en 404 (model onbeschikbaar — precies hoe de Developer-API-doodlopende weg eruitzag) niet. Die opnieuw proberen verbrandt dezelfde wandklok drie keer en faalt identiek.</li>
+      <li>3 pogingen, lineaire backoff (~2s, 4s). <em>"Not tuned — reasoned"</em>, en met de eerlijke grens erbij: dit overleeft <strong>geen</strong> uur durende quota-uitputting door 30 gelijktijdige inzendingen. <em>"That needs quota, not patience."</em></li>
+      <li><code>run_tutor_with_recovery</code> <strong>gooit nooit</strong>: het is de top van een achtergrondthread waar een exception nergens heen kan. Elk einde wordt naar de gate geschreven, wat ook de enige plek is waar een student het kan zien.</li>
+    </ul>
+
+    <div class="theme">
+      <p>De ontstaansgeschiedenis staat in de code in plaats van weggepoetst: Main Task 36's <strong>eerste live run</strong> kreeg een 429, de thread stierf, en Gate A bleef eeuwig op <code>assessing</code> staan — <em>"een scherm dat zegt 'Socrates leest jullie checkpoint' terwijl er niets leest"</em>, zonder weg terug. Alleen een per-team docent-override kon eruit.</p>
+    </div>
+
+    <p><strong>De recovery-route weigert tenzij de status exact <code>failed</code> is</strong> (<code>server.py:215-241</code>). Zonder die guard zou het de verwijderde "roep de tutor op"-route zijn met een andere naam, en zou een team twee rapporten kunnen verzamelen voor één inzending.</p>
+
+    <p><strong>Bekend gat, vastgelegd:</strong> <code>daemon=True</code> — een server die middenin stopt doodt de thread zonder <code>failed</code> te schrijven. Acceptabel voor een handmatig gestarte devserver; expliciet <strong>niet</strong> acceptabel op Cloud Run, waar een container onder een team gerecycled kan worden. <em>"That deployment needs a durable queue, not a thread."</em></p>
+
+    <p><strong>LLM-degradatie</strong> — één uniform contract in drie modules (<code>wiki_quality_check/tools.py:205</code>, <code>prep_agent.py:662</code>, <code>quality_advisor/tools.py:259</code>): guard op <code>has_model_access()</code>, <code>genai.Client()</code> met <code>response_schema=&lt;pydantic&gt;</code>, en <code>except Exception</code> → print → <code>return None</code> → heuristische fallback. <strong>Gooit nooit naar buiten.</strong></p>
+
+    <p><strong><code>@log_action</code> slikt nooit</strong>: schrijft <code>outcome="error"</code> met <code>error_code</code>/<code>error_message</code> en <strong>re-raiset</strong> (<code>action_log.py:159-176</code>).</p>
+
+    <p><strong>HTTP-mapping:</strong> <code>PermissionError</code>→403, <code>TeamApiError|ValueError</code>→400, <code>KeyError</code>→400, catch-all→500 + traceback; <code>admin_api</code> voegt 401 en 429 toe.</p>
+
+    <h3>7.3 Logging &amp; observability</h3>
+
+    <p><strong>Applicatielogging</strong> = <code>agents/shared/action_log.py</code>, één decorator, het enige NFR-08-mechanisme.</p>
+    <ul>
+      <li>Wrapt <strong>sync of async</strong> transparant via <code>inspect.iscoroutinefunction</code> — ADK-tools zijn vaak async, hulpfuncties vaak sync, en de caller hoort dat niet te hoeven weten.</li>
+      <li>Schrijft naar het cohort-onafhankelijke <code>_system</code>-lakehouse: <code>action_log</code> is een devops-zorg, geen per-cohort pedagogische inhoud (TDD 2.3).</li>
+      <li><strong>Zes gereserveerde kwargs worden geconsumeerd vóór de aanroep</strong> (<code>correlation_id</code>, <code>actor_type</code>, <code>actor_id</code>, <code>target_type</code>, <code>target_id</code>, <code>lakehouse</code>) — dát is wat de decorator in staat stelt willekeurige bestaande functies te wrappen zonder hun signature aan te raken.</li>
+      <li>Niet-decoreren is telkens beredeneerd: leeszware paden (pollpanel, checkpoint-view) slaan het over omdat ze de cohort-overstijgende systeemtabel zouden overspoelen.</li>
+    </ul>
+
+    <div class="theme warn">
+      <p><strong>Bekende regressie, vastgelegd in plaats van weggepoetst</strong> (<code>team_api/service.py:519-525</code>): nu de <em>echte</em> agent de tools zelf aanroept en ADK geen hook biedt om context te injecteren, landen de rijen van de tutor <strong>ongecorreleerd</strong>. "Wie deed wat in één keer" is niet meer uit het log alleen te beantwoorden. Niets hangt er vandaag van af.</p>
+    </div>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Aanwezig</th><th>Afwezig</th></tr></thead>
+      <tbody>
+        <tr><td>Cloud Run startup/liveness probes op <code>/api/health</code></td><td><strong>Geen tracing</strong> (geen OTel, geen Cloud Trace, geen ADK-tracing)</td></tr>
+        <tr><td><code>PYTHONUNBUFFERED=1</code> zodat regels niet in een buffer sneuvelen bij container-kill</td><td>Geen structured logger, geen <code>logging</code>-module, geen request-ID's</td></tr>
+        <tr><td>stdout/stderr → Cloud Logging</td><td>Geen error reporting (Sentry / Cloud Error Reporting)</td></tr>
+        <tr><td>Post-deploy smoke test</td><td>Geen metrics, alerts of SLO's; geen frontend-RUM; <code>oe-frontend</code> heeft geen liveness probe</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Let op de terminologie: het woord <strong>trace</strong> betekent in deze codebase overal <em>domein</em>-traceerbaarheid (elk punt herleidbaar tot een echt event), nooit distributed tracing.</p>
+
+    <h3>7.4 Validatie</h3>
+
+    <p>Er is geen validatieframework en geen validatielaag. Validatie is verdeeld over drie plaatsen, elk met een eigen rol:</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Plaats</th><th>Rol</th></tr></thead>
+      <tbody>
+        <tr><td>Pydantic-modellen</td><td>Vorm en onmogelijkheid: <code>Literal</code>-enums, <code>extra="forbid"</code>, keyword-only args zonder default</td></tr>
+        <tr><td>SQL-predicaten</td><td>Beveiligingschecks die een caller kan vergeten: <code>find_access_grant</code> filtert <code>revoked_at IS NULL</code> <strong>in de SQL</strong>, met de reden erbij — <em>"a caller that forgets the check would accept a revoked credential, and that failure is both silent and in the dangerous direction"</em></td></tr>
+        <tr><td>Dispatch</td><td>Scope-claims (<code>authorize_scope</code>), één keer in plaats van in ~30 handlers</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>De frontend valideert <strong>niets</strong> op runtime: TypeScript-interfaces zijn compile-time en worden weggegooid. De interfaces spiegelen de Pydantic-schema's met de hand, en het commentaar erbij is eerlijk over wat dat waard is (<code>routes/team/api.ts:102-107</code>): <em>"TypeScript has no equivalent runtime <code>extra=forbid</code> check, so this interface being score-free is the client-side half of the same guarantee TDD 6.3 describes as fundamentally a SERVER-side one."</em></p>
+
+    <h3>7.5 Configuratiemanagement</h3>
+
+    <p><code>.env.example</code> declareert <strong>drie</strong> live variabelen en is verder vooral een beredeneerd document.</p>
+
+<pre><code>GOOGLE_GENAI_USE_VERTEXAI=true
+GOOGLE_CLOUD_PROJECT=operational-excellence-course
+GOOGLE_CLOUD_LOCATION=europe-west4</code></pre>
+
+    <div class="theme">
+      <h4>Vertex is verplicht, geen voorkeur</h4>
+      <p>Twee redenen (<code>.env.example:8-24</code>):</p>
+      <ol>
+        <li>Gemeten 16-07-2026: de Gemini Developer API antwoordt 404 <em>"no longer available to new users"</em> voor <strong>elk</strong> model dat <code>transparantie.json</code> noemt; op Vertex/europe-west4 antwoorden alle acht.</li>
+        <li>De sterkere reden: de Developer API is globaal en heeft geen regio om te pinnen — daar prompts doorheen routeren zou de onboardingbelofte (<code>opslag.regio</code>) ongeldig maken.</li>
+      </ol>
+      <p>Met een expliciete waarschuwing erbij: repareer een 404 <strong>niet</strong> met <code>gemini-3.x-flash</code> — die zijn global-only, en dat ruilt de regiobelofte in voor een modelnaam.</p>
+    </div>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Var</th><th>Soort</th><th>Waar gezet</th></tr></thead>
+      <tbody>
+        <tr><td><code>OE_LAKEHOUSE_ROOT</code></td><td>pad (54 leessites — de meest gelezen var)</td><td><code>cloudrun.yaml</code>, <code>conftest.py:42</code>, <code>playwright.config.ts:40</code></td></tr>
+        <tr><td><code>OE_DUCKLAKE_CATALOG_DSN</code></td><td><strong>secret</strong></td><td>Secret Manager → <code>oe-catalog-dsn</code></td></tr>
+        <tr><td><code>OE_DUCKLAKE_DATA_URI</code></td><td>GCS URI</td><td><code>cloudrun.yaml:103</code></td></tr>
+        <tr><td><code>DATABASE_URL</code></td><td><strong>secret</strong></td><td>→ <code>oe-database-url</code></td></tr>
+        <tr><td><code>OE_GCS_HMAC_KEY_ID</code> / <code>_SECRET</code></td><td><strong>secret</strong></td><td>zie discrepantie hieronder</td></tr>
+        <tr><td><code>SESSION_BACKEND</code></td><td><strong>de enige echte feature flag</strong> (<code>database</code> | default memory)</td><td><code>cloudrun.yaml:112</code></td></tr>
+        <tr><td><code>OE_*_ALLOWED_ORIGIN</code></td><td>CORS</td><td>post-deploy <code>services update</code></td></tr>
+        <tr><td><code>OE_TEST_PG_DSN</code></td><td>testflag: opt-in op Postgres-catalogtests</td><td>lokaal</td></tr>
+        <tr><td><code>VITE_TEAM_API_BASE</code> / <code>VITE_ADMIN_API_BASE</code></td><td><strong>build-time only</strong>, door Vite ingebakken</td><td><code>Dockerfile:88-91</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Secrets worden door Cloud Run bij containerstart uit Secret Manager opgelost; de workflow mapt alleen <strong>namen</strong> — waarden gaan nooit door CI heen.</p>
+
+    <div class="theme warn">
+      <p>⚠️ <strong>Discrepantie.</strong> <code>OE_GCS_HMAC_SECRET</code> verwijst naar secret <code>oe-gcs-hmac-<strong>value</strong>:latest</code> in de workflow (<code>:44</code>) maar naar <code>oe-gcs-hmac-<strong>secret</strong></code> in <code>cloudrun.yaml:126</code>. De workflow is wat daadwerkelijk deployt (<code>cloudrun.yaml</code> is declaratieve referentie), dus één van beide namen is stale. Uitzoeken vóór de volgende infrastructuurwijziging.</p>
+    </div>
+
+    <p><strong>Modelselectie is geen flag</strong> — dat is het hele punt van de SSOT.</p>
+  </section>
+
+  <!-- ============================ DEEL 8 ============================ -->
+  <section id="deel-8">
+    <h2 class="bds-part">Deel 8: De transparantie-SSOT</h2>
+
+    <p>Dit is het meest karakteristieke mechanisme in het systeem en verdient een eigen deel.</p>
+
+    <p><strong>Eén bestand, twee lezers.</strong> <code>data/compliance/transparantie.json</code>:</p>
+    <ul>
+      <li><strong>Python</strong> leest het via <code>compliance.config()</code> / <code>model_for(rol)</code> — 8 rollen, elk <code>{id, doel}</code>.</li>
+      <li><strong>TypeScript</strong> krijgt het via Vite's <code>define</code> als de compile-time constante <code>__TRANSPARANTIE__</code>, en <code>Transparantie.tsx</code> rendert <code>doel</code> woordelijk aan studenten.</li>
+    </ul>
+
+    <p>Daarom kan een model niet veranderen zonder dat de tekst die studenten lezen in dezelfde commit verandert.</p>
+
+    <p><strong>Rollen heten naar wat het model voor een student doet</strong>, niet naar de aanroepende module (<code>__init__.py:87-89</code>) — een rol hernoemen is een gebruikerszichtbare wijziging:</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Rol</th><th>Model</th><th>Consument</th></tr></thead>
+      <tbody>
+        <tr><td><code>socratische_tutor</code></td><td><code>gemini-2.5-flash</code></td><td><code>socratic_tutor</code></td></tr>
+        <tr><td><code>dashboard_query</code></td><td><code>gemini-2.5-flash</code></td><td><code>dashboard_query</code></td></tr>
+        <tr><td><code>assessment_prep</code></td><td><code>gemini-2.5-flash-lite</code></td><td><code>prep_agent</code></td></tr>
+        <tr><td><code>wiki_kwaliteit</code></td><td><code>gemini-2.5-flash-lite</code></td><td><code>wiki_quality_check</code></td></tr>
+        <tr><td><code>wiki_duplicaat_embedding</code></td><td><code>text-embedding-004</code></td><td><code>wiki_quality_check</code></td></tr>
+        <tr><td><code>kwaliteitsadviseur</code></td><td><code>gemini-2.5-flash</code></td><td><code>quality_advisor</code></td></tr>
+        <tr><td><code>kwaliteitsadviseur_rapport</code></td><td><code>gemini-2.5-flash-lite</code></td><td><code>quality_advisor</code></td></tr>
+        <tr><td><code>document_ingest</code></td><td><code>gemini-2.5-flash-lite</code></td><td><code>ingest_pdf</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <ul>
+      <li><strong><code>config()</code> gooit in plaats van te defaulten.</strong> Een ontbrekende SSOT mag niet stil een hardcoded model worden.</li>
+      <li><strong>Er is geen env-override.</strong> <code>GOOGLE_MODEL</code> is verwijderd (Main Task 30) omdat de onboardingtekst op buildtijd wordt ingebakken: een runtime-override kan hem alleen tot een leugen maken.</li>
+    </ul>
+
+    <div class="theme">
+      <h4>Eerlijkheid als schema-eis</h4>
+      <p>Het <code>_comment</code>-blok bovenaan de JSON bevat een expliciete notitie dat <code>leverancier.tier</code> de <strong>enige claim is die geen enkele test kan verifiëren</strong> (betaald-vs-gratis Gemini-tier woont in GCP-billing, niet in de repo) en dat <code>leverancier.training</code> volledig van die tier afhangt. De guard-test dringt er daarom alleen op aan dat de claim nooit verschijnt zonder de tier te noemen waarvan hij afhangt.</p>
+    </div>
+
+    <p>De 15 tests die dit bewaken staan in <a href="#deel-13">Deel 13.1</a>.</p>
+  </section>
+
+  <!-- ============================ DEEL 9 ============================ -->
+  <section id="deel-9">
+    <h2 class="bds-part">Deel 9: Servicecommunicatie</h2>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Grens</th><th>Protocol</th><th>Vorm</th></tr></thead>
+      <tbody>
+        <tr><td>SPA → API's</td><td>HTTPS/JSON, <code>Authorization: Bearer</code></td><td>Synchroon; absolute base-URL's (geen dev-proxy)</td></tr>
+        <tr><td>API → agent</td><td>In-process Python-aanroep</td><td>Synchroon, behalve de tutor: <strong>achtergrondthread + polling</strong></td></tr>
+        <tr><td>Agent → data</td><td>In-process, <code>smdl</code>-functies</td><td>Synchroon; één ATTACH per operatie</td></tr>
+        <tr><td>Systeem → wiki</td><td>Bestandssysteem, read-only</td><td><code>OE_WIKI_ROOT</code>; <code>query_wiki</code> geeft <code>[]</code> bij een fout pad in plaats van te gooien</td></tr>
+        <tr><td>Systeem → Vertex</td><td>google-genai SDK over ADC</td><td>Synchroon, met retry</td></tr>
+        <tr><td>Systeem → GoatCounter</td><td>HTTPS, batch-rollup</td><td>Buiten het requestpad</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>Er is geen API-versionering en geen service discovery.</strong> URL's komen uit build-time env-vars (frontend) en post-deploy <code>describe</code> (CI). Voor een systeem met één frontend en twee backends die samen deployen is dat de proportionele keuze — maar het is ook waarom de deployvolgorde vastligt (zie <a href="#deel-10">Deel 10</a>).</p>
+
+    <p><strong>Sessies:</strong> de ADK-sessiestore (<code>DatabaseSessionService</code> op Postgres in productie) is <strong>niet</strong> waar de duurzame staat leeft. Die leeft in OKF-bundels en DuckLake. Live tutorruns gebruiken zelfs geen van beide sessiestores: elk request bouwt een <strong>verse <code>InMemoryRunner</code></strong>, omdat het protocol single-shot is en een gedeelde module-level runner op een <code>ThreadingHTTPServer</code> twee gelijktijdige teams sessiestaat zou laten delen (<code>service.py:468-479</code>).</p>
+  </section>
+
+  <!-- ============================ DEEL 10 ============================ -->
+  <section id="deel-10">
+    <h2 class="bds-part">Deel 10: Deployment-architectuur</h2>
+
+    <p><strong>Eén Dockerfile, drie images</strong>, geselecteerd met een <code>SERVICE</code> build-arg:</p>
+
+    <figure>
+      <div class="diagram">
+        <div class="mermaid"><pre class="mmd-src">graph LR
+    pb["python-base&lt;br/&gt;python:3.12-slim&lt;br/&gt;pip install ."] --> t["team_api&lt;br/&gt;python -m team_api.server"]
+    pb --> a["admin_api&lt;br/&gt;python -m admin_api.server"]
+    fb["frontend-build&lt;br/&gt;node:22-slim&lt;br/&gt;npm ci + npm run build"] --> f["frontend&lt;br/&gt;python -m infra.static_server"]
+    t --> final["FROM SERVICE AS final&lt;br/&gt;(build-arg selecteert de stage)"]
+    a --> final
+    f --> final</pre></div>
+      </div>
+      <figcaption>Eén multi-stage Dockerfile levert drie images; de <code>SERVICE</code> build-arg kiest welke stage <code>final</code> wordt.</figcaption>
+    </figure>
+
+    <p><strong>Drie Cloud Run-services</strong>, alle in <code>europe-west4</code>: <code>oe-team-api</code> (maxScale 4, concurrency 8, timeout 300), <code>oe-admin-api</code> (maxScale 2), <code>oe-frontend</code> (maxScale 4, concurrency 80). De regio staat op drie plaatsen en wordt door een guard-test tegen de SSOT gehouden.</p>
+
+    <h3>10.1 De state-driedeling</h3>
+
+    <p>Het meest beredeneerde ontwerpbesluit in de repo (<code>infra/cloudrun.yaml:14-59</code>):</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Staat</th><th>Waar</th><th>Waarom niet anders</th></tr></thead>
+      <tbody>
+        <tr><td>DuckLake-catalog</td><td><strong>Cloud SQL Postgres</strong> (unix socket)</td><td>GCS FUSE heeft geen file locking → last-write-wins. <strong>Gemeten: 3 processen / 24 writes → file-catalog 9 ok, 15 IOException; Postgres 24/24</strong></td></tr>
+        <tr><td>DuckLake-data (Parquet)</td><td><strong>GCS</strong> via httpfs</td><td>Immutable, uniek benoemd, heeft nooit een lock nodig</td></tr>
+        <tr><td>OKF-bundel (<code>*.md</code>)</td><td><strong>gcsfuse-volume</strong> op <code>/app/lakehouse</code></td><td>Writes zijn write-once of hele-bestand-overschrijven</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>De ene uitzondering, <code>Bundle.append_log</code>, is naar de <code>bundle_log</code>-DuckLake-tabel verhuisd omdat objectopslag niet kan appenden: het herschrijft het hele object, dus gelijktijdige schrijvers gooiden elkaars regels stil weg uit wat het TDD <em>"letterlijk de FR-09-geschiedenis-export"</em> noemt.</p>
+
+    <p>Zonder de mount sterven inzendingen bij een redeploy — live bewezen: <code>submit → has_submission true → nieuwe revisie → has_submission false</code>.</p>
+
+    <h3>10.2 De deployvolgorde is een harde constraint</h3>
+
+    <p>Vite bakt <code>import.meta.env.VITE_*</code> op <strong>buildtijd</strong> in. Dus:</p>
+
+<pre><code>pytest → auth (WIF) → build+deploy team_api → build+deploy admin_api
+       → describe --format='value(status.url)'  ← lees de echte URL's terug
+       → build frontend --build-arg VITE_*_BASE → deploy oe-frontend
+       → services update: zet CORS-origin op de frontend-URL   ← de omgekeerde afhankelijkheid
+       → smoke_test.py</code></pre>
+
+    <p>De omgekeerde afhankelijkheid (API's hebben de frontend-origin nodig voor CORS) wordt daarná gesloten met een <code>services update</code>-stap. Dit is niet te vereenvoudigen zolang Vite build-time inlining doet.</p>
+
+    <p><strong><code>linux/amd64</code> is verplicht</strong> — arm64-images van Apple Silicon worden door Cloud Run stil geweigerd. <code>infra/cloudbuild.yaml</code> bestaat uitsluitend als native-amd64-ontsnappingsluik voor lokale builds; CI gebruikt het niet.</p>
+
+    <h3>10.3 Authenticatiehouding — tijdelijk, en zo benoemd</h3>
+
+    <p>Beide API's staan op <code>--no-allow-unauthenticated</code> als fail-safe voor het venster waarin ze geen eigen auth hadden — <code>admin_api</code> serveert studentdossiers. Zodra <code>shared/identity.py</code> elke route dekt, gaan ze naar <code>--allow-unauthenticated</code>: Cloud Run IAM is de verkeerde laag, want de browser kan geen Google identity token sturen. Vastgelegd op twee plaatsen (<code>deploy-gate-system.yml:110-119</code>, <code>cloudrun.yaml:157-161</code>).</p>
+  </section>
+
+  <!-- ============================ DEEL 11 ============================ -->
+  <section id="deel-11">
+    <h2 class="bds-part">Deel 11: Frontend-architectuur</h2>
+
+    <h3>11.1 Navigatie: één registry, drie effecten</h3>
+
+    <p><code>frontend/src/nav-config.ts</code> is de SSOT voor navigatie. Eén <code>NavItem</code> toevoegen registreert tegelijk de nav-entry, de zone-toewijzing én het <code>HanHeader</code>-contextlabel — die convergentie is de bestaansreden van het bestand.</p>
+
+<pre><code>type Zone = 'student' | 'docent'          // admin is GEEN zone; het is een docent-NavItem
+interface NavItem { zone; path; label; match(pathname): boolean }</code></pre>
+
+    <p><code>match()</code> bestaat omdat <code>path</code> een concrete klikbare href met een demo-team-id is (<code>/team/team-07/wiki</code>) en dus niet tegelijk als patroon voor willekeurige team-id's kan dienen.</p>
+
+    <div class="theme warn">
+      <p><strong>Zone-scoping is expliciet cosmetisch.</strong> <code>zoneOf()</code> leest alleen <code>location.pathname</code>. De module zegt het zelf (<code>nav-config.ts:9-14</code>): <em>"Nothing here is a route guard — every route stays reachable by direct URL regardless of zone."</em></p>
+    </div>
+
+    <p>De enige client-side rolfeit komt uit <code>GET /api/whoami</code> en wordt op precies twee plaatsen gebruikt: <code>Toegang.tsx</code> (een <code>switch</code> met expliciete "Onbekende rol"-default, omdat een if/else een admin stil het studentportaal in zou sturen) en <code>OwnTeamGuard</code>.</p>
+
+    <p><strong><code>OwnTeamGuard</code> is ondanks zijn naam geen security guard.</strong> De servers leiden het team af uit het credential, dus <code>:teamId</code> is decoratief. Maar een ander team-id intypen renderde <em>jouw</em> data onder <em>hun</em> naam — <em>"team-02 staat nog aan het begin"</em>, wat in werkelijkheid team-01's data was, verkeerd gelabeld. Er lekte niets; de pagina loog alleen. De guard corrigeert de URL naar het eigen team. Bij een fetch-fout valt hij door naar de child-route, zodat de échte 401/403 met zijn specifieke boodschap bovenkomt.</p>
+
+    <h3>11.2 De "geen cijfer"-garantie, client-side</h3>
+
+    <p>Drie lagen, en de eerlijkheid over hun waarde is het interessantst:</p>
+    <ol>
+      <li><strong>Structureel:</strong> <code>TeamCheckpointView</code> heeft geen score/grade/verdict-veld. Hetzelfde geldt voor <code>CohortPositions</code>, <code>TutorHistoryView</code>, en <code>ActivePoll</code> (die bewust geen counts draagt — aggregaten komen alleen via <code>admin/api.ts</code>).</li>
+      <li><strong>Presentationeel:</strong> <code>NoGradeFooter</code> maakt de regel <em>zichtbaar</em> in plaats van alleen afgedwongen: <em>"Geen cijfer hier: alleen open of dicht. Het cijfer valt bij het eindgesprek."</em></li>
+      <li><strong>E2E:</strong> <code>student-portal.spec.ts:81</code> assert dat geen enkele response-body matcht op <code>/rubric[_\s]?score/i</code>.</li>
+    </ol>
+
+    <p><strong>Waarom de client niet de garantie is:</strong> een <code>type</code> verdampt bij de build, een <code>fetch</code> in DevTools omzeilt elke regel hierboven, en <code>zoneOf()</code> gate't niets. De echte afdwinging is <code>agents/team_api/schemas.py</code> + <code>test_team_api_contract.py</code>. De bijdrage van de frontend is dat hij <em>niet per ongeluk</em> een score kan renderen die hij nooit gekregen heeft.</p>
+
+    <h3>11.3 Design system — één SSOT, met een eerlijk voorbehoud</h3>
+
+    <p><code>styles/han-huisstijl-tokens.css</code> (47 <code>--han-*</code>-properties op <code>:root</code>) is de app-brede bron: <em>"every literal color/shadow value used anywhere in this frontend lives HERE and only here."</em> <code>index.css</code> is de indirectielaag (<code>--accent: var(--han-pink)</code>). De <code>prefers-color-scheme: dark</code>-block bestaat maar resolvet naar dezelfde lichte tokens — de HAN-huisstijl heeft geen darkvariant.</p>
+
+    <p>Twee gelabelde secties: <strong>MOCKUP</strong>-tokens (hex-voor-hex overgenomen, met per element een bronvermelding — <code>--han-gate-pending: #e5007d</code>, expliciet roze, <em>nooit</em> amber) en <strong>EXTRAPOLATED</strong>-tokens voor toestanden die de statische mockup nooit toont (<code>--han-override</code>, <code>--han-danger</code>), elk apart beredeneerd.</p>
+
+    <div class="theme warn">
+      <h4>Het voorbehoud: er zijn twee paletten</h4>
+      <p><code>styles/studentportaal-palette.css</code> implementeert een <em>ander</em> mockup (brandroze <code>#e50056</code>, Archivo + Public Sans). In plaats van <code>:root</code> te overschrijven en elk reeds opgeleverd scherm stil te herthemen, zijn deze <code>--sp-*</code>-tokens <strong>gescoped aan een <code>.studentportaal</code>-wrapperklasse</strong>, alleen toegepast door <code>WikiBrowser</code>, <code>TutorHistory</code> en <code>ReviewRingStatus</code>. Het bestand stelt expliciet dat unificatie een openstaande beslissing is die het niet oplost.</p>
+      <p>Dus: <code>han-huisstijl-tokens.css</code> is de app-brede SSOT; <code>studentportaal-palette.css</code> is een bewust parallel, klasse-gescoped tweede systeem.</p>
+    </div>
+  </section>
+
+  <!-- ============================ DEEL 12 ============================ -->
+  <section id="deel-12">
+    <h2 class="bds-part">Deel 12: Testarchitectuur</h2>
+
+    <h3>12.1 Lagen</h3>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Laag</th><th>Waar</th><th>Karakter</th></tr></thead>
+      <tbody>
+        <tr><td>Data-unit</td><td><code>data/tests/</code> (6 modules, 1364 regels)</td><td>Hermetisch: echte DuckDB-catalogs op schijf, <strong>echte <code>subprocess</code></strong> voor elke concurrency-claim, <strong>echte wheel-builds</strong> voor elke packaging-claim</td></tr>
+        <tr><td>Agent-unit/component</td><td><code>agents/tests/</code> (25 bestanden, ~380 tests)</td><td>Conventie: <em>"test the logic, not the transport"</em> — roep <code>service</code>/<code>routes</code>/tools direct aan, in-process</td></tr>
+        <tr><td>Agent-eval</td><td>4 <code>*.evalset.json</code> naast hun agent</td><td>ADK <code>AgentEvaluator</code>, marker <code>eval</code></td></tr>
+        <tr><td>E2E</td><td><code>e2e/</code> (5 specs, 24 tests)</td><td>Echte SPA, echte servers, echt DuckLake, echt model; alleen de data is wegwerp</td></tr>
+        <tr><td>Smoke</td><td><code>infra/smoke_test.py</code></td><td>Stdlib-only, tegen de gedeployde URL's, in CI</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>Twee uitzonderingen op de "test de logica, niet het transport"-regel, en beide zijn beredeneerd:</strong> <code>test_team_api_auth.py</code> draait een <strong>echte</strong> HTTP-server, want daar <em>ís</em> de logica het transport (CORS-headers, Bearer-parsing). <code>test_admin_server.py</code> doet juist het omgekeerde: het test <code>_safe_upload_filename</code> en <code>_resolve_allowed_origin</code> als pure functies, zonder socket.</p>
+
+    <h3>12.2 Hermeticiteit: de <code>conftest.py</code> die een bug repareert</h3>
+
+<pre><code>load_dotenv()                                              # :38
+os.environ["OE_LAKEHOUSE_ROOT"] = tempfile.mkdtemp(...)    # :40-42 — vóór elke agent-import</code></pre>
+
+    <p>Waarom monkeypatchen niet kan: <code>admin_api.routes</code>-handlers nemen <code>root: Path = LAKE_ROOT</code> als keyword-<strong>default</strong>, en Python bindt defaults op importtijd. <code>LAKE_ROOT</code> default naar het <em>relatieve</em> <code>"lakehouse"</code> — het dev-lakehouse van de ontwikkelaar. Gevonden op de harde manier: <code>test_admin_api_auth.py</code> liet een <code>team-99</code>-roster achter in de echte <code>lakehouse/</code>.</p>
+
+    <p>Dit is niet alleen een testdetail. <strong>Het is de reden om keyword-defaults als configuratiemechanisme te wantrouwen</strong> (zie <a href="#deel-4">Deel 4</a>).</p>
+
+    <h3>12.3 De <code>no_model_access</code>-fixture — de scherpste testles in de repo</h3>
+
+<pre><code>@pytest.fixture
+def no_model_access(monkeypatch):
+    """Tests of a fallback must CAUSE the condition they test, not hope for it."""</code></pre>
+
+    <div class="theme">
+      <p>Meerdere tests asserteerden <code>extraction_method == "heuristic_fallback"</code> onder een comment <em>"no API key in this environment"</em>, en slaagden <strong>jarenlang</strong> — eerst omdat er geen key geconfigureerd was, daarna omdat de Developer API elk model 404'de en de LLM-tak toch doorviel. Op het moment dat Vertex de modellen bereikbaar maakte (Task 33), faalden ze: <strong>ze hadden op een kapotte omgeving geassert, niet op gedrag.</strong></p>
+    </div>
+
+    <h3>12.4 <code>ScriptedLlm</code> — en de kosten ervan, eerlijk benoemd</h3>
+
+    <p><code>socratic_tutor/testing.py:119-149</code> subclasst <code>BaseLlm</code> en overschrijft alleen <code>generate_content_async</code>. Hij is <strong>adaptief, geen positionele wachtrij</strong>: elke stap beslist zelf of hij nog van toepassing is door te kijken welke function-call-namen al in <code>llm_request.contents</code> staan — daardoor overleeft hij ADK's echte interne patroon (coördinator-overdracht, "legacy sub-agent picker", herhaalde beurten) zonder dat vooraf te kennen.</p>
+
+    <p>Hij drijft de <strong>echte</strong> ADK-machinerie: echte tools, echte bestandslezingen tegen de zusterwiki, echte DuckLake-writes, echte tweelaagse delegatie. Alleen de next-token-aanroep is gestubd.</p>
+
+    <p>De moduleheader benoemt de prijs zonder omhaal: een gescript model produceert antwoorden die er al goed-gefundeerd uitzien, dus een bug in de gescripte stap is onzichtbaar — <em>"exactly how the tutor went 33 tasks without noticing it could not read the submission it was judging."</em></p>
+
+    <h3>12.5 E2E: waarom seeden een script is</h3>
+
+    <p><code>e2e/seed.py</code> bouwt de wereld elke run vanaf nul. Niet omdat een fixture lelijk zou zijn, maar omdat <strong>de credentials niet te berekenen zijn</strong>: <code>identity.new_credential()</code> is <code>secrets.token_urlsafe(32)</code>, opgeslagen als kale SHA-256 — geen derivatie, geen lookup op naam. Een geldige link kan alleen <strong>gemint</strong> worden, precies één keer. Dus de suite komt binnen zoals een echte klas dat doet: iemand draait de import.</p>
+
+    <p>De volgorde is gedwongen, niet verkozen: <code>roster-import</code> eist een docent-credential, en credentials komen alleen uit een import — dus wordt de eerste admin <strong>buiten HTTP om</strong> aangemaakt (Task 32.5), dan de docenten, dan de roster (want <code>commit_import</code> weigert onbekende docenten — geschreven nadat een typfout van één letter een vreemde een werkende link naar een hele klas gaf).</p>
+
+    <p>Seeden gebeurt in het <strong>npm-script</strong>, vóórdat Playwright de config leest — niet in <code>globalSetup</code>, want <code>team_api</code> bindt zijn lakehouse-root op importtijd. Dezelfde defectklasse die <code>conftest.py</code> repareert.</p>
+
+    <div class="theme">
+      <h4>Wat de gate-test bewijst</h4>
+      <p>Niet <em>wat</em> Socrates zegt — dat geeft een test die rood wordt als een model een synoniem kiest. Wel dat hij <strong>hun inzending gelezen heeft</strong>: van zes distinctieve termen uit <em>hun</em> tekst moeten er minstens twee terugkomen. Parafrase overleeft dat; een tutor die niet leest heeft geen route naar die woorden. Groen betekent <em>"hij heeft ze gelezen"</em>, niet <em>"hij onderwijst goed"</em> — daarom hangt het transcript aan het rapport; dat oordeel is van een mens.</p>
+    </div>
+
+    <p><strong>De bewust rode test</strong> (<code>instructor.spec.ts:37-39</code>): <code>test.fail()</code>, geen <code>skip</code>, op het dashboard — dat toont <code>MOCK_DASHBOARD</code> en zégt dat op het scherm. <code>test.fail()</code> zodat <strong>de dag dat iemand het repareert, de test rood wordt en de markering de bug niet kan overleven.</strong></p>
+
+    <p>Verder: <code>retries: 0</code> (<em>"a flaky E2E is a finding, not a nuisance to paper over"</em>), <code>workers: 1</code> (één lakehouse, de suite schrijft echt), <code>screenshot: 'on'</code> (niet only-on-failure — het rapport wordt gelezen door een mens die het systeem wil zíen werken).</p>
+  </section>
+
+  <!-- ============================ DEEL 13 ============================ -->
+  <section id="deel-13">
+    <h2 class="bds-part">Deel 13: Architecture governance</h2>
+
+    <h3>13.1 Guard-tests</h3>
+
+    <p>Dit is het primaire mechanisme. Elke test bewaakt één invariant en maakt CI rood.</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Test</th><th>Invariant</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_no_model_name_lives_outside_the_ssot</code></td><td><strong>De dragende.</strong> Geen model-id buiten <code>transparantie.json</code> — ook niet in proza. Scant <code>.py/.ts/.tsx/.json/.yaml/.toml</code> over de échte boom; <code>MODEL_PATTERN</code> is bewust breed (moet een model vangen dat nog niet bedacht is); allowlist = 4 entries, elk met reden</td></tr>
+        <tr><td><code>test_every_ssot_role_is_actually_used</code></td><td>Geen decoratieve rollen. Niet hypothetisch: <code>quality_advisor</code> importeerde ooit de <em>tutor</em>-rol, dus de <code>kwaliteitsadviseur</code>-entry die studenten lazen configureerde niets — en omdat beide id's gelijk waren, zag het er goed uit</td></tr>
+        <tr><td><code>test_no_floating_model_aliases</code></td><td>Geen <code>-latest</code>/<code>-preview</code>/<code>-exp</code>. Je kunt een student niet naar waarheid vertellen welk model zijn checkpoint las als het antwoord kan veranderen zonder commit</td></tr>
+        <tr><td><code>test_deployment_region_matches_what_students_are_told</code></td><td><code>infra/</code>-manifests noemen <code>storage_region()</code> en géén andere regio</td></tr>
+        <tr><td><code>test_the_env_override_stays_gone</code></td><td><code>GOOGLE_MODEL</code> wordt nergens gelezen of gezet — matcht <em>gebruik</em>, niet <em>vermelding</em>, zodat de docstrings die de verwijdering uitleggen blijven leven</td></tr>
+        <tr><td><code>test_vendor_data_use_is_stated_and_tier_qualified</code></td><td>De "Google traint niet op je input"-claim mag nooit verschijnen zonder de tier te noemen waarvan hij afhangt</td></tr>
+        <tr><td><code>test_no_module_decides_model_access_by_reading_a_credential_itself</code></td><td>Alles via <code>has_model_access()</code></td></tr>
+        <tr><td><code>test_retention_promise_names_its_enforcement</code></td><td><code>bewaartermijn.{termijn,toelichting,handhaving}</code> niet-leeg</td></tr>
+        <tr><td><code>test_packaging.py</code></td><td>Elk niet-<code>.py</code>-bestand dat op runtime gelezen wordt, zit in de <strong>echt gebouwde wheel</strong>. Bouwt een wheel uit een schone kopie: lokaal is de package editable, dus elke import lost op in de broncode-boom en een import-check slaagt terwijl hij een kapotte image shipt. <em>"Only the artifact tells the truth"</em></td></tr>
+        <tr><td><code>test_runtime_data_files_still_exist</code></td><td><strong>Guard de guard.</strong> De paden in <code>RUNTIME_DATA_FILES</code> bestaan nog — anders assert de test hierboven op een pad dat niemand leest: groen en betekenisloos</td></tr>
+        <tr><td><code>test_wiki_no_week_numbers.py</code></td><td>De wiki noemt geen weeknummers. Het rooster stond in ~25 handgekopieerde plaatsen en <strong>13 van 19 hoofdstukken spraken elkaar tegen</strong>. De fix was deduplicatie, niet synchronisatie: <em>"Wat de wiki niet zegt, kan de wiki niet tegenspreken"</em></td></tr>
+        <tr><td><code>test_ducklake_catalog.py</code></td><td>Twee processen die hetzelfde lakehouse schrijven behouden op Postgres al hun writes, wat de file-catalog aantoonbaar niet doet</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>De conventie voor een guard-test</strong> (<code>test_transparantie_ssot.py:20-22</code>): scan de echte boom, noem het overtredende pad in de faalboodschap, houd de allowlist expliciet en kort genoeg om te lezen.</p>
+
+    <p>En de reden dat de weeknummer- en modelnaam-guards <strong>Python-tests zijn die <code>.tsx</code> grep'pen</strong>: de frontend heeft geen testrunner, terwijl <code>python -m pytest -q</code> al de deploy-gate is. Eén test, één taal, de bestaande gate.</p>
+
+    <h3>13.2 De hookify-regels — bewust adviserend</h3>
+
+    <p>Twee regels, in beide repo's (de <code>oe-gate-system</code>-kopieën zijn supersets):</p>
+    <ul>
+      <li><strong><code>hookify.require-tests-before-commit.local.md</code></strong> — <code>event: bash</code>, <code>pattern: git\s+(commit|push)</code>, <code>action: warn</code>. Vraagt vier bevestigingen: welke main task? is de test gate <strong>daadwerkelijk gedraaid en geslaagd in dit gesprek</strong>? altijd <code>.venv/bin/python</code>? buildplan-vinkje gezet?</li>
+      <li><strong><code>hookify.check-test-gate-on-stop.local.md</code></strong> — <code>event: stop</code>. Checklist: subtasks af, gate geslaagd (automatisch <strong>én</strong> mens-testbaar artefact), gecommit <strong>en gepusht</strong> naar <code>origin/main</code> van <code>oe-gate-system</code>, vinkje <code>- [x]</code>, en de volgordeafspraak.</li>
+    </ul>
+
+    <div class="theme">
+      <p>De slotparagraaf van de eerste is het eerlijkste stuk governance in het project: <strong>de waarschuwing blokkeert niet.</strong> Hookify kan het commando herkennen maar geen testresultaten of exitcodes verifiëren; de verantwoordelijkheid ligt bij de uitvoerende agent. En de tweede sluit af met: <em>"verzin geen afgeronde status."</em></p>
+    </div>
+
+    <h3>13.3 De proceslus</h3>
+
+<pre><code>implementeer main task → draai de test gate (automatisch + mens-testbaar artefact)
+                       → commit → push → vink het buildplan af → pas dán de volgende task</code></pre>
+
+    <p>Beide hookify-regels zijn <code>warn</code>-only duwtjes op precies de twee momenten waarop deze lus het makkelijkst wordt overgeslagen. CI dwingt de automatische helft daarna mechanisch af; de smoke-test dwingt hem af tegen de werkelijkheid.</p>
+
+    <p><strong>Een "test gate"</strong> is dus de eenheid van <em>klaar</em>: een tweeledige verplichting (groene tests <strong>plus</strong> iets dat een mens kan dráaien en zien werken), waarvan beide helften daadwerkelijk uitgevoerd moeten zijn.</p>
+  </section>
+
+  <!-- ============================ DEEL 14 ============================ -->
+  <section id="deel-14">
+    <h2 class="bds-part">Deel 14: Blueprint voor nieuw werk</h2>
+
+    <h3>14.1 Startpunten per soort feature</h3>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Ik wil…</th><th>Begin bij</th><th>Vergeet niet</th></tr></thead>
+      <tbody>
+        <tr><td>Een nieuw OKF-concepttype</td><td><code>data/smdl/okf.py</code>: model + <code>CONCEPT_TYPES</code>-registry</td><td><code>type</code> als <code>Literal</code> met default; een round-trip-test in de tier die het TDD toewijst</td></tr>
+        <tr><td>Een nieuwe DuckLake-tabel</td><td><code>data/smdl/ducklake.py</code>: rowmodel + <code>write_x</code>/<code>query_x</code>-paar</td><td><strong>Geen kolom toevoegen aan een bestaande tabel</strong> — de INSERT is positioneel. Nullable-kolommen <code>.astype("string")</code></td></tr>
+        <tr><td>Een nieuwe agent</td><td>Kopieer de <code>socratic_tutor</code>-vorm</td><td><code>model_for("&lt;nieuwe_rol&gt;")</code> + de rol in <code>transparantie.json</code> mét <code>doel</code>, anders faalt de guard</td></tr>
+        <tr><td>Een nieuwe tool</td><td>Gewone functie met typehints + Google-style docstring</td><td><code>@log_action(layer=...)</code> tenzij het een leeszwaar pad is (en schrijf de reden op)</td></tr>
+        <tr><td>Een nieuwe route</td><td>Één entry in de juiste routetabel</td><td><code>team_api</code>: automatisch authenticated. <code>admin_api</code>: overweeg <code>_ADMIN_ONLY_ROUTES</code> — de cohort-brede early return maakt niet-genoemde routes stil bereikbaar</td></tr>
+        <tr><td>Een nieuwe view</td><td>Component + <code>&lt;Route&gt;</code> in <code>App.tsx</code> + <code>NavItem</code> in <code>nav-config.ts</code></td><td>Onder <code>/team/:teamId</code>: statische segmenten vóór <code>:stage</code>. Nieuwe <code>is&lt;X&gt;Path</code>-regex <strong>én</strong> uitsluiten in <code>isTeamPath</code></td></tr>
+        <tr><td>Een runtime-datafile</td><td>Zet hem in <code>[tool.setuptools.package-data]</code></td><td>Voeg hem toe aan <code>RUNTIME_DATA_FILES</code> in <code>test_packaging.py</code>, anders shipt de container zonder</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>14.2 Templates</h3>
+
+    <p><strong>Een agent-tool die deterministische data leest:</strong></p>
+
+<pre><code>@log_action(layer="agentic")
+def read_something(team_id: str, stage: str) -&gt; dict:
+    """One-line summary ADK will show the model.
+
+    Args:
+        team_id: ...
+        stage: One of direct|design|deliver|develop.
+
+    Returns:
+        A dict with ... -- never a fabricated value; every number here
+        comes from &lt;table&gt;#&lt;snapshot&gt;.
+    """
+    lake = Lakehouse.for_team(_lakehouse_root(), team_id, cohort=...)
+    result = run_query(lake, table="...", sql_template="SELECT ... FROM {table_ref} WHERE ...")
+    return {"rows": result.rows, "source_ref": f"{result.table}#{result.snapshot}"}</code></pre>
+
+    <p><strong>Een schema dat een verboden waarde onmogelijk maakt:</strong></p>
+
+<pre><code>class TeamFacingThing(BaseModel):
+    model_config = ConfigDict(extra="forbid")   # dit is de garantie, niet de docstring
+    questions: list[str]
+    # geen score-, grade- of verdict-veld: er is geen plek waar het heen kan</code></pre>
+
+    <h3>14.3 Veelgemaakte fouten (uit de geschiedenis van dit project)</h3>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Fout</th><th>Wat er gebeurt</th></tr></thead>
+      <tbody>
+        <tr><td>Een architecturale regel in een docstring zetten in plaats van in een test</td><td><code>shared/models.py</code> was stil onwaar in 7 van de 9 call sites, projectbreed, voor de hele looptijd</td></tr>
+        <tr><td>Een fallback testen zonder de conditie te <em>veroorzaken</em></td><td>Tests slagen jarenlang op een kapotte omgeving en breken op het moment dat de omgeving gerepareerd wordt</td></tr>
+        <tr><td>Een kolom toevoegen aan een bestaande DuckLake-tabel</td><td>Elke write tegen een bestaand lakehouse breekt; de INSERT is positioneel</td></tr>
+        <tr><td><code>pip install</code> zonder venv</td><td>Breekt andere projecten op dezelfde machine (gebeurd tijdens Task 0)</td></tr>
+        <tr><td>Een modelnaam ergens anders hardcoden — ook in commentaar</td><td>De SSOT-guard maakt CI rood, en terecht: de onboardingtekst zou een leugen worden</td></tr>
+        <tr><td>Een 404 op Vertex "repareren" met een global-only model</td><td>Ruilt de <code>europe-west4</code>-belofte in voor een modelnaam</td></tr>
+        <tr><td>Aannemen dat de agent iets gedaan heeft omdat hij dat zegt</td><td><em>"An LLM can end its turn having written nothing"</em> — verifieer het lakehouse</td></tr>
+        <tr><td><code>Identity.is_instructor</code> verbreden zodat admins erin passen</td><td>Geeft admins stil élke check, inclusief de nog niet geschreven checks</td></tr>
+        <tr><td>Vertrouwen op een lokale <code>pip install .</code>-check voor packaging</td><td><code>build/</code> en <code>*.egg-info/SOURCES.txt</code> maken elke wheel compleet, ongeacht wat pyproject declareert</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============================ DEEL 15 ============================ -->
+  <section id="deel-15">
+    <h2 class="bds-part">Deel 15: Drift — waar code en TDD uiteenlopen</h2>
+
+    <p>Deze bevindingen zijn de eigenlijke opbrengst van een blueprint-exercitie. Geen ervan is acuut; alle verdienen een besluit.</p>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th style="width:36px">#</th><th>Bevinding</th><th style="width:140px">Ernst</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>De bewaartermijn-belofte heeft geen mechanisme — bekend en ingepland.</strong> <code>transparantie.json:120</code> belooft handhaving via <em>"een resetknop in het beheerscherm (of <code>python -m smdl.cli purge --cohort &lt;cohort&gt;</code>)"</em>. <strong>Geen van beide bestaat</strong> (geverifieerd: <code>purge</code> komt alleen voor in de belofte zelf en in frontendtekst die ernaar verwijst; <code>cli.py</code> registreert alleen <code>inspect</code>; er is geen reset-route in <code>admin_api</code>). De guard-test checkt alleen dat <code>handhaving</code> <strong>niet-leeg</strong> is, niet dat het genoemde mechanisme bestaat — precies de faalwijze waar de docstring van die test zelf voor waarschuwt. <strong>Dit is geen onontdekt gat:</strong> buildplan Main Task 31 (golf 22, alle subtasks nog <code>- [ ]</code>) beschrijft het in dezelfde bewoordingen en sluit het. Vermeld hier omdat de belofte nú live staat en de guard hem nú niet dekt</td>
+          <td><span class="sev hoog">Hoog van impact</span> <span class="sev laag">maar bekend</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Secret-naam-discrepantie.</strong> <code>OE_GCS_HMAC_SECRET</code> → <code>oe-gcs-hmac-<strong>value</strong></code> (workflow) vs <code>oe-gcs-hmac-<strong>secret</strong></code> (<code>cloudrun.yaml</code>). De workflow deployt; één naam is stale</td>
+          <td><span class="sev middel">Middel</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong><code>action_log.actor_id</code> heeft geen validatie.</strong> De "nooit een voornaam"-regel staat in twee docstrings die elkaar naar elkaar doorverwijzen, en wordt door niets afgedwongen. Een <code>Literal</code>-type of een assert in <code>_pop_context</code> zou dit sluiten</td>
+          <td><span class="sev middel">Middel</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong><code>uploaded_tables</code> accepteert willekeurige kolommen</strong> (<code>extra="allow"</code>). Een docent die een sheet met <code>studentnummer</code> of <code>email</code> uploadt, schrijft dat ongevalideerd in het lakehouse. Alleen naamcollisies worden gecheckt. Het gat in de privacy-invariant met het grootste oppervlak</td>
+          <td><span class="sev middel">Middel</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Twee paletten in de frontend.</strong> <code>han-huisstijl-tokens.css</code> (<code>#e5007d</code>, Arial) en <code>studentportaal-palette.css</code> (<code>#e50056</code>, Archivo). Bewust klasse-gescoped in plaats van geünificeerd; het bestand zegt zelf dat unificatie een open beslissing is</td>
+          <td><span class="sev laag">Laag</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Stale comment:</strong> <code>ducklake.py:334-340</code> spreekt van <em>"the seven named DuckLake tables"</em>; het zijn er 16</td>
+          <td><span class="sev laag">Cosmetisch</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Correlatie-regressie:</strong> tutor-tool-rijen landen ongecorreleerd sinds de echte agent de tools zelf aanroept; ADK biedt geen injectiehook. Vastgelegd in <code>service.py:519-525</code>; niets hangt er vandaag van af</td>
+          <td><span class="sev laag">Laag, met opzet</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><strong><code>test_socratic_tutor_eval.py</code> draait niet in de default gate</strong> — het woont naast de agent, buiten <code>testpaths</code>. Bewust (kost quota), maar het is geen bewuste <em>documentatie</em></td>
+          <td><span class="sev laag">Laag</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============================ BIJLAGE A ============================ -->
+  <section id="bijlage-a">
+    <h2 class="bds-part">Bijlage A: Snelle oriëntatie</h2>
+
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Ik zoek…</th><th>Kijk in</th></tr></thead>
+      <tbody>
+        <tr><td>Welk model doet wat</td><td><code>data/compliance/transparantie.json</code></td></tr>
+        <tr><td>Alle DuckLake-SQL</td><td><code>data/smdl/ducklake.py</code> — nergens anders</td></tr>
+        <tr><td>Het toegangsmodel</td><td><code>agents/shared/identity.py:1-53</code> (de docstring is de referentietekst)</td></tr>
+        <tr><td>Waarom een tabel/kolom zo is</td><td>De docstring van het rowmodel; ze noemen vrijwel allemaal de productiefout</td></tr>
+        <tr><td>Waarom Vertex verplicht is</td><td><code>.env.example:8-24</code></td></tr>
+        <tr><td>Waarom de staat driedelig is</td><td><code>infra/cloudrun.yaml:14-59</code></td></tr>
+        <tr><td>Wat de E2E-suite wel/niet bewijst</td><td><code>e2e/README.md:37-59</code></td></tr>
+        <tr><td>De volgorde van het werk</td><td><a href="buildplan.md"><code>buildplan.md</code></a> (deze repo)</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<footer class="bds-footer">
+  <div class="bds-footer-inner">
+    <a href="#top" class="bds-wordmark">
+      <span class="dot"></span>
+      <span>HAN · Operational Excellence</span>
+    </a>
+    <p>Architecture Blueprint: Operational Excellence Gate-systeem · gegenereerd 17 juli 2026</p>
+  </div>
+</footer>
+
+<dialog id="diagram-dialog" class="diagram-dialog" aria-labelledby="diagram-dialog-title">
+  <div class="diagram-dialog__bar">
+    <span class="diagram-dialog__title" id="diagram-dialog-title">Diagram</span>
+    <button type="button" class="diagram-dialog__close">Sluiten (Esc)</button>
+  </div>
+  <div class="diagram-dialog__body"></div>
+</dialog>
+
+<script type="module">
+// Mermaid vanaf CDN. Bewuste afweging: de diagrammen blijven bewerkbare tekst in
+// dit bestand (en dus diffbaar in git), tegen de prijs van een netwerkafhankelijkheid
+// bij het openen. Zonder netwerk toont elk diagramblok zijn bron in plaats van niets.
+const THEME = {
+  // Exact de tokens uit de :root hierboven — geen tweede palet.
+  primaryColor: '#fafbf0',
+  primaryTextColor: '#111827',
+  primaryBorderColor: '#1a1a1a',
+  secondaryColor: '#f5f0e6',
+  secondaryBorderColor: '#d1d5db',
+  tertiaryColor: '#f9fafb',
+  tertiaryBorderColor: '#e5e7eb',
+  lineColor: '#6b7280',
+  textColor: '#111827',
+  mainBkg: '#fafbf0',
+  nodeBorder: '#1a1a1a',
+  clusterBkg: '#f9f8f4',
+  clusterBorder: '#d1d5db',
+  edgeLabelBackground: '#ffffff',
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif",
+  fontSize: '14px',
+  // Sequence
+  actorBkg: '#fafbf0',
+  actorBorder: '#1a1a1a',
+  actorTextColor: '#111827',
+  actorLineColor: '#6b7280',
+  signalColor: '#111827',
+  signalTextColor: '#111827',
+  labelBoxBkgColor: '#d4db3e',
+  labelBoxBorderColor: '#1a1a1a',
+  labelTextColor: '#111827',
+  loopTextColor: '#4b5563',
+  noteBkgColor: '#d4db3e',
+  noteBorderColor: '#1a1a1a',
+  noteTextColor: '#111827',
+  sequenceNumberColor: '#111827',
+}
+
+// Mermaid verwacht de brontekst als textContent van .mermaid. Wij bewaren hem in
+// een <pre class="mmd-src"> zodat hij leesbaar blijft als het renderen faalt.
+const blocks = [...document.querySelectorAll('.diagram .mermaid')]
+const sources = blocks.map((el) => el.querySelector('.mmd-src')?.textContent ?? '')
+
+// Vergrootknop per diagram. Wordt pas ná een geslaagde render aangeroepen: een
+// knop die een leeg dialoog opent bij een mislukt diagram is erger dan geen knop.
+function wireZoom() {
+  const dlg = document.getElementById('diagram-dialog')
+  const body = dlg.querySelector('.diagram-dialog__body')
+  const titel = document.getElementById('diagram-dialog-title')
+
+  for (const el of blocks) {
+    const svg = el.querySelector('svg')
+    const fig = el.closest('figure')
+    if (!svg || !fig) continue
+
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'diagram-zoom'
+    btn.title = 'Diagram vergroten'
+    btn.innerHTML =
+      '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M6 2H2v4M10 2h4v4M10 14h4v-4M6 14H2v-4"/></svg><span>Vergroten</span>'
+
+    btn.addEventListener('click', () => {
+      // Klonen, niet verplaatsen: bij verplaatsen klapt het originele kader dicht
+      // terwijl het dialoog open staat, en springt de scrollpositie zodra je sluit.
+      // De gekloonde <style> in de svg is id-gescoped, dus de kopie ziet er identiek uit.
+      body.replaceChildren(svg.cloneNode(true))
+      titel.textContent = fig.querySelector('figcaption')?.textContent?.trim() || 'Diagram'
+      dlg.showModal()
+    })
+    fig.append(btn)
+  }
+
+  dlg.querySelector('.diagram-dialog__close').addEventListener('click', () => dlg.close())
+  // Klik op de backdrop sluit: het dialoog zelf is het klikdoel zodra je naast
+  // de inhoud klikt, want de body vult het dialoog niet noodzakelijk helemaal.
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close() })
+  // Opruimen ná sluiten: anders blijft een kopie van een groot diagram in de DOM,
+  // inclusief een duplicaat van elke node-id daarin.
+  dlg.addEventListener('close', () => body.replaceChildren())
+}
+
+try {
+  const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: THEME,
+    securityLevel: 'strict',
+    // htmlLabels: false is niet cosmetisch. Met securityLevel 'strict' saneert
+    // mermaid HTML-labels, waardoor elke &lt;br/&gt; uit een node-label sneuvelt en
+    // regels aan elkaar plakken ("oe-frontendVite build"). SVG-tekstlabels
+    // vertalen &lt;br/&gt; wél naar een echte regelafbreking, met strict intact.
+    // useMaxWidth: false laat een diagram op zijn natuurlijke maat renderen in
+    // plaats van het in de tekstkolom te persen. Het containerdiagram heeft zes
+    // agents naast elkaar; ingepast op 766px wordt de tekst ~7px en onleesbaar.
+    // .diagram heeft overflow-x: auto, dus een breed diagram scrollt in zijn
+    // eigen kader -- de pagina zelf scrollt nooit horizontaal.
+    flowchart: { curve: 'basis', htmlLabels: false, useMaxWidth: false, nodeSpacing: 45, rankSpacing: 55 },
+    sequence: { useMaxWidth: false, mirrorActors: false, wrap: true },
+  })
+  blocks.forEach((el, i) => { el.textContent = sources[i] })
+  await mermaid.run({ nodes: blocks })
+  wireZoom()
+} catch (err) {
+  // Geen netwerk, of een syntaxfout in één diagram: toon de bron in plaats van
+  // een leeg vak. Een diagram dat stil verdwijnt is erger dan een lelijk diagram.
+  console.warn('Mermaid renderde niet; bron wordt getoond.', err)
+  blocks.forEach((el, i) => {
+    if (el.hasAttribute('data-processed')) return
+    el.textContent = ''
+    const pre = document.createElement('pre')
+    pre.className = 'mmd-src'
+    pre.textContent = sources[i]
+    el.append(pre)
+    el.closest('.diagram')?.classList.add('failed')
+  })
+}
+</script>
+
+<script>
+// Inhoudsopgave in-/uitklappen. De stand leeft op <html> (niet op de aside),
+// zodat de CSS zowel de grid-kolom, de aside als de chevron kan aansturen, en
+// het head-script hem vóór de eerste paint al kan zetten.
+{
+  const KEY = 'oe.blueprint.toc'
+  const root = document.documentElement
+  const btn = document.getElementById('toc-toggle')
+
+  const sync = () => {
+    const ingeklapt = root.dataset.toc === 'collapsed'
+    btn.setAttribute('aria-expanded', String(!ingeklapt))
+    // Het label vertelt wat de knop DOET, de aria-expanded wat de staat IS.
+    btn.title = ingeklapt ? 'Inhoudsopgave tonen' : 'Inhoudsopgave verbergen'
+  }
+
+  btn.addEventListener('click', () => {
+    const ingeklapt = root.dataset.toc === 'collapsed'
+    if (ingeklapt) delete root.dataset.toc
+    else root.dataset.toc = 'collapsed'
+    try {
+      localStorage.setItem(KEY, ingeklapt ? 'expanded' : 'collapsed')
+    } catch (e) { /* private mode: de stand geldt dan alleen deze sessie */ }
+    sync()
+  })
+
+  sync()
+}
+</script>
+
+<script>
+// Scroll-spy voor de inhoudsopgave. IntersectionObserver in plaats van een
+// scroll-listener: geen layout thrashing, en de browser doet het rekenwerk.
+const links = new Map(
+  [...document.querySelectorAll('.bds-toc a')].map((a) => [a.getAttribute('href').slice(1), a])
+)
+const sections = [...document.querySelectorAll('main section[id]')]
+let current = null
+
+const io = new IntersectionObserver(
+  (entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue
+      if (current === e.target.id) continue
+      links.get(current)?.classList.remove('is-current')
+      current = e.target.id
+      links.get(current)?.classList.add('is-current')
+    }
+  },
+  // Een smalle band onder de sticky nav: de sectie die dáár staat is waar je bent.
+  { rootMargin: '-15% 0px -75% 0px' }
+)
+sections.forEach((s) => io.observe(s))
+</script>
+
+</body>
+</html>
