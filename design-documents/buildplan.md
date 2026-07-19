@@ -275,11 +275,38 @@ Reproductie tegen de draaiende dienst (`oe-team-api`, team `smoke-a9c327fb`):
 De bucket is op dat moment nog volledig leeg (`gcloud storage ls` → geen objecten): deze flow raakt de GCS-datapath niet eens. **Studentenwerk overleeft een deploy dus niet.** Dit is exact het risico dat TDD Deel 14 benoemde, alleen op de laag waar ik het aanvankelijk niet zocht: ik heb de catalogus duurzaam gemaakt terwijl de eigenlijke inzendingen ephemeer bleven.
 
 Openstaande keuze (vraagt opdrachtgever-input, niet stilzwijgend te beslissen):
-- **GCS FUSE-mount alleen voor `okf_bundle/`** — hier wél verdedigbaar waar het voor een DuckDB-catalogus dat niet was: elk concept is een eigen, één keer geschreven bestand, dus "last write wins" heeft geen twee schrijvers om te laten botsen. Aandachtspunt: `Bundle`'s eigen audit-log (`log_path`) wordt wél aangevuld en is dus wél een gedeeld bestand.
+- **GCS FUSE-mount alleen voor `okf_bundle/`** — hier wél verdedigbaar waar het voor een DuckDB-catalogus dat niet was: elk concept is een eigen, één keer geschreven bestand, dus "last write wins" heeft geen twee schrijvers om te laten botsen. Aandachtspunt: `Bundle`'s eigen audit-log (`log_path`) wordt wél aangevuld en is dus wél een gedeeld bestand. — ⚠️ **achterhaald sinds `append_log` naar de `bundle_log`-DuckLake-tabel verhuisde; zie de herijking hieronder.**
 - **`okf.Bundle` via de GCS-API laten lezen/schrijven** — geen FUSE, wel een echte codewijziging in de OKF-laag.
 - **Concepten naar DuckLake-tabellen verplaatsen** — grootste ingreep, raakt TDD Deel 4.1's hele "OKF-bundel als bronbestand"-model.
 
 Tot dit is opgelost is de deploy **niet productiewaardig**, hoe groen de smoke-test verder ook is.
+
+#### Herijking (19-07-2026): het bezwaar tegen optie 1 is inmiddels achterhaald
+
+**Het enige gedocumenteerde bezwaar tegen optie 1 bestaat niet meer.** Toen deze drie opties werden opgeschreven, was `Bundle`'s audit-log nog een `log.md` waar aan werd toegevoegd — het ene gedeelde bestand tussen allemaal write-once-bestanden, en daarmee precies de FUSE-faalmodus. Later werk heeft dat verplaatst: `okf.Bundle.append_log` schrijft nu naar de DuckLake-tabel `bundle_log`, en de docstring noemt letterlijk de reden — *"the bundle now lives on Cloud Storage, which cannot append — it rewrites the whole object, so two processes appending would silently drop each other's lines. Every other file in the bundle is write-once and is fine there; this one was the exception."* De signatuur bleef ongewijzigd, dus alle ~30 aanroepers merkten er niets van.
+
+Geverifieerd in de code, niet aangenomen:
+- `data/smdl/okf.py` raakt het bestandssysteem op **zes** plaatsen, allemaal `mkdir`/`write_text`/`read_text`/`glob` — operaties die over een FUSE-mount gewoon werken.
+- Er is **geen** append-schrijver meer binnen `okf_bundle/`.
+- De enige resterende append in de datalaag (`storage.py:201`, `resources/manifests/checksums.sha256`) ligt **buiten** `okf_bundle/` en wordt door geen enkele aanroeper in het serving-pad geraakt (alleen tests/CLI).
+
+**Advies: optie 1 — GCS FUSE-mount alleen voor `okf_bundle/`.** Nul coderegels, en het bezwaar dat de andere twee opties moesten rechtvaardigen is weg. Optie 2 (GCS-API) herschrijft zes bestandsoperaties en 41 aanroepplekken voor een probleem dat niet meer bestaat; optie 3 raakt TDD Deel 4.1's hele "OKF-bundel als bronbestand"-model en is niet te verdedigen als duurzaamheidsfix alleen. De asymmetrie met 7.2 blijft daarbij intact en is geen inconsistentie: een **DuckDB-catalogus** vereist vergrendeling en verdroeg FUSE daarom niet; een map met write-once-markdown heeft geen twee schrijvers om te laten botsen.
+
+Aandachtspunten die bij optie 1 wél gelden en bij de uitvoering horen:
+- FUSE-mounts op Cloud Run kennen tragere directory-listings; `iter_concepts` doet een `glob` per concepttype. Bij cursusomvang (tientallen concepten per team) is dat verwaarloosbaar, maar het is een meetpunt, geen aanname.
+- De round-trip-assertie uit 7.6 blijft de acceptatietest: inzenden, **nieuwe revisie forceren**, terugleze. Een HTTP 200 bewijst hier niets — dat was de hele les.
+
+#### Actuele cloudstand (gemeten 19-07-2026)
+
+De eerdere deploy is volledig afgebroken; er staat minder dan het bovenstaande "Geprovisioneerd"-blok suggereert:
+
+| Resource | Verwacht | Gemeten |
+|---|---|---|
+| GCS-bucket `oe-lakehouse-…` | aanwezig | ✅ aanwezig (leeg) |
+| Cloud Run-diensten | 3 | ❌ `Listed 0 items` |
+| Cloud SQL `oe-catalog` | draaiend | ❌ `Listed 0 items` |
+
+De DuckLake-catalogus heeft dus geen databank meer om in te leven: **7.2's Postgres-helft moet opnieuw geprovisioneerd worden** vóór 7.5/7.6 zinvol zijn. `infra/` (Dockerfile, cloudbuild.yaml, cloudrun.yaml, smoke_test.py) en `.github/workflows/deploy-gate-system.yml` staan er nog wél.
 
 **Geprovisioneerd (GCP-project `operational-excellence-course`, `europe-west4`):** API's aan (run/artifactregistry/sqladmin/secretmanager/cloudbuild/storage), GCS-bucket `oe-lakehouse-operational-excellence-course` (versioning aan), Artifact Registry `oe-gate`, Cloud SQL `oe-catalog` + databank `oe_lakehouse`, service-account `oe-runtime@` met least-privilege-rollen (`storage.objectAdmin` **alleen op die ene bucket**, `cloudsql.client`, `secretmanager.secretAccessor` op vier met naam genoemde secrets), en vijf Secret Manager-entries (`oe-db-password`, `oe-catalog-dsn`, `oe-database-url`, `oe-gcs-hmac-key-id`, `oe-gcs-hmac-value`). De GCS HMAC-sleutel is nodig omdat DuckDB `gs://` uitsluitend via de S3-compatibiliteits-API bereikt; een service-account volstaat daar niet.
 

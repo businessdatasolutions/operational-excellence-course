@@ -98,7 +98,7 @@ graph TB
 
     subgraph run["Cloud Run — europe-west4"]
         team["oe-team-api<br/>ThreadingHTTPServer :8080<br/>19 routes, studentgericht"]
-        admin["oe-admin-api<br/>ThreadingHTTPServer :8080<br/>38 routes, docent/beheerder"]
+        admin["oe-admin-api<br/>ThreadingHTTPServer :8080<br/>47 routes, docent/beheerder"]
     end
 
     subgraph agents["Agentic services (in-process)"]
@@ -107,6 +107,8 @@ graph TB
         dash["dashboard_query<br/>+ prep_agent"]
         wqc["wiki_quality_check"]
         qa["quality_advisor"]
+        vi["video_ingest<br/>YouTube → wikipagina"]
+        sq["socratic_questions<br/>3 vragen/hoofdstuk"]
         wq["wiki_query — geen LLM"]
     end
 
@@ -222,7 +224,7 @@ Drie soorten module, en het onderscheid is bewust:
 
 | Soort | Packages | Heeft een `Agent`? |
 |---|---|---|
-| LLM-agents | `socratic_tutor`, `dashboard_query`, `wiki_quality_check`, `quality_advisor` | ja |
+| LLM-agents | `socratic_tutor`, `dashboard_query`, `wiki_quality_check`, `quality_advisor`, `video_ingest`, `socratic_questions` | ja |
 | Deterministische orkestratie | `review_ring_coordinator` (ADK `Workflow`, geen LLM-node), `wiki_query` (geen LLM) | nee |
 | HTTP-adapters | `team_api`, `admin_api` | nee — zij *roepen* agents aan |
 | Cross-cutting | `shared/` (`session`, `identity`, `action_log`) | n.v.t. |
@@ -270,6 +272,167 @@ Dat `(_PROMPTS_DIR / "system_instruction.md").read_text()` op **importtijd** geb
 
 Plus de structurele variant in `build_cohort_positions` (`dashboard_query/agent.py:355-388`): de query die zou kunnen lekken **wordt niet gedraaid**. `TeamPositionRow` heeft exact twee velden en `extra="forbid"`.
 
+#### De video-pijplijn — `video_ingest` + `socratic_questions`
+
+Twee agents, bewust gescheiden, achter één docentscherm (*Video naar wiki*). De
+docent plakt een YouTube-URL en vinkt **maximaal vijf** hoofdstukken aan;
+daarna draait de pijplijn op een achtergrondthread — fetchen plus drie
+modelstadia loopt tot tientallen seconden, ruim voorbij het request-plafond in
+`infra/cloudrun.yaml`.
+
+| Stap | Module | Wat er gebeurt |
+|---|---|---|
+| 1 | `video_ingest` | transcript ophalen en eruit de samenvatting schrijven |
+| 2 | `socratic_questions` | per hoofdstuk drie vragen, verankerd in de conceptpagina's |
+| 3 | `wiki_quality_check.propose_links` | linksuggesties naar bestaande pagina's |
+| 4 | `video_ingest.pipeline.publish_draft` | schrijft de pagina én de entity-pagina's in de wiki-checkout |
+
+De pagina die eruit komt is `type: video-bron` — het enige paginatype dat dit
+systeem zelf aanmaakt in plaats van leest — en landt in `wiki/sources/`, dat
+al in `scan_wiki`'s globs stond.
+
+**Het transcript is bron, geen sectie.** De agent leest het nauwkeurig en
+publiceert het niet: de eerste pagina die deze pijplijn opleverde was 211
+regels, waarvan het leeuwendeel een transcript dat niemand leest en dat tussen
+de student en de twee dingen stond waarvoor die kwam. Wat ervoor in de plaats
+komt is een korte lijst tijdstempel-ankers — dat wás de functie van dat
+transcript: springen naar de passage waar een vraag over gaat. De pagina ging
+daarmee naar 41 regels.
+
+Zeven dingen die dragend zijn:
+
+- **Stap 4 commit niet.** `publish_draft` schrijft het bestand en meldt
+  `WRITTEN_NOT_COMMITTED`; een cross-repo commit vereist een deploy key die
+  deze service niet heeft. De docent ziet "geschreven naar *pad*, nog niet
+  gecommit" — één duidelijk gemarkeerd gat in plaats van een onzichtbaar.
+- **Twee agents, geen uitbreiding van `socratic_tutor`.** Die praat met één team
+  over hún inzending; zijn tools (`read_submission`) betekenen niets voor een
+  video. Wat geërfd wordt is de pedagogie — nooit een oordeel, nooit het
+  antwoord — en die staat opnieuw in de eigen prompt, zodat de twee evalsets
+  onafhankelijk kunnen bewegen.
+- **Drie vragen per hoofdstuk, op Understand / Analyze / Evaluate** (Anderson &
+  Krathwohl). Niet zes niveaus: *Remember* is te beantwoorden door omhoog te
+  scrollen, *Apply* vraagt een procedure die dit materiaal niet levert, en
+  *Create* is wat het checkpoint zelf al eist. De prompt draagt per niveau de
+  werkwoordenlijsten, want het werkwoord maakt het niveau zichtbaar zonder het
+  te benoemen. `grade` en `score` staan in de bron onder *Evaluate* maar zijn
+  hier verboden: dit systeem velt nooit een oordeel.
+- **De output is Nederlands**, ongeacht de taal van de video. Zonder die regel
+  volgde de agent de taal die in de invoer domineerde, en leverde dezelfde
+  video de ene run Nederlandse en de volgende Engelse vragen. Vier dingen
+  blijven onvertaald: de `**Video title:**`-regel (een citaat), eigennamen en
+  functietitels, vaktermen die de cursus zelf in het Engels gebruikt
+  (`Kaizen`, `Jidoka`, `lean`), en directe citaten van de spreker.
+- **Eén pagina per run, afgedwongen na afloop.** `_run_agent` plakt de tekst
+  van *elk* event aaneen — de enige reden dat het werk van de worker
+  überhaupt aankomt, want de coördinator relayt niet betrouwbaar. De prijs is
+  dat alles wat er verder gezegd wordt in dezelfde string belandt, en dat
+  gebeurde: de eerste gepubliceerde pagina bevatte zichzelf twee keer, de
+  tweede keer achter "Here is the output:" in een codeblok. Quartz parste de
+  eerste frontmatter en rendeerde de tweede als letterlijke YAML — de
+  renderfout die een docent zag en de duplicatie eronder waren één bug.
+  `tools.take_first_page` knipt sindsdien bij de eerste code fence of het
+  tweede frontmatter-blok; beide betekenen dat het model gestopt is met
+  schrijven en begonnen met vertellen.
+- **Een foutrapport is geen pagina.** Als `fetch_video` faalt hóórt de agent
+  dat te melden in plaats van een transcript te verzinnen, en dat doet hij.
+  Maar de pijplijn zette zo'n concept op `ready` met een leeg `error`-veld:
+  publiceerbaar, één klik van een alinea proza in de wiki, en stap 2 schreef
+  er ook nog vijftien vragen bij over een video die niemand had kunnen lezen.
+  `run_pipeline` eist nu dat de pagina met frontmatter begint; anders gaat het
+  concept naar `failed` met de reden van de agent erin.
+- **De thumbnail wordt kant-en-klaar aangeleverd.** `build_frontmatter` geeft
+  `thumbnail_markdown` terug — een afbeelding binnen een link, zodat het beeld
+  toont en erop klikken de video opent — en de prompt zegt die letterlijk over
+  te nemen. Hetzelfde patroon als de hoofdstukkoppen van `read_chapters`, en
+  om dezelfde reden: beschrijven hóé je een markdown-constructie bouwt levert
+  hem verkeerd gebouwd op. De eerste pagina zette de thumbnail als kale URL in
+  een opsomming, waar Quartz een link van maakte. Een concept van vóór die
+  wijziging draagt die kale vorm nog, dus `publish_draft` haalt elke pagina
+  langs `with_thumbnail_image` — anders draait een herpublicatie een met de
+  hand aangebrachte correctie stilzwijgend terug, wat één keer is gebeurd.
+
+#### Wat de gepubliceerde pagina met de wiki verbindt
+
+Vier dingen die alle vier ontbraken tot een docent opmerkte dat de graph leeg
+bleef en de ToyotaGPT-pagina geen enkele relatie toonde met de Toyota-case
+ernaast.
+
+- **De links.** `propose_links` vond ze, het reviewscherm liet de docent er
+  wegstrepen, en `full_page` plakte vervolgens alleen pagina en vragen aaneen
+  — de gecureerde lijst ging bij publicatie de prullenbak in. Er staat nu een
+  `## Zie ook`-sectie tussen samenvatting en vragen.
+- **Geen zelfverwijzing.** Een herpublicatie vindt de vorige versie op ~0,85
+  inhoudelijke gelijkenis; het *is* dezelfde inhoud. Filteren op bestandsnaam
+  faalt, want een gepubliceerde pagina houdt de naam die ze ooit kreeg terwijl
+  `slug_for` de huidige titel volgt — hier `building-toyotagpt-...` tegenover
+  `toyotagpt-bouwen-...`. Vergeleken wordt daarom `source_url`.
+- **Twee roots, één juiste.** De paden in `links` komen uit
+  `scan_wiki(default_wiki_root())` (`OE_WIKI_ROOT`), terwijl `publish_draft`
+  schrijft onder `wiki_repo_root()` (`OE_WIKI_REPO`). Die twee wijzen standaard
+  naar dezelfde plek maar hoeven dat niet te blijven doen; resolveren tegen de
+  verkeerde laat élke link in de "buiten de wiki"-tak vallen en zonder een
+  woord verdwijnen. Gevonden door een proefpublicatie naar een tijdelijke map.
+- **De entity-pagina's.** De wiki had er nul, dus er was niets om naartoe te
+  linken. De sprekersregel staat al op de pagina mét functie en organisatie en
+  wordt deterministisch ontleed — een tweede modelaanroep zou het oneens
+  kunnen zijn met de pagina die hij beschrijft. Per spreker en per organisatie
+  één pagina onder `wiki/entities/`, met relaties in beide richtingen
+  (`authored-by`, `published-by`, `employs`, `part-of`, vocabulaire van de
+  `relationships-panel`-extensie). Bestaande entity-pagina's worden nooit
+  overschreven: daar kan een mens proza op hebben gezet.
+
+De bestandsnamen van entity-pagina's behouden hun hoofdletters
+(`Kordel-France.md`) en gaan **niet** door `sanitise_slug`: de relaties
+verwijzen met hoofdletters, dus kleinletters zouden elke kant in de graph laten
+bungelen.
+
+Een entity is een knooppunt, geen lesstof, en dat heeft twee gevolgen die de
+eerste publicatie meteen aan het licht bracht. Ze dragen **geen `stage`** —
+`test_wiki_no_week_numbers` eist die van elke pagina zodat de portaaltab hem
+kan plaatsen, en een entity wordt niet geplaatst maar naartoe gelinkt; er een
+fase op plakken zou "Toyota" in de leeslijst van een fase duwen. En ze vallen
+buiten `_relevant`, dus buiten beide contextuele secties — precies zoals de
+`ai-wiki-contentmap`-verwijzingen. In `all_pages` staan ze wél: die lijst is
+bewust nooit ingeperkt.
+
+#### Hoe nieuw materiaal bij een student terechtkomt
+
+Drie routes, en ze werken onafhankelijk van elkaar. `build_wiki_context`
+(`wiki_query/agent.py`) bouwt ze; de Quartz-wiki kan dit niet, want die is
+statisch en weet niet wie er leest.
+
+| Sectie | Match op | Gevoed door |
+|---|---|---|
+| Bij jullie checkpoint | het hoofdstuk van hún eigen inzending, tegen de hoofdstuktags van de pagina | `CheckpointSubmission` |
+| Bij jullie fase | de fase van het team, tegen `stage` **of** de fase van een hoofdstuktag | `wiki_index.stages_touched` |
+| Alle pagina's | niets — nooit ingeperkt door de twee secties hierboven | `scan_wiki` |
+
+Die tweede regel — `stage` **of** een hoofdstuktag — is nieuw, en de reden is
+de video-pijplijn. Een pagina draagt precies één `stage`, en
+`build_frontmatter` moet dus kiezen als een video vijf hoofdstukken beslaat;
+het kiest de laatste fase die hij raakt. De eerste gepubliceerde video was
+getagd ch03, ch04, ch08, ch15 en ch16 en kreeg daarmee `develop`. Een
+Design-team dat op Ch8 zat kon hem alleen bereiken door de volledige lijst van
+67 kaarten door te scrollen — precies het platte lijstje dat deze tab vervangt.
+
+Matchen op de hoofdstuktags lost dat op zonder het frontmatter-contract van de
+wiki te raken. Gemeten tegen de echte wiki bij die wijziging: **vijf pagina's
+wonnen een fase, geen enkele verloor er een.** Vier daarvan zijn bedrijfscases
+— Toyota bij Direct, Amazon bij Deliver, IKEA bij Develop — die altijd al
+hoofdstuktags uit die fase droegen terwijl hun `stage` iets anders zei.
+
+`STAGE_BY_CHAPTER` (LRD Deel 8; de week-landingspagina's van de wiki zeggen
+hetzelfde) woont in `wiki_quality_check.wiki_index`, niet in `video_ingest`
+waar hij begon. Twee kopieën zouden de `stage` van een pagina en het idee dat
+de browser van die fase heeft stilletjes uit elkaar laten lopen.
+
+`read_chapters` en het docentscherm delen één opzoekfunctie
+(`wiki_quality_check.wiki_index.chapter_pages`), die alleen `type:
+boek-concept`-pagina's teruggeeft: een hoofdstuktag is niet uniek — de 23
+Lean-tool-pagina's dragen er ook een — en zonder dat filter verwijst een vraag
+over Hoofdstuk 16 naar "Kanban boards".
+
 ### 3.3 HTTP-oppervlak
 
 Beide servers: stdlib, dict-routetabel `(method, path) → handler`, dunne handlers die JSON-bare waarden teruggeven.
@@ -277,7 +440,7 @@ Beide servers: stdlib, dict-routetabel `(method, path) → handler`, dunne handl
 | Server | Poort (dev) | Routes | Publiek |
 |---|---|---|---|
 | `team_api` | 8801 | 19 (`server.py:413-438`) | studenten |
-| `admin_api` | 8799 | 38, verdeeld over 4 tabellen (`ROUTES`, `IDENTITY_ROUTES`, `BINARY_ROUTES`, `HTML_ROUTES`) | docenten, beheerders |
+| `admin_api` | 8799 | 47 (methode+pad), verdeeld over 4 tabellen (`ROUTES`, `IDENTITY_ROUTES`, `BINARY_ROUTES`, `HTML_ROUTES`) | docenten, beheerders |
 
 Vier tabellen in `admin_api` in plaats van één, omdat de responsetypes verschillen: JSON, een PDF (`application/pdf`, ruwe bytes), HTML (de printbare toegangssheet), en handlers die de opgeloste `Identity` nodig hebben.
 
