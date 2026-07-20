@@ -7,3 +7,11 @@ background-material/
 .agents/
 .claude/skills/architecture-blueprint-generator
 skills-lock.json
+artikel/.env
+
+# Artikel: alleen bronnen in git. Deze zijn reproduceerbaar en blijven eruit:
+# de HTML komt met quarto uit de .md, de _files/-map is gevendorde third-party
+# JS/CSS die daarbij hoort, en figures/*.png maakt annotate.py uit figures/raw/.
+artikel/*.html
+artikel/*_files/
+artikel/figures/*.png

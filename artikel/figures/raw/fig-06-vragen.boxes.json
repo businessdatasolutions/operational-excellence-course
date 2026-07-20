@@ -1,0 +1,29 @@
+[
+  {
+    "target": "#chapter-3--operations-strategy + ol > li:nth-child(1)",
+    "box": [
+      0.28515625,
+      0.5083938294010889,
+      0.74609375,
+      0.6322595281306715
+    ]
+  },
+  {
+    "target": "#chapter-3--operations-strategy + ol > li:nth-child(2)",
+    "box": [
+      0.28515625,
+      0.6322595281306715,
+      0.74609375,
+      0.8180580762250453
+    ]
+  },
+  {
+    "target": "#chapter-3--operations-strategy + ol > li:nth-child(3)",
+    "box": [
+      0.28515625,
+      0.8180580762250453,
+      0.74609375,
+      0.941923774954628
+    ]
+  }
+]

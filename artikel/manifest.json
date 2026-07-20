@@ -1,0 +1,222 @@
+{
+  "base_url": "http://localhost:5273",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "figures": [
+    {
+      "id": "fig-01-wiki",
+      "rol": "student",
+      "path": "/team/{team}/wiki",
+      "ready": ".wiki-item",
+      "full_page": true,
+      "callouts": [
+        {
+          "target": ".wiki-item:has-text('Ch05')",
+          "badge": "left"
+        },
+        {
+          "target": ".wiki-item:has-text('Cellular Manufacturing')",
+          "badge": "left"
+        },
+        {
+          "target": ".wiki-item:has-text('ToyotaGPT')",
+          "badge": "right"
+        }
+      ],
+      "legend": {
+        "nl": [
+          "De wiki is geordend naar de hoofdstukken van het studieboek, getagd als boekconcept. Die nummering is de volgorde die de auteur koos, en het systeem neemt hem over in plaats van hem opnieuw te bedenken.",
+          "Een concept dat de docent zelf toevoegde, zonder hoofdstuknummer. Het boek levert de structuur, de docent vult aan.",
+          "En deze pagina heeft het systeem zelf geschreven, uit een video die de docent aanwees. Alle drie staan hier omdat het team in deze fase zit: de wiki toont wat past bij waar ze nu staan."
+        ],
+        "en": [
+          "The wiki is ordered by the textbook's chapters, tagged as book concepts. That numbering is the sequence the author chose, and the system adopts it instead of inventing its own.",
+          "A concept the teacher added, with no chapter number. The book supplies the structure, the teacher adds to it.",
+          "And this page the system wrote itself, from a video the teacher pointed it at. All three appear here because the team is in this phase: the wiki shows what fits where they now stand."
+        ]
+      },
+      "artikel": 1
+    },
+    {
+      "id": "fig-02-transparantie",
+      "rol": "student",
+      "path": "/onboarding/{team}/transparantie",
+      "ready": ".transparantie__table",
+      "full_page": true,
+      "callouts": [
+        {
+          "target": ".transparantie__table",
+          "badge": "left"
+        },
+        {
+          "target": ".transparantie__footnote",
+          "badge": "left"
+        }
+      ],
+      "legend": {
+        "nl": [
+          "Eén JSON-bestand bepaalt welk model welke rol vervult. Diezelfde regel is hier de tekst die de student leest.",
+          "\"Deze lijst is geen momentopname die iemand handmatig bijhoudt: het is exact de configuratie waarmee het systeem draait. Verandert er een model, dan verandert deze tabel mee, anders start het systeem niet.\""
+        ],
+        "en": [
+          "A single JSON file decides which model fills which role. That same line is the text the student reads here.",
+          "\"This list is not a snapshot someone maintains by hand. It is the exact configuration the system runs on. Change a model and this table changes with it, or the system refuses to start.\""
+        ]
+      },
+      "artikel": 1
+    },
+    {
+      "id": "fig-03-tutor",
+      "rol": "student",
+      "path": "/team/{team}/tutor",
+      "ready": ".sp-bubble",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "full_page": true,
+      "callouts": [
+        {
+          "target": ".sp-list",
+          "badge": "top"
+        },
+        {
+          "target": ".sp-note",
+          "badge": "left"
+        },
+        {
+          "target": ".sp-bubble >> nth=2",
+          "badge": "left"
+        }
+      ],
+      "legend": {
+        "nl": [
+          "De vier fasen, elk met een eigen gate. Design is afgerond, Direct staat nog open: kwaliteit wordt op meerdere punten getoetst, niet op één eindmoment.",
+          "\"Alleen Socratische vragen: nooit een score of verdict zichtbaar voor het team.\" Die regel staat niet in een handleiding maar boven het gesprek, en het rapport eronder houdt zich eraan.",
+          "Een echte vraag van de tutor over de Ryanair-casus van dit team. De tutor vraagt door op wat het team zelf heeft opgeschreven, en geeft nergens het antwoord."
+        ],
+        "en": [
+          "The four phases, each with its own gate. Design is finished, Direct is still open: quality is tested at several points, not at a single moment at the end.",
+          "\"Socratic questions only: never a score or verdict visible to the team.\" That rule does not sit in a manual, it sits above the conversation, and the report below it obeys.",
+          "A real question from the tutor about this team's Ryanair case. The tutor probes what the team wrote down itself, and nowhere supplies the answer."
+        ]
+      },
+      "artikel": 1
+    },
+    {
+      "id": "fig-04-dashboard",
+      "rol": "docent",
+      "path": "/instructor/dashboard",
+      "ready": ".team-card__meta",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "full_page": false,
+      "callouts": [
+        {
+          "target": ".mock-badge",
+          "badge": "right"
+        },
+        {
+          "target": ".team-card__meta >> nth=0",
+          "badge": "left"
+        },
+        {
+          "target": ".btn--override >> nth=0",
+          "badge": "right"
+        }
+      ],
+      "legend": {
+        "nl": [
+          "Ook dit scherm staat in demo-toestand en zegt dat er zelf bij. Wat eronder ligt is wel gebouwd: de route bestaat, en met een echte klas geeft hij echte cijfers terug.",
+          "\"Verborgen score\": het cijfer dat de student nergens ziet en de docent wel. Niet omdat het per ongeluk zo uitpakte, maar omdat het rapport aan het team structureel geen veld heeft waar een score in past.",
+          "De docent kan de poort van de AI overrulen. De server legt elke override vast in een auditspoor, en weigert er een zonder opgegeven reden: een override die niemand later kan uitleggen is precies wat een student er wel over zou vragen."
+        ],
+        "en": [
+          "This screen is in its demo state too, and says so itself. What sits underneath is built: the route exists, and against a real class it returns real figures.",
+          "\"Hidden score\": the grade the student never sees and the teacher does. Not because it worked out that way, but because the team-facing report structurally has no field a score could go in.",
+          "The teacher can overrule the AI's gate. The server records every override in an audit trail, and refuses one that carries no stated reason: an override nobody can explain later is exactly what a student would ask about."
+        ]
+      },
+      "artikel": 2
+    },
+    {
+      "id": "fig-05-dossier",
+      "rol": "docent",
+      "path": "/instructor/dossier",
+      "ready": ".prep-point",
+      "full_page": true,
+      "callouts": [
+        {
+          "target": ".mock-badge",
+          "badge": "right"
+        },
+        {
+          "target": ".guardrail-banner",
+          "badge": "left"
+        },
+        {
+          "target": ".prep-point .citation-link",
+          "badge": "right"
+        }
+      ],
+      "legend": {
+        "nl": [
+          "Het scherm staat hier in zijn demo-toestand en zegt dat er zelf bij: het start met vastgelegde voorbeelddata en laadt pas echte gegevens na een handeling. De data is dus een voorbeeld. De regel eronder niet.",
+          "\"Geen cijfer, oordeel of aanbeveling. Dit overzicht wijst de docent ergens op; het oordeelt niet. Elk punt hierboven toont zijn bron zichtbaar; een punt zonder geldige bron wordt door de tool zelf al geweigerd.\" Dat is geen disclaimer achteraf: de server schrapt een punt zonder geldige bronverwijzing daadwerkelijk, voordat het scherm het te zien krijgt.",
+          "Elke vraagsuggestie draagt een klikbare bronverwijzing naar de gebeurtenis in de tijdlijn waar hij uit volgt. De docent kan dus altijd terug naar het bewijs."
+        ],
+        "en": [
+          "The screen is in its demo state here, and says so itself: it starts with recorded sample data and only loads real records once you act. So the data is an example. The rule beneath it is not.",
+          "\"No grade, judgement or recommendation. This overview points the teacher at something; it does not judge. Every point above shows its source; a point without a valid source is refused by the tool itself.\" That is not a disclaimer bolted on afterwards: the server really does drop any point without a valid source reference, before the screen ever sees it.",
+          "Every suggested question carries a clickable reference back to the timeline event it came from. The teacher can always return to the evidence."
+        ]
+      },
+      "artikel": 2
+    },
+    {
+      "id": "fig-06-vragen",
+      "rol": "publiek",
+      "url": "https://businessdatasolutions.github.io/oe-wiki/sources/building-toyotagpt-50-production-agents-one-config-file-zero",
+      "ready": "#discussievragen-en-tentamenvragen-socratisch",
+      "viewport": {
+        "width": 1280,
+        "height": 1200
+      },
+      "callouts": [
+        {
+          "target": "#chapter-3--operations-strategy + ol > li:nth-child(1)",
+          "badge": "left"
+        },
+        {
+          "target": "#chapter-3--operations-strategy + ol > li:nth-child(2)",
+          "badge": "left"
+        },
+        {
+          "target": "#chapter-3--operations-strategy + ol > li:nth-child(3)",
+          "badge": "left"
+        }
+      ],
+      "legend": {
+        "nl": [
+          "\"Leg uit hoe...\" Begrijpen: kan de student navertellen wat de spreker beweert?",
+          "\"Vergelijk... met de vier perspectieven uit dit hoofdstuk.\" Analyseren: hier ontmoet de video het boek.",
+          "\"Beoordeel in hoeverre...\" Evalueren: een oordeel vellen, en kunnen zeggen op welke gronden. De niveaus staan er niet bij; het werkwoord verraadt ze. Dat is precies wat de opdracht eiste."
+        ],
+        "en": [
+          "\"Explain how...\" Understand: can the student restate what the speaker is claiming?",
+          "\"Compare... against the four perspectives in this chapter.\" Analyse: this is where the video meets the book.",
+          "\"Assess to what extent...\" Evaluate: make a judgement, and be able to say on what grounds. The levels are not labelled; the verb gives them away. Which is exactly what the instruction demanded."
+        ]
+      },
+      "clip_range": [
+        "#discussievragen-en-tentamenvragen-socratisch",
+        "#chapter-3--operations-strategy + ol"
+      ],
+      "artikel": 2
+    }
+  ]
+}
